@@ -13,6 +13,8 @@ struct AgentDeckApp: App {
         // libghostty must be initialised before any surface exists.
         GhosttyRuntime.shared.start()
         _workspace = StateObject(wrappedValue: Workspace())
+        // After the hook/askpass early exits: those runs must not touch Sparkle.
+        _ = AppUpdater.shared
     }
 
     var body: some Scene {
@@ -23,6 +25,7 @@ struct AgentDeckApp: App {
                 .frame(minWidth: 720, minHeight: 420)
                 .onAppear {
                     appDelegate.workspace = workspace
+                    AppUpdater.shared.workspace = workspace
                     #if DEBUG
                     DebugHooks.install(workspace)
                     #endif
@@ -39,6 +42,7 @@ struct AgentDeckApp: App {
 /// keybinds) go through exactly the same path.
 struct AppCommands: Commands {
     @ObservedObject var workspace: Workspace
+    @ObservedObject private var updater = AppUpdater.shared
 
     private var hasSession: Bool { workspace.selected != nil }
 
@@ -47,6 +51,13 @@ struct AppCommands: Commands {
     }
 
     var body: some Commands {
+        CommandGroup(after: .appInfo) {
+            if updater.isEnabled {
+                Button("检查更新…") { updater.checkForUpdates() }
+                    .disabled(!updater.canCheckForUpdates)
+            }
+        }
+
         CommandGroup(replacing: .newItem) {
             // ⌘⇧1…9 follow the order in 管理 Agent.
             ForEach(Array(workspace.catalog.visible.prefix(9).enumerated()), id: \.element.id) { i, kind in

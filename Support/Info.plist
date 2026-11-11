@@ -43,5 +43,15 @@
 	<string>终端里运行的程序想要使用麦克风。</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>终端里运行的程序想要访问照片。</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUFeedURL</key>
+	<string>https://github.com/CassianFlorin/AgentDeck/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>$(SPARKLE_PUBLIC_ED_KEY)</string>
+	<key>SURequireSignedFeed</key>
+	<true/>
+	<key>SUVerifyUpdateBeforeExtraction</key>
+	<true/>
 </dict>
 </plist>

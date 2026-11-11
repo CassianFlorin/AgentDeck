@@ -20,6 +20,9 @@ jobs:
 
       - uses: ./.github/actions/ghosttykit
 
+      - name: Fetch Sparkle
+        run: scripts/fetch-sparkle.sh
+
       - name: Install XcodeGen
         run: brew install xcodegen
 
@@ -37,6 +40,7 @@ jobs:
           test "$(readlink "$APP/Contents/MacOS/ghostty")" = AgentDeck
           test -d "$APP/Contents/Resources/ghostty/shell-integration"
           test -f "$APP/Contents/Resources/AppIcon.icns"
+          test -d "$APP/Contents/Frameworks/Sparkle.framework"
           codesign --verify --strict "$APP"
           # The CLI entry point must run Ghostty actions and exit (no UI).
           "$APP/Contents/MacOS/ghostty" +version | head -1

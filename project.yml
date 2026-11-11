@@ -14,6 +14,9 @@ settings:
     SWIFT_VERSION: "5.0"
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
+    # Public half of the update-signing key (scripts/setup-update-key.sh).
+    # The private half is the SPARKLE_ED_PRIVATE_KEY repo secret.
+    SPARKLE_PUBLIC_ED_KEY: "/Vtf2a3VvELEvQPYTTpuKisZjK7VKa5KCfI7CWStb5Q="
 
 targets:
   AgentDeck:
@@ -30,6 +33,10 @@ targets:
       - framework: vendor/GhosttyKit.xcframework
         embed: false
       - sdk: Carbon.framework
+      # In-app updater. Fetched by scripts/fetch-sparkle.sh (not committed).
+      - framework: vendor/Sparkle/Sparkle.framework
+        embed: true
+        codeSign: true
     postBuildScripts:
       # libghostty looks for shell-integration / terminfo / themes under
       # Contents/Resources/ghostty. Without it shell integration (cwd, titles,
@@ -70,6 +77,14 @@ targets:
         NSCalendarsUsageDescription: "终端里运行的程序想要访问日历。"
         NSLocationUsageDescription: "终端里运行的程序想要获取位置。"
         NSPhotoLibraryUsageDescription: "终端里运行的程序想要访问照片。"
+        # Sparkle (Sources/App/AppUpdater.swift). Release CI publishes
+        # appcast.xml with every GitHub Release; "latest" redirects to it.
+        SUFeedURL: "https://github.com/CassianFlorin/AgentDeck/releases/latest/download/appcast.xml"
+        SUPublicEDKey: "$(SPARKLE_PUBLIC_ED_KEY)"
+        SUEnableAutomaticChecks: true
+        # Check the EdDSA signature before unpacking anything.
+        SUVerifyUpdateBeforeExtraction: true
+        SURequireSignedFeed: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.cassianflorin.agentdeck

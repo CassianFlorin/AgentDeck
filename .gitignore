@@ -11,6 +11,9 @@ build/
 vendor/GhosttyKit.xcframework/
 vendor/ghostty-resources/
 
+# Fetched by scripts/fetch-sparkle.sh
+vendor/Sparkle/
+
 # macOS / Xcode user state
 .DS_Store
 xcuserdata/

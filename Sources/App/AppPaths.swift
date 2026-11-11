@@ -12,18 +12,26 @@ enum AppPaths {
         URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath, isDirectory: true)
     }
 
+    /// "AgentDeck" for the real app. A build with another bundle id (e.g. one
+    /// made to test updates, which Sparkle relaunches without our environment)
+    /// gets its own folders instead of the real workspace.
+    private static let folderName: String = {
+        let id = Bundle.main.bundleIdentifier ?? "com.cassianflorin.agentdeck"
+        return id == "com.cassianflorin.agentdeck" ? "AgentDeck" : id
+    }()
+
     /// ~/Library/Application Support/AgentDeck (or $AGENTDECK_HOME/support)
     static var support: URL {
         dir(override?.appendingPathComponent("support")
             ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-                .appendingPathComponent("AgentDeck"))
+                .appendingPathComponent(folderName))
     }
 
     /// ~/Library/Caches/AgentDeck (or $AGENTDECK_HOME/cache)
     static var cache: URL {
         dir(override?.appendingPathComponent("cache")
             ?? FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
-                .appendingPathComponent("AgentDeck"))
+                .appendingPathComponent(folderName))
     }
 
     /// Distributed-notification name for DebugHooks; isolated instances get their own.

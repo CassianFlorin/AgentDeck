@@ -11,10 +11,20 @@
 #   NOTARY_KEY_ID     the key id
 #   NOTARY_ISSUER_ID  the issuer id
 # Without them you get signed-but-unnotarized artifacts marked "-unnotarized".
+#
+# The in-app updater feed (appcast.xml) is written when this is set:
+#   SPARKLE_KEY_PATH  EdDSA private key file (scripts/setup-update-key.sh)
+# Overrides (forks, and testing updates without touching the real app):
+#   SPARKLE_PUBLIC_ED_KEY  instead of project.yml's
+#   BUNDLE_ID              instead of com.cassianflorin.agentdeck
+#   GITHUB_REPOSITORY      owner/name used for the download URLs in appcast.xml
 set -euo pipefail
 
 VERSION="${1:?usage: scripts/package.sh <version>}"
-BUILD_NUM="${GITHUB_RUN_NUMBER:-$(date +%y%m%d%H%M)}"
+# CFBundleVersion is what Sparkle compares, so it must grow with every
+# release and match between local and CI builds: 1.2.3 -> 10203.
+IFS=. read -r V_MAJ V_MIN V_PAT <<< "${VERSION%%-*}"
+BUILD_NUM=$(( 10#${V_MAJ:-0} * 10000 + 10#${V_MIN:-0} * 100 + 10#${V_PAT:-0} ))
 TEAM_ID=HU729D6ML5
 APP=AgentDeck
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -27,6 +37,8 @@ mkdir -p "$OUT"
 
 security find-identity -v -p codesigning | grep -q "Developer ID Application: .*($TEAM_ID)" \
   || { echo "error: no 'Developer ID Application ($TEAM_ID)' identity with a private key in the keychain"; exit 1; }
+
+scripts/fetch-sparkle.sh
 
 if [[ ! -d vendor/GhosttyKit.xcframework || ! -d vendor/ghostty-resources ]]; then
   echo "==> Building GhosttyKit"
@@ -41,6 +53,8 @@ if ! xcodebuild archive \
   -project "$APP.xcodeproj" -scheme "$APP" -configuration Release \
   -archivePath "$ARCHIVE" -derivedDataPath "$ROOT/build/DerivedData-release" \
   MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD_NUM" \
+  ${SPARKLE_PUBLIC_ED_KEY:+SPARKLE_PUBLIC_ED_KEY="$SPARKLE_PUBLIC_ED_KEY"} \
+  ${BUNDLE_ID:+PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID"} \
   > "$ROOT/build/archive.log" 2>&1; then
   echo "archive failed; tail of build/archive.log:"; tail -n 40 "$ROOT/build/archive.log"; exit 1
 fi
@@ -88,6 +102,49 @@ SUFFIX=""; [[ "$NOTARIZE" == 1 ]] || SUFFIX="-unnotarized"
 
 echo "==> ZIP"
 ditto -c -k --keepParent "$OUT/$APP.app" "$OUT/$APP-$VERSION$SUFFIX.zip"
+
+if [[ -n "${SPARKLE_KEY_PATH:-}" ]]; then
+  echo "==> appcast.xml (Sparkle)"
+  [[ -n "$(/usr/libexec/PlistBuddy -c 'Print :SUPublicEDKey' "$OUT/$APP.app/Contents/Info.plist" 2>/dev/null)" ]] \
+    || { echo "error: SPARKLE_PUBLIC_ED_KEY is empty in project.yml (run scripts/setup-update-key.sh)"; exit 1; }
+  ZIP="$APP-$VERSION$SUFFIX.zip"
+  # Prints: sparkle:edSignature="…" length="…"
+  ED_SIG="$(vendor/Sparkle/bin/sign_update --ed-key-file "$SPARKLE_KEY_PATH" "$OUT/$ZIP")"
+  [[ "$ED_SIG" == *edSignature=* ]] || { echo "error: sign_update failed"; exit 1; }
+  PREV_TAG="$(git describe --tags --abbrev=0 --match 'v*' HEAD^ 2>/dev/null || true)"
+  CHANGES="$(git log --no-merges --format=%s ${PREV_TAG:+"$PREV_TAG..HEAD"} | head -n 30)"
+  REPO_URL="https://github.com/${GITHUB_REPOSITORY:-CassianFlorin/AgentDeck}"
+  VERSION="$VERSION" BUILD_NUM="$BUILD_NUM" ED_SIG="$ED_SIG" CHANGES="$CHANGES" \
+  REPO_URL="$REPO_URL" ZIP="$ZIP" python3 - > "$OUT/appcast.xml" <<'PY'
+import os, html
+from email.utils import formatdate
+e = os.environ
+v, repo = e["VERSION"], e["REPO_URL"]
+items = "".join(f"<li>{html.escape(l)}</li>" for l in e["CHANGES"].splitlines() if l.strip())
+notes = f"<h3>AgentDeck {v}</h3><ul>{items}</ul>" \
+        f'<p><a href="{repo}/releases/tag/v{v}">完整更新说明</a></p>'
+print(f'''<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+  <channel>
+    <title>AgentDeck</title>
+    <item>
+      <title>AgentDeck {v}</title>
+      <pubDate>{formatdate(usegmt=True)}</pubDate>
+      <sparkle:version>{e["BUILD_NUM"]}</sparkle:version>
+      <sparkle:shortVersionString>{v}</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <sparkle:fullReleaseNotesLink>{repo}/releases/tag/v{v}</sparkle:fullReleaseNotesLink>
+      <description><![CDATA[{notes}]]></description>
+      <enclosure url="{repo}/releases/download/v{v}/{e["ZIP"]}" type="application/octet-stream" {e["ED_SIG"]}/>
+    </item>
+  </channel>
+</rss>''')
+PY
+  xmllint --noout "$OUT/appcast.xml"
+  # Embeds a signature in the feed itself (Info.plist SURequireSignedFeed).
+  vendor/Sparkle/bin/sign_update --ed-key-file "$SPARKLE_KEY_PATH" "$OUT/appcast.xml"
+  vendor/Sparkle/bin/sign_update --ed-key-file "$SPARKLE_KEY_PATH" --verify "$OUT/appcast.xml" >/dev/null
+fi
 
 echo "==> DMG"
 STAGE="$OUT/stage"

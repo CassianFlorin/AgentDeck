@@ -22,6 +22,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          # Tags, so the appcast's change list can start at the previous release.
+          fetch-depth: 0
 
       - name: Version
         id: v
@@ -41,9 +43,10 @@ jobs:
           NOTARY_KEY_P8: ${{ secrets.NOTARY_KEY_P8 }}
           NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
           NOTARY_ISSUER_ID: ${{ secrets.NOTARY_ISSUER_ID }}
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
         run: |
           missing=0
-          for v in CERT_P12_BASE64 CERT_P12_PASSWORD NOTARY_KEY_P8 NOTARY_KEY_ID NOTARY_ISSUER_ID; do
+          for v in CERT_P12_BASE64 CERT_P12_PASSWORD NOTARY_KEY_P8 NOTARY_KEY_ID NOTARY_ISSUER_ID SPARKLE_ED_PRIVATE_KEY; do
             if [ -z "${!v}" ]; then echo "::error::Missing secret: $v"; missing=1; fi
           done
           exit $missing
@@ -77,23 +80,26 @@ jobs:
           rm -f $RUNNER_TEMP/cert.p12 $RUNNER_TEMP/DeveloperIDG2CA.cer
           security find-identity -v -p codesigning "$KEYCHAIN"
 
-      - name: Write notarization key
+      - name: Write notarization & update-signing keys
         env:
           NOTARY_KEY: ${{ secrets.NOTARY_KEY_P8 }}
+          SPARKLE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
         run: |
+          umask 077
           echo "$NOTARY_KEY" > $RUNNER_TEMP/notary.p8
-          chmod 600 $RUNNER_TEMP/notary.p8
+          printf '%s' "$SPARKLE_KEY" > $RUNNER_TEMP/sparkle.key
 
       - name: Build, sign & notarize
         env:
           NOTARY_KEY_PATH: ${{ runner.temp }}/notary.p8
           NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
           NOTARY_ISSUER_ID: ${{ secrets.NOTARY_ISSUER_ID }}
+          SPARKLE_KEY_PATH: ${{ runner.temp }}/sparkle.key
         run: scripts/package.sh "${{ steps.v.outputs.version }}"
 
-      - name: Remove notarization key
+      - name: Remove keys
         if: always()
-        run: rm -f ${{ runner.temp }}/notary.p8
+        run: rm -f ${{ runner.temp }}/notary.p8 ${{ runner.temp }}/sparkle.key
 
       - name: Publish GitHub Release
         env:
@@ -109,9 +115,11 @@ jobs:
           已使用 Apple Developer ID 签名并通过 Apple 公证，可以直接打开，不需要右键或在「隐私与安全性」里放行。
           需要 macOS 14 或更新版本（Apple 芯片）。
 
-          `.sha256` 文件里是 DMG / ZIP 的校验值。
+          已经装了 AgentDeck 的话，在菜单「AgentDeck → 检查更新…」里就能直接更新（0.2.0 起）。
+
+          `.sha256` 文件里是 DMG / ZIP 的校验值。`appcast.xml` 是应用内更新用的。
           EOF
-          FILES=(build/dist/AgentDeck-$VERSION.dmg build/dist/AgentDeck-$VERSION.zip build/dist/AgentDeck-$VERSION.sha256)
+          FILES=(build/dist/AgentDeck-$VERSION.dmg build/dist/AgentDeck-$VERSION.zip build/dist/AgentDeck-$VERSION.sha256 build/dist/appcast.xml)
           for f in "${FILES[@]}"; do test -f "$f" || { echo "::error::missing $f"; exit 1; }; done
           if gh release view "$TAG" >/dev/null 2>&1; then
             # Re-running a release replaces its assets instead of failing.
