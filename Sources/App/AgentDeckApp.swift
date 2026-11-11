@@ -34,6 +34,14 @@ struct AgentDeckApp: App {
         }
         .windowToolbarStyle(.unifiedCompact)
         .commands { AppCommands(workspace: workspace) }
+
+        Settings {
+            TabView {
+                AppearanceSettingsView()
+                    .tabItem { Label("外观", systemImage: "paintbrush") }
+            }
+            .preferredColorScheme(.dark)
+        }
     }
 }
 
@@ -141,6 +149,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     weak var workspace: Workspace?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // AgentDeck is always dark: it sits on a (translucent) terminal background.
+        NSApp.appearance = NSAppearance(named: .darkAqua)
         updateColorScheme()
         DistributedNotificationCenter.default().addObserver(
             forName: .init("AppleInterfaceThemeChangedNotification"), object: nil, queue: .main

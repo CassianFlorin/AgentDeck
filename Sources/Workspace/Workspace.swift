@@ -19,6 +19,8 @@ final class Workspace: ObservableObject {
     @Published private(set) var hosts: [RemoteHost] = []
     /// Aliases from ~/.ssh/config not yet saved as hosts.
     @Published private(set) var sshConfigAliases: [String] = []
+    /// ~/.ssh/config aliases the user removed from the sidebar (config file untouched).
+    @Published private(set) var hiddenSSHConfigAliases: [String] = []
     /// Set to open the host editor (new or existing host).
     @Published var editingHost: RemoteHost?
     /// Set to open the remote-session picker for a host.
@@ -98,6 +100,10 @@ final class Workspace: ObservableObject {
                                        startCommand: line.map { withHooks($0, kind) },
                                        conversationID: conversationID)
             add(session, select: false)
+        }
+        // Nothing to restore (first launch, or everything was closed): start in a shell at ~.
+        if sessions.isEmpty {
+            open(kind: .shell, directory: NSHomeDirectory(), select: false)
         }
         selectedID = orderedSessions.first?.id
         persist()
@@ -193,7 +199,25 @@ final class Workspace: ObservableObject {
 
     func reloadSSHConfig() {
         let saved = Set(hosts.map(\.host))
-        sshConfigAliases = SSHConfigReader.aliases().filter { !saved.contains($0) }
+        let hidden = hostStore.hiddenAliases()
+        let all = SSHConfigReader.aliases().filter { !saved.contains($0) }
+        sshConfigAliases = all.filter { !hidden.contains($0) }
+        hiddenSSHConfigAliases = all.filter { hidden.contains($0) }
+    }
+
+    /// Remove an ~/.ssh/config alias from AgentDeck's list. Only remembered
+    /// here; ~/.ssh/config itself is never touched.
+    func hideSSHConfigAlias(_ alias: String) {
+        var hidden = hostStore.hiddenAliases()
+        hidden.insert(alias)
+        hostStore.saveHiddenAliases(hidden)
+        reloadSSHConfig()
+    }
+
+    /// Show every hidden ~/.ssh/config alias again.
+    func unhideSSHConfigAliases() {
+        hostStore.saveHiddenAliases([])
+        reloadSSHConfig()
     }
 
     func saveHost(_ host: RemoteHost) {

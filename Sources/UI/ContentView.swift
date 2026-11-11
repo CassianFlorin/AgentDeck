@@ -13,6 +13,8 @@ struct ContentView: View {
                     .ignoresSafeArea(.container, edges: .bottom)
                     .navigationTitle(session.displayName)
                     .navigationSubtitle(session.directory.abbreviatingHome)
+                    // The window paints the tint (see GlassWindowConfigurator); the title bar adds none.
+                    .toolbarBackground(.hidden, for: .windowToolbar)
             } else {
                 EmptyStateView()
             }
@@ -20,6 +22,8 @@ struct ContentView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) { NewSessionMenu() }
         }
+        .background(GlassWindowConfigurator())
+        .preferredColorScheme(.dark)
         .sheet(item: $workspace.renaming) { session in
             RenameSheet(title: "重命名会话", initial: session.displayName) { name in
                 workspace.rename(session, to: name)
