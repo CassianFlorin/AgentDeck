@@ -61,6 +61,15 @@ targets:
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         LSMinimumSystemVersion: "14.0"
         NSHumanReadableCopyright: "Copyright © 2026 CassianFlorin. MIT License."
+        # Shown when a program running in a terminal asks for these (it inherits
+        # the terminal's permissions). Matches the entitlements in Support/.
+        NSAppleEventsUsageDescription: "终端里运行的程序想要控制其他 App（例如 osascript）。"
+        NSMicrophoneUsageDescription: "终端里运行的程序想要使用麦克风。"
+        NSCameraUsageDescription: "终端里运行的程序想要使用摄像头。"
+        NSContactsUsageDescription: "终端里运行的程序想要访问通讯录。"
+        NSCalendarsUsageDescription: "终端里运行的程序想要访问日历。"
+        NSLocationUsageDescription: "终端里运行的程序想要获取位置。"
+        NSPhotoLibraryUsageDescription: "终端里运行的程序想要访问照片。"
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.cassianflorin.agentdeck
@@ -75,7 +84,17 @@ targets:
           CODE_SIGN_STYLE: Manual
           CODE_SIGN_IDENTITY: "-"
           ENABLE_HARDENED_RUNTIME: NO
+        # Release: Developer ID + hardened runtime, for notarization.
+        # Built by scripts/package.sh (locally and in CI). Contributors without
+        # the certificate should use Debug.
         Release:
           CODE_SIGN_STYLE: Manual
-          CODE_SIGN_IDENTITY: "-"
+          CODE_SIGN_IDENTITY: "Developer ID Application"
+          DEVELOPMENT_TEAM: HU729D6ML5
+          CODE_SIGN_ENTITLEMENTS: Support/AgentDeck.entitlements
           ENABLE_HARDENED_RUNTIME: YES
+          OTHER_CODE_SIGN_FLAGS: "--timestamp"
+          # GhosttyKit is built for the native arch only (-Dxcframework-target=native).
+          # Apple silicon only for now; a universal build would need
+          # -Dxcframework-target=universal (about twice the Zig build time).
+          ARCHS: arm64

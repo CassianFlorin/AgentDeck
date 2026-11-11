@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build (Debug)
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: ./.github/actions/ghosttykit
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Build
+        run: |
+          set -o pipefail
+          xcodegen generate --quiet
+          xcodebuild -project AgentDeck.xcodeproj -scheme AgentDeck -configuration Debug \
+            -derivedDataPath build/DerivedData build | tail -n 30
+
+      - name: Check the app bundle
+        run: |
+          APP=build/DerivedData/Build/Products/Debug/AgentDeck.app
+          test -x "$APP/Contents/MacOS/AgentDeck"
+          test "$(readlink "$APP/Contents/MacOS/ghostty")" = AgentDeck
+          test -d "$APP/Contents/Resources/ghostty/shell-integration"
+          test -f "$APP/Contents/Resources/AppIcon.icns"
+          codesign --verify --strict "$APP"
+          # The CLI entry point must run Ghostty actions and exit (no UI).
+          "$APP/Contents/MacOS/ghostty" +version | head -1

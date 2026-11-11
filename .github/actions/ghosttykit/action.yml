@@ -1,0 +1,43 @@
+name: GhosttyKit
+description: >
+  Build vendor/GhosttyKit.xcframework and vendor/ghostty-resources from the
+  vendor/ghostty submodule, cached by submodule commit + Zig version.
+runs:
+  using: composite
+  steps:
+    - name: Resolve versions
+      id: v
+      shell: bash
+      run: |
+        echo "sha=$(git -C vendor/ghostty rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+        # Ghostty declares the Zig it needs in build.zig.zon.
+        zig=$(grep -oE 'minimum_zig_version *= *"[^"]+"' vendor/ghostty/build.zig.zon | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
+        echo "zig=$zig" >> "$GITHUB_OUTPUT"
+        echo "Ghostty $(git -C vendor/ghostty rev-parse --short HEAD), Zig $zig"
+
+    - name: Cache GhosttyKit
+      id: cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          vendor/GhosttyKit.xcframework
+          vendor/ghostty-resources
+        key: ghosttykit-${{ runner.os }}-${{ runner.arch }}-${{ steps.v.outputs.sha }}-zig${{ steps.v.outputs.zig }}
+
+    - name: Install Zig
+      if: steps.cache.outputs.cache-hit != 'true'
+      uses: mlugg/setup-zig@v2
+      with:
+        version: ${{ steps.v.outputs.zig }}
+
+    # Xcode 26+ ships the Metal compiler as a separate component; Ghostty's
+    # renderer shaders need it.
+    - name: Ensure Metal Toolchain
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: xcrun metal --version >/dev/null 2>&1 || xcodebuild -downloadComponent MetalToolchain
+
+    - name: Build GhosttyKit
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: scripts/build-ghosttykit.sh

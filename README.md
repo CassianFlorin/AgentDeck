@@ -62,6 +62,22 @@ Troubleshooting:
 
 - **`hash mismatch` after an interrupted build.** Run `CLEAN=1 scripts/build-ghosttykit.sh`.
 
+## Releases
+
+Download the latest DMG from [Releases](../../releases). Builds are signed with a Developer ID and notarized by Apple, and they run on Apple silicon with macOS 14 or later.
+
+Maintainers:
+
+- **CI** (`.github/workflows/ci.yml`) builds every push and PR. GhosttyKit is cached by submodule commit and Zig version.
+- **Release** (`.github/workflows/release.yml`) runs on a `v*` tag. It builds, signs with Developer ID, notarizes and staples the app and the DMG, then publishes a GitHub Release with the DMG, a ZIP and SHA-256 checksums:
+
+  ```bash
+  git tag v0.1.0 && git push origin v0.1.0
+  ```
+
+- One-time setup: `scripts/setup-ci-secrets.sh` stores the Developer ID `.p12` and the App Store Connect API key as repository secrets. It prompts for the p12 password and the Issuer ID.
+- Local release: `NOTARY_KEY_PATH=… NOTARY_KEY_ID=… NOTARY_ISSUER_ID=… scripts/package.sh 0.1.0` puts its output in `build/dist`. Without the notary variables you get signed but `-unnotarized` artifacts, which aren't meant for distribution.
+
 ## Claude Code tip
 
 AgentDeck already gets Claude Code's status from hooks. If you also want a terminal bell when Claude waits for you (useful outside AgentDeck too), run:
