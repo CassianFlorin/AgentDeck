@@ -1,9 +1,10 @@
 name: CI
 
+# Only for pull requests (and by hand). Pushes to main aren't built: a
+# release tag runs a full Release build anyway (release.yml).
 on:
-  push:
-    branches: [main]
   pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}

@@ -32,7 +32,7 @@ Troubleshooting:
 
 ## Releasing
 
-- **CI** (`.github/workflows/ci.yml`) builds every push and PR. GhosttyKit is cached by submodule commit and Zig version.
+- **CI** (`.github/workflows/ci.yml`) builds pull requests (and runs by hand from the Actions tab). Pushes to main are not built, since a release tag runs a full Release build. GhosttyKit is cached by submodule commit and Zig version.
 - **Release** (`.github/workflows/release.yml`) runs on a `v*` tag. It builds, signs with Developer ID, notarizes and staples the app and the DMG, then publishes a GitHub Release with the DMG, a ZIP, SHA-256 checksums and `appcast.xml`. The appcast is the in-app update feed, and both it and the ZIP are EdDSA-signed. The version comes from the tag, so `project.yml` doesn't need a bump:
 
   ```bash
