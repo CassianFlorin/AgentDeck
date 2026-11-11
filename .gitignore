@@ -1,0 +1,27 @@
+# XcodeGen output — regenerate with `xcodegen`
+*.xcodeproj/
+*.xcworkspace/
+
+# Build output
+DerivedData/
+build/
+.build/
+
+# Built from vendor/ghostty by scripts/build-ghosttykit.sh
+vendor/GhosttyKit.xcframework/
+vendor/ghostty-resources/
+
+# macOS / Xcode user state
+.DS_Store
+xcuserdata/
+*.xcuserstate
+
+# Never commit signing material or secrets
+*.p12
+*.cer
+*.mobileprovision
+*.provisionprofile
+.env
+
+# Pre-fetched Zig dependencies (scripts/prefetch-zig-deps.sh)
+vendor/zig-deps/
