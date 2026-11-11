@@ -119,12 +119,24 @@ private struct GroupRef: Identifiable {
 struct SessionRow: View {
     @ObservedObject var session: AgentSession
     @EnvironmentObject private var workspace: Workspace
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Bumped each time the session starts needing you, to bounce its icon once.
+    @State private var nudge = 0
+
+    /// An agent waiting on you, or a bell / notification you haven't looked at.
+    private var needsYou: Bool {
+        if case .waiting = session.activity { return true }
+        if case .needsAttention = session.status { return true }
+        return false
+    }
 
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: session.kind.symbol)
                 .frame(width: 18)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(needsYou ? AnyShapeStyle(Color.orange) : AnyShapeStyle(.secondary))
+                .symbolEffect(.bounce, value: nudge)
+                .animation(.easeInOut(duration: 0.25), value: needsYou)
             VStack(alignment: .leading, spacing: 2) {
                 Text(session.displayName)
                     .lineLimit(1)
@@ -161,6 +173,9 @@ struct SessionRow: View {
         }
         .padding(.vertical, 2)
         .help(helpText)
+        .onChange(of: needsYou) { _, now in
+            if now && !reduceMotion { nudge += 1 }
+        }
     }
 
     private var helpText: String {
@@ -180,7 +195,7 @@ struct StatusDot: View {
         case .running:
             EmptyView()
         case .needsAttention:
-            Circle().fill(.orange).frame(width: 8, height: 8)
+            PulsingDot(color: .orange, size: 8)
                 .help("等你处理")
         case .finished(let code):
             Circle().fill(code == 0 || code == -1 ? Color.green.opacity(0.7) : .red).frame(width: 6, height: 6)
@@ -231,6 +246,9 @@ struct NewSessionMenu: View {
                 }
                 Divider()
                 Button("添加服务器…") { workspace.editingHost = RemoteHost(name: "", host: "") }
+                if !workspace.hiddenSSHConfigAliases.isEmpty {
+                    Button("恢复已删除的 ssh config 条目") { workspace.unhideSSHConfigAliases() }
+                }
             } label: {
                 Label("连接服务器", systemImage: "server.rack")
             }
@@ -295,12 +313,34 @@ struct ServerList: View {
             .contextMenu {
                 Button("连接") { workspace.connect(alias: alias) }
                 Button("保存为服务器…") { workspace.editingHost = .fromSSHConfig(alias: alias) }
+                Divider()
+                Button("从列表中删除", role: .destructive) { confirmHide(alias) }
+                if !workspace.hiddenSSHConfigAliases.isEmpty {
+                    Button(restoreHiddenTitle) { workspace.unhideSSHConfigAliases() }
+                }
             }
         }
         if workspace.hosts.isEmpty && workspace.sshConfigAliases.isEmpty {
             Button("添加服务器…") { workspace.editingHost = RemoteHost(name: "", host: "") }
                 .buttonStyle(.link)
         }
+        if workspace.sshConfigAliases.isEmpty && !workspace.hiddenSSHConfigAliases.isEmpty {
+            Button(restoreHiddenTitle) { workspace.unhideSSHConfigAliases() }
+                .buttonStyle(.link)
+        }
+    }
+
+    private var restoreHiddenTitle: String {
+        "恢复已删除的 ssh config 条目（\(workspace.hiddenSSHConfigAliases.count)）"
+    }
+
+    private func confirmHide(_ alias: String) {
+        let alert = NSAlert()
+        alert.messageText = "从列表中删除“\(alias)”？"
+        alert.informativeText = "只是不在 AgentDeck 里显示，~/.ssh/config 不会被修改，ssh 命令照常可用。之后可在右键菜单里恢复。"
+        alert.addButton(withTitle: "删除")
+        alert.addButton(withTitle: "取消")
+        if alert.runModal() == .alertFirstButtonReturn { workspace.hideSSHConfigAlias(alias) }
     }
 
     private func confirmDelete(_ host: RemoteHost) {
@@ -344,27 +384,58 @@ struct HostRow: View {
 
 private struct ConnectButton: View {
     let action: () -> Void
+    @State private var hovering = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
-        Button(action: action) { Image(systemName: "play.circle") }
-            .buttonStyle(.borderless)
-            .help("连接")
+        Button(action: action) {
+            Image(systemName: hovering ? "play.circle.fill" : "play.circle")
+                .foregroundStyle(hovering ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.secondary))
+                .scaleEffect(hovering && !reduceMotion ? 1.12 : 1)
+        }
+        .buttonStyle(.borderless)
+        .onHover { h in
+            withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) { hovering = h }
+        }
+        .help("连接")
     }
 }
 
 /// "运行中 / 等你 / 本轮完成 …" next to the folder name.
+///
+/// Motion carries meaning: working shimmers, waiting ripples (it's the one
+/// that needs you), done/ready stay still. Everything goes static under
+/// "Reduce motion".
 struct ActivityBadge: View {
     let activity: AgentActivity
     let label: String
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Bumped when a turn finishes, for a single bounce of the dot.
+    @State private var finished = 0
 
     var body: some View {
         HStack(spacing: 3) {
             switch activity {
             case .working:
-                ProgressView().controlSize(.mini).scaleEffect(0.7).frame(width: 10, height: 10)
+                Image(systemName: "circle.fill")
+                    .font(.system(size: 5))
+                    .foregroundStyle(color)
+                    .symbolEffect(.pulse, options: .repeating, isActive: !reduceMotion)
+                Text(label).foregroundStyle(color).shimmer(active: !reduceMotion)
+            case .waiting:
+                PulsingDot(color: color, size: 5)
+                Text(label).foregroundStyle(color).fontWeight(.medium)
             default:
-                Circle().fill(color).frame(width: 5, height: 5)
+                Image(systemName: "circle.fill")
+                    .font(.system(size: 5))
+                    .foregroundStyle(color)
+                    .symbolEffect(.bounce, value: finished)
+                Text(label).foregroundStyle(color)
             }
-            Text(label).foregroundStyle(color)
+        }
+        .animation(.easeInOut(duration: 0.2), value: activity)
+        .onChange(of: activity) { old, new in
+            if new == .done && old != .done && !reduceMotion { finished += 1 }
         }
     }
 
@@ -377,4 +448,62 @@ struct ActivityBadge: View {
         default: return .secondary
         }
     }
+}
+
+/// A solid dot with a ring that keeps expanding and fading out — "look here".
+struct PulsingDot: View {
+    let color: Color
+    let size: CGFloat
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var expanded = false
+
+    var body: some View {
+        Circle()
+            .fill(color)
+            .frame(width: size, height: size)
+            .background {
+                if !reduceMotion {
+                    Circle()
+                        .stroke(color, lineWidth: 1)
+                        .scaleEffect(expanded ? 2.6 : 1)
+                        .opacity(expanded ? 0 : 0.8)
+                }
+            }
+            .onAppear {
+                guard !reduceMotion else { return }
+                withAnimation(.easeOut(duration: 1.4).repeatForever(autoreverses: false)) { expanded = true }
+            }
+    }
+}
+
+/// A soft highlight that sweeps across text, for "still working".
+private struct Shimmer: ViewModifier {
+    let active: Bool
+    @State private var phase: CGFloat = -1
+
+    func body(content: Content) -> some View {
+        if active {
+            content
+                .overlay {
+                    GeometryReader { geo in
+                        LinearGradient(colors: [.clear, .white.opacity(0.75), .clear],
+                                       startPoint: .leading, endPoint: .trailing)
+                            .frame(width: geo.size.width * 0.6)
+                            .offset(x: phase * geo.size.width * 1.3)
+                    }
+                    .mask(content)
+                    .allowsHitTesting(false)
+                }
+                .onAppear {
+                    phase = -0.6
+                    withAnimation(.linear(duration: 1.6).repeatForever(autoreverses: false)) { phase = 1 }
+                }
+        } else {
+            content
+        }
+    }
+}
+
+extension View {
+    func shimmer(active: Bool = true) -> some View { modifier(Shimmer(active: active)) }
 }

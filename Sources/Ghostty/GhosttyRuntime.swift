@@ -83,10 +83,7 @@ final class GhosttyRuntime {
 
         // Reuse the user's existing Ghostty config (~/.config/ghostty/config etc.),
         // so fonts/themes/keybinds carry over for free.
-        guard let cfg = ghostty_config_new() else { return false }
-        ghostty_config_load_default_files(cfg)
-        ghostty_config_load_recursive_files(cfg)
-        ghostty_config_finalize(cfg)
+        guard let cfg = Self.makeConfig() else { return false }
         let diagnostics = ghostty_config_diagnostics_count(cfg)
         for i in 0..<diagnostics {
             let d = ghostty_config_get_diagnostic(cfg, i)
@@ -143,6 +140,47 @@ final class GhosttyRuntime {
     func tick() {
         guard let app else { return }
         ghostty_app_tick(app)
+    }
+
+    // MARK: - Config
+
+    /// The user's Ghostty config, then AgentDeck's appearance overlay on top
+    /// (background opacity / blur from 设置 → 外观).
+    private static func makeConfig() -> ghostty_config_t? {
+        guard let cfg = ghostty_config_new() else { return nil }
+        ghostty_config_load_default_files(cfg)
+        ghostty_config_load_recursive_files(cfg)
+        let overlay = AppPaths.support.appendingPathComponent("ghostty-appearance.conf")
+        try? AppearanceSettings.ghosttyOverlay.write(to: overlay, atomically: true, encoding: .utf8)
+        overlay.path.withCString { ghostty_config_load_file(cfg, $0) }
+        ghostty_config_finalize(cfg)
+        return cfg
+    }
+
+    /// Re-read config after an appearance change; libghostty pushes it to every surface.
+    func reloadAppearance() {
+        guard let app, let cfg = Self.makeConfig() else { return }
+        ghostty_app_update_config(app, cfg)
+        let old = config
+        config = cfg
+        if let old { ghostty_config_free(old) }
+    }
+
+    /// Blur what's behind a translucent window (radius from `background-blur`).
+    func applyBackgroundBlur(to window: NSWindow) {
+        guard let app else { return }
+        ghostty_set_window_background_blur(app, Unmanaged.passUnretained(window).toOpaque())
+    }
+
+    /// The terminal's `background` color.
+    var backgroundColor: NSColor {
+        var color = ghostty_config_color_s()
+        let key = "background"
+        guard let config, ghostty_config_get(config, &color, key, UInt(key.utf8.count)) else {
+            return NSColor(white: 0.08, alpha: 1)
+        }
+        return NSColor(srgbRed: CGFloat(color.r) / 255, green: CGFloat(color.g) / 255,
+                       blue: CGFloat(color.b) / 255, alpha: 1)
     }
 
     /// Overlay for unfocused splits, from the user's Ghostty config

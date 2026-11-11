@@ -133,6 +133,24 @@ struct HostStore {
         enc.outputFormatting = [.prettyPrinted, .sortedKeys]
         if let data = try? enc.encode(hosts) { try? data.write(to: url, options: .atomic) }
     }
+
+    /// ~/.ssh/config aliases removed from the sidebar: hidden-ssh-aliases.json.
+    /// ~/.ssh/config itself is read-only to AgentDeck.
+    private var hiddenURL: URL {
+        AppPaths.support.appendingPathComponent("hidden-ssh-aliases.json")
+    }
+
+    func hiddenAliases() -> Set<String> {
+        guard let data = try? Data(contentsOf: hiddenURL),
+              let list = try? JSONDecoder().decode([String].self, from: data) else { return [] }
+        return Set(list)
+    }
+
+    func saveHiddenAliases(_ aliases: Set<String>) {
+        let enc = JSONEncoder()
+        enc.outputFormatting = [.prettyPrinted]
+        if let data = try? enc.encode(aliases.sorted()) { try? data.write(to: hiddenURL, options: .atomic) }
+    }
 }
 
 /// Reads Host aliases out of ~/.ssh/config (following Include), so hosts you
