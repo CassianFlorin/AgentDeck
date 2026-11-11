@@ -1,6 +1,40 @@
 import AppKit
 import GhosttyKit
 
+/// Everything libghostty tells a surface that AgentDeck cares about.
+/// Delivered on the main thread via `TerminalSurfaceView.onEvent`.
+enum TerminalEvent {
+    // Pane-level state
+    case title(String)
+    case pwd(String)
+    case attention(String?)
+    case commandFinished(Int16)
+    case childExited(Int32)
+    case closeRequested(processAlive: Bool)
+    case focused
+
+    // Search / scrollback (handled by the pane)
+    case startSearch(needle: String?)
+    case endSearch
+    case searchTotal(Int)
+    case searchSelected(Int)
+    case scrollbar(total: UInt64, offset: UInt64, length: UInt64)
+
+    // Splits (handled by the session)
+    case newSplit(ghostty_action_split_direction_e)
+    case gotoSplit(ghostty_action_goto_split_e)
+    case resizeSplit(ghostty_action_resize_split_direction_e, amount: UInt16)
+    case equalizeSplits
+    case toggleZoom
+
+    // Sessions = tabs (handled by the workspace)
+    case newSession
+    case gotoSession(Int32)
+    case moveSession(Int)
+    case closeSession
+    case renameSession
+}
+
 /// Owns the single `ghostty_app_t` for the process and routes libghostty's
 /// C callbacks back into Swift.
 ///
@@ -13,9 +47,9 @@ final class GhosttyRuntime {
     private(set) var app: ghostty_app_t?
     private var config: ghostty_config_t?
 
-    /// Asked to open a new session "like this one" (Ghostty's new_tab / new_window
-    /// bindings, cmd+t / cmd+n by default).
-    var onNewSessionRequested: ((TerminalSurfaceView?) -> Void)?
+    /// Events whose target is the app rather than a surface (e.g. cmd+t with
+    /// no terminal focused).
+    var onAppEvent: ((TerminalEvent) -> Void)?
 
     private init() {}
 
@@ -71,7 +105,7 @@ final class GhosttyRuntime {
             },
             close_surface_cb: { ud, processAlive in
                 guard let view = TerminalSurfaceView.from(userdata: ud) else { return }
-                DispatchQueue.main.async { view.onCloseRequested?(processAlive) }
+                DispatchQueue.main.async { view.onEvent?(.closeRequested(processAlive: processAlive)) }
             }
         )
 
@@ -100,6 +134,23 @@ final class GhosttyRuntime {
         ghostty_app_tick(app)
     }
 
+    /// Overlay for unfocused splits, from the user's Ghostty config
+    /// (`unfocused-split-fill`, falling back to `background`; `unfocused-split-opacity`).
+    lazy var unfocusedSplitOverlay: NSColor = {
+        guard let config else { return NSColor.black.withAlphaComponent(0.3) }
+        var opacity: Double = 0.85
+        let okey = "unfocused-split-opacity"
+        _ = ghostty_config_get(config, &opacity, okey, UInt(okey.utf8.count))
+        var color = ghostty_config_color_s()
+        let fkey = "unfocused-split-fill"
+        if !ghostty_config_get(config, &color, fkey, UInt(fkey.utf8.count)) {
+            let bkey = "background"
+            _ = ghostty_config_get(config, &color, bkey, UInt(bkey.utf8.count))
+        }
+        return NSColor(srgbRed: CGFloat(color.r) / 255, green: CGFloat(color.g) / 255,
+                       blue: CGFloat(color.b) / 255, alpha: CGFloat(1 - opacity))
+    }()
+
     func setColorScheme(dark: Bool) {
         guard let app else { return }
         ghostty_app_set_color_scheme(app, dark ? GHOSTTY_COLOR_SCHEME_DARK : GHOSTTY_COLOR_SCHEME_LIGHT)
@@ -112,65 +163,65 @@ final class GhosttyRuntime {
         return TerminalSurfaceView.from(userdata: ghostty_surface_userdata(surface))
     }
 
+    /// Translate a libghostty action into a TerminalEvent, or nil if we don't handle it.
+    private static func event(for action: ghostty_action_s) -> TerminalEvent? {
+        let a = action.action
+        switch action.tag {
+        case GHOSTTY_ACTION_SET_TITLE: return .title(String(cString: a.set_title.title))
+        case GHOSTTY_ACTION_PWD: return .pwd(String(cString: a.pwd.pwd))
+        case GHOSTTY_ACTION_RING_BELL: return .attention(nil)
+        case GHOSTTY_ACTION_DESKTOP_NOTIFICATION:
+            // Claude Code / Codex use OSC 9 / OSC 777 to say "I need you".
+            let text = [String(cString: a.desktop_notification.title),
+                        String(cString: a.desktop_notification.body)]
+                .filter { !$0.isEmpty }.joined(separator: " — ")
+            return .attention(text.isEmpty ? nil : text)
+        case GHOSTTY_ACTION_COMMAND_FINISHED: return .commandFinished(a.command_finished.exit_code)
+        case GHOSTTY_ACTION_SHOW_CHILD_EXITED: return .childExited(Int32(a.child_exited.exit_code))
+
+        case GHOSTTY_ACTION_START_SEARCH:
+            let needle = String(cString: a.start_search.needle)
+            return .startSearch(needle: needle.isEmpty ? nil : needle)
+        case GHOSTTY_ACTION_END_SEARCH: return .endSearch
+        case GHOSTTY_ACTION_SEARCH_TOTAL: return .searchTotal(Int(a.search_total.total))
+        case GHOSTTY_ACTION_SEARCH_SELECTED: return .searchSelected(Int(a.search_selected.selected))
+        case GHOSTTY_ACTION_SCROLLBAR:
+            let s = a.scrollbar
+            return .scrollbar(total: s.total, offset: s.offset, length: s.len)
+
+        case GHOSTTY_ACTION_NEW_SPLIT: return .newSplit(a.new_split)
+        case GHOSTTY_ACTION_GOTO_SPLIT: return .gotoSplit(a.goto_split)
+        case GHOSTTY_ACTION_RESIZE_SPLIT:
+            return .resizeSplit(a.resize_split.direction, amount: a.resize_split.amount)
+        case GHOSTTY_ACTION_EQUALIZE_SPLITS: return .equalizeSplits
+        case GHOSTTY_ACTION_TOGGLE_SPLIT_ZOOM: return .toggleZoom
+
+        case GHOSTTY_ACTION_NEW_TAB, GHOSTTY_ACTION_NEW_WINDOW: return .newSession
+        case GHOSTTY_ACTION_GOTO_TAB: return .gotoSession(a.goto_tab.rawValue)
+        case GHOSTTY_ACTION_MOVE_TAB: return .moveSession(Int(a.move_tab.amount))
+        // cmd+shift+w / cmd+alt+w in Ghostty's defaults close the window/tab;
+        // here the closest equivalent is closing the whole session.
+        case GHOSTTY_ACTION_CLOSE_TAB, GHOSTTY_ACTION_CLOSE_WINDOW: return .closeSession
+        case GHOSTTY_ACTION_PROMPT_TITLE: return .renameSession
+        default: return nil
+        }
+    }
+
     /// Return true when the action was handled. Unhandled actions fall back to
     /// libghostty's defaults (or are ignored).
     private static func handleAction(_ app: ghostty_app_t, target: ghostty_target_s, action: ghostty_action_s) -> Bool {
         let view = surfaceView(target)
 
+        // Actions that need no session context.
         switch action.tag {
-        case GHOSTTY_ACTION_SET_TITLE:
-            guard let view else { return false }
-            let title = String(cString: action.action.set_title.title)
-            DispatchQueue.main.async { view.onTitleChange?(title) }
-            return true
-
-        case GHOSTTY_ACTION_PWD:
-            guard let view else { return false }
-            let pwd = String(cString: action.action.pwd.pwd)
-            DispatchQueue.main.async { view.onPwdChange?(pwd) }
-            return true
-
-        case GHOSTTY_ACTION_RING_BELL:
-            guard let view else { return false }
-            DispatchQueue.main.async { view.onAttention?(nil) }
-            return true
-
-        case GHOSTTY_ACTION_DESKTOP_NOTIFICATION:
-            // Claude Code / Codex use OSC 9 / OSC 777 to say "I need you".
-            guard let view else { return false }
-            let n = action.action.desktop_notification
-            let title = String(cString: n.title)
-            let body = String(cString: n.body)
-            let text = [title, body].filter { !$0.isEmpty }.joined(separator: " — ")
-            DispatchQueue.main.async { view.onAttention?(text.isEmpty ? nil : text) }
-            return true
-
-        case GHOSTTY_ACTION_COMMAND_FINISHED:
-            guard let view else { return false }
-            let code = action.action.command_finished.exit_code
-            DispatchQueue.main.async { view.onCommandFinished?(code) }
-            return true
-
-        case GHOSTTY_ACTION_SHOW_CHILD_EXITED:
-            guard let view else { return false }
-            let code = action.action.child_exited.exit_code
-            DispatchQueue.main.async { view.onChildExited?(Int32(code)) }
-            return true
-
-        case GHOSTTY_ACTION_NEW_TAB, GHOSTTY_ACTION_NEW_WINDOW, GHOSTTY_ACTION_NEW_SPLIT:
-            DispatchQueue.main.async { GhosttyRuntime.shared.onNewSessionRequested?(view) }
-            return true
-
         case GHOSTTY_ACTION_QUIT:
             DispatchQueue.main.async { NSApp.terminate(nil) }
             return true
-
         case GHOSTTY_ACTION_MOUSE_SHAPE:
             guard let view else { return false }
             let shape = action.action.mouse_shape
             DispatchQueue.main.async { view.setMouseShape(shape) }
             return true
-
         case GHOSTTY_ACTION_OPEN_URL:
             let u = action.action.open_url
             let data = Data(bytes: u.url, count: Int(u.len))
@@ -178,10 +229,19 @@ final class GhosttyRuntime {
             let url = URL(string: str) ?? URL(fileURLWithPath: str)
             DispatchQueue.main.async { NSWorkspace.shared.open(url) }
             return true
-
         default:
-            return false
+            break
         }
+
+        guard let event = event(for: action) else { return false }
+        DispatchQueue.main.async {
+            if let view {
+                view.deliver(event)
+            } else {
+                GhosttyRuntime.shared.onAppEvent?(event)
+            }
+        }
+        return true
     }
 
     // MARK: - Clipboard
@@ -209,14 +269,12 @@ final class GhosttyRuntime {
               let surface = view.surface,
               let pb = pasteboard(location) else { return GHOSTTY_CLIPBOARD_READ_UNSUPPORTED }
 
-        // Text only for now. Image paste (for agents that accept screenshots)
-        // is a natural next step.
         var wanted: String?
         for i in 0..<mimesLen {
             let m = String(cString: mimes[i])
             if isPlainText(m) { wanted = m; break }
         }
-        guard let mime = wanted, let text = pb.string(forType: .string) else {
+        guard let mime = wanted, let text = PasteboardText.read(pb) else {
             return GHOSTTY_CLIPBOARD_READ_UNAVAILABLE
         }
 

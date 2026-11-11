@@ -9,14 +9,11 @@ import GhosttyKit
 final class TerminalSurfaceView: NSView {
     private(set) var surface: ghostty_surface_t?
 
-    // Events for the owning session. Always delivered on the main thread.
-    var onTitleChange: ((String) -> Void)?
-    var onPwdChange: ((String) -> Void)?
-    var onAttention: ((String?) -> Void)?
-    var onCommandFinished: ((Int16) -> Void)?
-    var onChildExited: ((Int32) -> Void)?
-    var onCloseRequested: ((Bool) -> Void)?
-    var onFocus: (() -> Void)?
+    /// Everything libghostty reports for this surface. Always on the main thread.
+    var onEvent: ((TerminalEvent) -> Void)?
+
+    /// Last directory reported by shell integration (OSC 7).
+    private(set) var currentDirectory: String?
 
     private var markedText = NSMutableAttributedString()
     /// Non-nil only while inside keyDown; collects text committed by the IME.
@@ -37,7 +34,30 @@ final class TerminalSurfaceView: NSView {
     ///     land back in a normal shell with shell integration intact.
     init(workingDirectory: String?, initialInput: String?, env: [String: String] = [:]) {
         super.init(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
-        createSurface(workingDirectory: workingDirectory, initialInput: initialInput, env: env)
+        currentDirectory = workingDirectory
+        createSurface(workingDirectory: workingDirectory, initialInput: initialInput, env: env,
+                      fontSize: nil, context: GHOSTTY_SURFACE_CONTEXT_WINDOW)
+        commonInit()
+    }
+
+    /// A new split next to `source`: same cwd and font size (incl. zoom level).
+    init(splittingFrom source: TerminalSurfaceView) {
+        super.init(frame: source.bounds)
+        var dir = source.currentDirectory
+        var fontSize: Float?
+        if let s = source.surface {
+            let inherited = ghostty_surface_inherited_config(s, GHOSTTY_SURFACE_CONTEXT_SPLIT)
+            if let wd = inherited.working_directory { dir = String(cString: wd) }
+            if inherited.font_size > 0 { fontSize = inherited.font_size }
+        }
+        currentDirectory = dir
+        createSurface(workingDirectory: dir, initialInput: nil, env: [:],
+                      fontSize: fontSize, context: GHOSTTY_SURFACE_CONTEXT_SPLIT)
+        commonInit()
+    }
+
+    private func commonInit() {
+        registerForDraggedTypes([.fileURL, .png, .tiff, .string])
     }
 
     @available(*, unavailable)
@@ -47,7 +67,8 @@ final class TerminalSurfaceView: NSView {
         if let surface { ghostty_surface_free(surface) }
     }
 
-    private func createSurface(workingDirectory: String?, initialInput: String?, env: [String: String]) {
+    private func createSurface(workingDirectory: String?, initialInput: String?, env: [String: String],
+                               fontSize: Float?, context: ghostty_surface_context_e) {
         guard let app = GhosttyRuntime.shared.app else { return }
 
         var cfg = ghostty_surface_config_new()
@@ -56,7 +77,8 @@ final class TerminalSurfaceView: NSView {
             nsview: Unmanaged.passUnretained(self).toOpaque()))
         cfg.userdata = Unmanaged.passUnretained(self).toOpaque()
         cfg.scale_factor = Double(NSScreen.main?.backingScaleFactor ?? 2)
-        cfg.context = GHOSTTY_SURFACE_CONTEXT_WINDOW
+        cfg.context = context
+        if let fontSize { cfg.font_size = fontSize }
 
         // C strings must outlive ghostty_surface_new; free them right after.
         var owned: [UnsafeMutablePointer<CChar>] = []
@@ -87,7 +109,7 @@ final class TerminalSurfaceView: NSView {
         let ok = super.becomeFirstResponder()
         if ok, let surface {
             ghostty_surface_set_focus(surface, true)
-            onFocus?()
+            onEvent?(.focused)
         }
         return ok
     }
@@ -434,6 +456,52 @@ final class TerminalSurfaceView: NSView {
         } else if clearIfNeeded {
             ghostty_surface_preedit(surface, nil, 0)
         }
+    }
+}
+
+// MARK: - Commands, events, drag & drop
+
+extension TerminalSurfaceView {
+    /// Run a Ghostty keybinding action by name, e.g. "new_split:right",
+    /// "search:foo", "scroll_to_top". See `ghostty +list-actions`.
+    @discardableResult
+    func performBindingAction(_ action: String) -> Bool {
+        guard let surface else { return false }
+        return action.withCString { ptr in
+            ghostty_surface_binding_action(surface, ptr, UInt(action.utf8.count))
+        }
+    }
+
+    /// Called by the runtime; keeps local state in sync, then forwards.
+    func deliver(_ event: TerminalEvent) {
+        if case .pwd(let pwd) = event {
+            if let url = URL(string: pwd), url.isFileURL { currentDirectory = url.path } else { currentDirectory = pwd }
+        }
+        onEvent?(event)
+    }
+
+    /// Insert text as if pasted (bracketed paste aware).
+    func insertPasteText(_ text: String) {
+        guard let surface, !text.isEmpty else { return }
+        text.withCString { ptr in ghostty_surface_text(surface, ptr, UInt(text.utf8.count)) }
+    }
+
+    func focus() {
+        window?.makeFirstResponder(self)
+    }
+
+    /// Send text as typed input (not a paste). "\r" acts as Return.
+    func typeText(_ text: String) {
+        committedText(text)
+    }
+
+    override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation { .copy }
+
+    override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        guard let text = PasteboardText.read(sender.draggingPasteboard) else { return false }
+        insertPasteText(text)
+        focus()
+        return true
     }
 }
 

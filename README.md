@@ -13,6 +13,10 @@ You get one window and a sidebar of sessions. Each session is a real Ghostty ter
 - **"Needs you" tracking.** Bell and OSC 9/777 notifications become a sidebar dot and a Dock badge. `⌘⇧J` jumps to the next waiting session.
 - **Your Ghostty config just works.** AgentDeck loads `~/.config/ghostty/config`, so your fonts, themes and keybinds carry over.
 - **IME support.** Chinese, Japanese and Korean input methods work, with the candidate window anchored at the cursor.
+- **Splits.** `⌘D` / `⌘⇧D` split right/down; `⌘[` `⌘]` or `⌘⌥←↑↓→` move between panes; `⌘⌃←↑↓→` resize; `⌘⇧↩` zoom; `⌃⌘=` equalize. New panes inherit the current folder. Layouts are restored on relaunch.
+- **Find & scrollback.** `⌘F` to find, `↩` / `⇧↩` (or `⌘G` / `⇧⌘G`) to step through matches, with a match counter. `⌘E` searches the current selection. An overlay scroll indicator can be dragged. `⌘↑` / `⌘↓` jump between prompts.
+- **Paste images and files.** `⌘V` with a screenshot on the clipboard saves it as a PNG and pastes its path, which is how you hand an agent an image. Copied or dragged files paste as shell-escaped paths.
+- **Rename & group sessions.** Right-click a session to rename it or move it into a group. Groups are collapsible sidebar sections. `⌘1`–`⌘9` jump to a session.
 - **Restore on relaunch.** The same agents reopen in the same folders, as fresh processes.
 
 ## Roadmap

@@ -25,3 +25,7 @@ xcuserdata/
 
 # Pre-fetched Zig dependencies (scripts/prefetch-zig-deps.sh)
 vendor/zig-deps/
+
+# Local agent instructions (not published)
+AGENTS.md
+CLAUDE.md
