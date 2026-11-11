@@ -15,6 +15,23 @@ final class Workspace: ObservableObject {
     /// Set to show the rename sheet for a session.
     @Published var renaming: AgentSession?
 
+    // MARK: Remote hosts
+    @Published private(set) var hosts: [RemoteHost] = []
+    /// Aliases from ~/.ssh/config not yet saved as hosts.
+    @Published private(set) var sshConfigAliases: [String] = []
+    /// Set to open the host editor (new or existing host).
+    @Published var editingHost: RemoteHost?
+    /// Set to open the remote-session picker for a host.
+    @Published var pickingSessionFor: RemoteHost?
+    private let hostStore = HostStore()
+
+    // MARK: Agents
+    let catalog = AgentCatalog()
+    /// Set to open the "resume a conversation" sheet.
+    @Published var resumeRequest: ResumeRequest?
+    @Published var managingAgents = false
+    private var hookObserver: NSObjectProtocol?
+
     private var cancellables: [AgentSession.ID: AnyCancellable] = [:]
     private let store = WorkspaceStore()
 
@@ -33,9 +50,21 @@ final class Workspace: ObservableObject {
         let saved = store.load()
         recentDirectories = saved.recentDirectories
         groups = saved.groups
+        hosts = hostStore.load()
+        reloadSSHConfig()
         GhosttyRuntime.shared.onAppEvent = { [weak self] event in
             guard let self else { return }
             if case .newSession = event { self.newSessionLikeCurrent(nil) }
+        }
+        // Agent hooks (see AgentHook) report from separate processes.
+        hookObserver = DistributedNotificationCenter.default().addObserver(
+            forName: AgentHook.notificationName, object: nil, queue: .main
+        ) { [weak self] note in
+            guard let event = AgentHook.parse(note.object) else { return }
+            MainActor.assumeIsolated {
+                self?.sessions.first { $0.pane(withID: event.paneID) != nil }?
+                    .handleHook(event.name, message: event.message)
+            }
         }
     }
 
@@ -45,18 +74,49 @@ final class Workspace: ObservableObject {
     func restore() {
         let saved = store.load()
         for s in saved.sessions {
-            let kind = AgentKind.builtIn.first { $0.id == s.kindID } ?? .shell
+            if let ref = s.remote {
+                // Reconnect and re-attach: this is what "restore" means for servers.
+                if let host = hosts.first(where: { $0.id == ref.hostID }) {
+                    let session = makeRemoteSession(host, sessionName: ref.sessionName, customName: s.customName,
+                                                    group: s.group, layout: s.layout)
+                    add(session, select: false)
+                }
+                continue
+            }
+            let kind = catalog.agent(id: s.kindID) ?? .shell
+            // Agents come back *in the same conversation*.
+            let (line, conversationID): (String?, String?)
+            if let id = s.conversationID, let resume = kind.resumeLine(id) {
+                (line, conversationID) = (resume, id)
+            } else if s.conversationID == nil, let cont = kind.continueLine(), s.hadAgent == true {
+                (line, conversationID) = (cont, nil)
+            } else {
+                (line, conversationID) = kind.newConversation()
+            }
             let session = AgentSession(kind: kind, directory: s.directory, customName: s.customName,
-                                       group: s.group, layout: s.layout)
+                                       group: s.group, layout: s.layout,
+                                       startCommand: line.map { withHooks($0, kind) },
+                                       conversationID: conversationID)
             add(session, select: false)
         }
         selectedID = orderedSessions.first?.id
         persist()
     }
 
+    /// Open a session. With `resume`, the agent continues that conversation.
     @discardableResult
-    func open(kind: AgentKind, directory: String, group: String? = nil, select: Bool = true) -> AgentSession {
-        let session = AgentSession(kind: kind, directory: directory, group: group)
+    func open(kind: AgentKind, directory: String, group: String? = nil, select: Bool = true,
+              resume: Conversation? = nil) -> AgentSession {
+        let (line, conversationID): (String?, String?)
+        if let resume, let r = kind.resumeLine(resume.id) {
+            (line, conversationID) = (r, resume.id)
+        } else {
+            (line, conversationID) = kind.newConversation()
+        }
+        let session = AgentSession(kind: kind, directory: directory, group: group,
+                                   startCommand: line.map { withHooks($0, kind) },
+                                   conversationID: conversationID)
+        if let resume { session.customName = resume.title }
         add(session, select: select)
         remember(directory)
         persist()
@@ -93,9 +153,132 @@ final class Workspace: ObservableObject {
         updateDockBadge()
     }
 
+    // MARK: Agents
+
+    private func withHooks(_ line: String, _ kind: AgentKind) -> String {
+        let extra = AgentHook.launchArguments(for: kind)
+        return extra.isEmpty ? line : "\(line) \(extra)"
+    }
+
+    /// After the agent exited: start it again, back in the same conversation if we know it.
+    func restartAgent(_ session: AgentSession) {
+        let kind = session.kind
+        guard kind.isAgent else { return }
+        if let id = session.conversationID, let line = kind.resumeLine(id) {
+            session.runInAgentPane(withHooks(line, kind), conversationID: id)
+        } else {
+            let (line, id) = kind.newConversation()
+            if let line { session.runInAgentPane(withHooks(line, kind), conversationID: id) }
+        }
+    }
+
+    func showResume(directory: String? = nil, agentID: String? = nil) {
+        let dir = directory ?? selected.flatMap { $0.remote == nil ? $0.directory : nil }
+            ?? recentDirectories.first ?? NSHomeDirectory()
+        let agent = agentID ?? selected.flatMap { $0.kind.history != .none ? $0.kind.id : nil }
+            ?? catalog.visible.first { $0.history != .none }?.id ?? "claude"
+        resumeRequest = ResumeRequest(directory: dir, agentID: agent)
+    }
+
     private func newSessionLikeCurrent(_ from: AgentSession?) {
         let src = from ?? selected
+        if let ref = src?.remote, let host = hosts.first(where: { $0.id == ref.hostID }) {
+            connect(host)   // cmd+t in an SSH session: another session on the same server
+            return
+        }
         open(kind: src?.kind ?? .shell, directory: src?.directory ?? NSHomeDirectory(), group: src?.group)
+    }
+
+    // MARK: Remote
+
+    func reloadSSHConfig() {
+        let saved = Set(hosts.map(\.host))
+        sshConfigAliases = SSHConfigReader.aliases().filter { !saved.contains($0) }
+    }
+
+    func saveHost(_ host: RemoteHost) {
+        if let i = hosts.firstIndex(where: { $0.id == host.id }) { hosts[i] = host } else { hosts.append(host) }
+        hostStore.save(hosts)
+        reloadSSHConfig()
+        // Keep labels of open sessions in sync.
+        for s in sessions where s.remote?.hostID == host.id {
+            s.remoteName = host.name
+            s.remoteLabel = label(for: host, sessionName: s.remote?.sessionName)
+        }
+    }
+
+    func deleteHost(_ host: RemoteHost) {
+        hosts.removeAll { $0.id == host.id }
+        HostKeychain.deletePassword(for: host.id)
+        hostStore.save(hosts)
+        reloadSSHConfig()
+    }
+
+    func host(for session: AgentSession) -> RemoteHost? {
+        session.remote.flatMap { ref in hosts.first { $0.id == ref.hostID } }
+    }
+
+    /// Sidebar subtitle: address, plus the tmux/zellij session if it isn't the default.
+    private func label(for host: RemoteHost, sessionName: String?) -> String {
+        guard let s = sessionName, s != "agentdeck" else { return host.address }
+        return "\(host.address) · \(s)"
+    }
+
+    /// A tmux/zellij name not used by another open session on this host.
+    private func freshSessionName(for host: RemoteHost) -> String {
+        let base = SSH.sessionName("agentdeck")
+        let used = Set(sessions.compactMap { $0.remote?.hostID == host.id ? $0.remote?.sessionName : nil })
+        if !used.contains(base) { return base }
+        var n = 2
+        while used.contains("\(base)-\(n)") { n += 1 }
+        return "\(base)-\(n)"
+    }
+
+    private func makeRemoteSession(_ host: RemoteHost, sessionName: String?, customName: String? = nil,
+                                   group: String? = nil, layout: PaneNode.Layout? = nil) -> AgentSession {
+        let name = host.persistence.usesSessionName ? (sessionName ?? freshSessionName(for: host)) : nil
+        return AgentSession(kind: .ssh, directory: NSHomeDirectory(), customName: customName,
+                            group: group ?? host.group, layout: layout,
+                            remote: RemoteRef(hostID: host.id, sessionName: name),
+                            remoteName: host.name,
+                            remoteLabel: label(for: host, sessionName: name),
+                            connectCommand: SSH.commandLine(for: host, sessionName: name))
+    }
+
+    /// Open a session on a server. `sessionName` attaches to an existing
+    /// tmux/zellij session; nil creates a fresh one.
+    @discardableResult
+    func connect(_ host: RemoteHost, sessionName: String? = nil) -> AgentSession {
+        // Already attached to that remote session? Just go there.
+        if let sessionName, let open = sessions.first(where: {
+            $0.remote?.hostID == host.id && $0.remote?.sessionName == sessionName
+        }) {
+            selectedID = open.id
+            if open.isDisconnected { reconnect(open) }
+            return open
+        }
+        let session = makeRemoteSession(host, sessionName: sessionName)
+        add(session, select: true)
+        persist()
+        return session
+    }
+
+    /// Connecting an ~/.ssh/config alias saves it as a server, so the session
+    /// can be reconnected and restored later.
+    @discardableResult
+    func connect(alias: String) -> AgentSession {
+        let host = hosts.first { $0.host == alias } ?? {
+            let h = RemoteHost.fromSSHConfig(alias: alias)
+            saveHost(h)
+            return h
+        }()
+        return connect(host)
+    }
+
+    /// Reconnect with the host's *current* settings (they may have been edited).
+    func reconnect(_ session: AgentSession) {
+        guard let host = host(for: session) else { return }
+        session.reconnect(with: SSH.commandLine(for: host, sessionName: session.remote?.sessionName))
     }
 
     // MARK: Events bubbled up from sessions
@@ -213,7 +396,9 @@ final class Workspace: ObservableObject {
         store.save(.init(
             sessions: orderedSessions.map {
                 .init(kindID: $0.kind.id, directory: $0.directory, customName: $0.customName,
-                      group: $0.group, layout: $0.root.layout)
+                      group: $0.group, layout: $0.root.layout, remote: $0.remote,
+                      conversationID: $0.conversationID,
+                      hadAgent: $0.kind.isAgent && $0.activity != .none ? true : nil)
             },
             recentDirectories: recentDirectories,
             groups: groups))
@@ -244,6 +429,12 @@ struct WorkspaceStore {
             var customName: String?
             var group: String?
             var layout: PaneNode.Layout?
+            var remote: RemoteRef?
+            /// The agent's conversation id, to resume it on relaunch.
+            var conversationID: String?
+            /// An agent was running but we never learned its conversation id
+            /// (e.g. Codex before the first prompt): continue the latest one.
+            var hadAgent: Bool?
         }
         var sessions: [Session] = []
         var recentDirectories: [String] = []
@@ -265,10 +456,7 @@ struct WorkspaceStore {
     }
 
     private var url: URL {
-        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("AgentDeck", isDirectory: true)
-        try? FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
-        return base.appendingPathComponent("workspace.json")
+        AppPaths.support.appendingPathComponent("workspace.json")
     }
 
     func load() -> Saved {
@@ -282,4 +470,11 @@ struct WorkspaceStore {
         enc.outputFormatting = [.prettyPrinted, .sortedKeys]
         if let data = try? enc.encode(saved) { try? data.write(to: url, options: .atomic) }
     }
+}
+
+/// What the "resume a conversation" sheet should show first.
+struct ResumeRequest: Identifiable, Equatable {
+    let id = UUID()
+    var directory: String
+    var agentID: String
 }

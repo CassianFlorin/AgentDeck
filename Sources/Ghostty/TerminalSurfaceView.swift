@@ -15,6 +15,19 @@ final class TerminalSurfaceView: NSView {
     /// Last directory reported by shell integration (OSC 7).
     private(set) var currentDirectory: String?
 
+    /// Exported to the shell as AGENTDECK_PANE, so agent hooks can say which
+    /// pane they belong to.
+    let paneID = UUID().uuidString
+
+    /// Command waiting to be typed once the shell's prompt is up.
+    ///
+    /// Writing it via ghostty's `initial_input` races the shell's startup: the
+    /// text lands while the tty is still in cooked mode, so the kernel echoes
+    /// it once and the line editor draws it again. Instead we wait for the
+    /// first OSC 7 (shell integration reports the cwd from precmd, i.e. the
+    /// prompt is about to be drawn), give the line editor a moment, then type.
+    private var pendingInput: String?
+
     private var markedText = NSMutableAttributedString()
     /// Non-nil only while inside keyDown; collects text committed by the IME.
     private var keyTextAccumulator: [String]?
@@ -35,9 +48,14 @@ final class TerminalSurfaceView: NSView {
     init(workingDirectory: String?, initialInput: String?, env: [String: String] = [:]) {
         super.init(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
         currentDirectory = workingDirectory
-        createSurface(workingDirectory: workingDirectory, initialInput: initialInput, env: env,
+        createSurface(workingDirectory: workingDirectory, env: env,
                       fontSize: nil, context: GHOSTTY_SURFACE_CONTEXT_WINDOW)
         commonInit()
+        if let initialInput, !initialInput.isEmpty {
+            pendingInput = initialInput
+            // Shells without shell integration never send OSC 7; don't wait forever.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in self?.flushPendingInput() }
+        }
     }
 
     /// A new split next to `source`: same cwd and font size (incl. zoom level).
@@ -51,7 +69,7 @@ final class TerminalSurfaceView: NSView {
             if inherited.font_size > 0 { fontSize = inherited.font_size }
         }
         currentDirectory = dir
-        createSurface(workingDirectory: dir, initialInput: nil, env: [:],
+        createSurface(workingDirectory: dir, env: [:],
                       fontSize: fontSize, context: GHOSTTY_SURFACE_CONTEXT_SPLIT)
         commonInit()
     }
@@ -67,7 +85,7 @@ final class TerminalSurfaceView: NSView {
         if let surface { ghostty_surface_free(surface) }
     }
 
-    private func createSurface(workingDirectory: String?, initialInput: String?, env: [String: String],
+    private func createSurface(workingDirectory: String?, env: [String: String],
                                fontSize: Float?, context: ghostty_surface_context_e) {
         guard let app = GhosttyRuntime.shared.app else { return }
 
@@ -90,9 +108,11 @@ final class TerminalSurfaceView: NSView {
         defer { owned.forEach { free($0) } }
 
         if let workingDirectory { cfg.working_directory = UnsafePointer(c(workingDirectory)) }
-        if let initialInput { cfg.initial_input = UnsafePointer(c(initialInput)) }
 
-        var envVars = env.map { ghostty_env_var_s(key: UnsafePointer(c($0.key)), value: UnsafePointer(c($0.value))) }
+        var fullEnv = env
+        fullEnv[AgentHook.paneEnv] = paneID
+        fullEnv["AGENTDECK"] = "1"
+        var envVars = fullEnv.map { ghostty_env_var_s(key: UnsafePointer(c($0.key)), value: UnsafePointer(c($0.value))) }
         envVars.withUnsafeMutableBufferPointer { buf in
             cfg.env_vars = buf.baseAddress
             cfg.env_var_count = buf.count
@@ -397,6 +417,12 @@ final class TerminalSurfaceView: NSView {
             if composing { return }
             keyAction(action, event: event, translationEvent: translationEvent,
                       text: Self.ghosttyCharacters(translationEvent), composing: composing)
+            // Plain Return (not Shift-Return newlines, not an IME commit):
+            // the user just submitted something, e.g. a prompt to an agent.
+            if (event.keyCode == 36 || event.keyCode == 76), !event.isARepeat,
+               event.modifierFlags.isDisjoint(with: [.shift, .option, .command, .control]) {
+                onEvent?(.userSubmitted)
+            }
         }
     }
 
@@ -476,8 +502,33 @@ extension TerminalSurfaceView {
     func deliver(_ event: TerminalEvent) {
         if case .pwd(let pwd) = event {
             if let url = URL(string: pwd), url.isFileURL { currentDirectory = url.path } else { currentDirectory = pwd }
+            if pendingInput != nil {
+                // precmd just ran; let zle/readline switch the tty to raw mode first.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in self?.flushPendingInput() }
+            }
         }
         onEvent?(event)
+    }
+
+    /// The text currently visible in the viewport (for tests and future features
+    /// like "send this output to an agent").
+    func visibleText() -> String {
+        guard let surface else { return "" }
+        var text = ghostty_text_s()
+        let sel = ghostty_selection_s(
+            top_left: ghostty_point_s(tag: GHOSTTY_POINT_VIEWPORT, coord: GHOSTTY_POINT_COORD_TOP_LEFT, x: 0, y: 0),
+            bottom_right: ghostty_point_s(tag: GHOSTTY_POINT_VIEWPORT, coord: GHOSTTY_POINT_COORD_BOTTOM_RIGHT, x: 0, y: 0),
+            rectangle: false)
+        guard ghostty_surface_read_text(surface, sel, &text) else { return "" }
+        defer { ghostty_surface_free_text(surface, &text) }
+        return String(cString: text.text)
+    }
+
+    private func flushPendingInput() {
+        guard let text = pendingInput else { return }
+        pendingInput = nil
+        // "\n" at the end of initial input means "press Return".
+        typeText(text.hasSuffix("\n") ? String(text.dropLast()) + "\r" : text)
     }
 
     /// Insert text as if pasted (bracketed paste aware).

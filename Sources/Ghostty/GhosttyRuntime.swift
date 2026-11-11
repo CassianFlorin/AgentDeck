@@ -20,6 +20,12 @@ enum TerminalEvent {
     case searchSelected(Int)
     case scrollbar(total: UInt64, offset: UInt64, length: UInt64)
 
+    // Agent activity signals
+    /// Plain Return pressed in this pane.
+    case userSubmitted
+    /// OSC 9;4 progress (some agents report "busy" this way).
+    case progress(ghostty_action_progress_report_state_e)
+
     // Splits (handled by the session)
     case newSplit(ghostty_action_split_direction_e)
     case gotoSplit(ghostty_action_goto_split_e)
@@ -69,6 +75,11 @@ final class GhosttyRuntime {
             NSLog("AgentDeck: ghostty_init failed")
             return false
         }
+
+        // `ghostty +ssh`, `ghostty +list-themes`, … Shell integration calls
+        // "$GHOSTTY_BIN_DIR/ghostty" (a symlink to us, see project.yml); when
+        // launched that way libghostty runs the CLI action and exits here.
+        ghostty_cli_try_action()
 
         // Reuse the user's existing Ghostty config (~/.config/ghostty/config etc.),
         // so fonts/themes/keybinds carry over for free.
@@ -188,6 +199,8 @@ final class GhosttyRuntime {
         case GHOSTTY_ACTION_SCROLLBAR:
             let s = a.scrollbar
             return .scrollbar(total: s.total, offset: s.offset, length: s.len)
+
+        case GHOSTTY_ACTION_PROGRESS_REPORT: return .progress(a.progress_report.state)
 
         case GHOSTTY_ACTION_NEW_SPLIT: return .newSplit(a.new_split)
         case GHOSTTY_ACTION_GOTO_SPLIT: return .gotoSplit(a.goto_split)

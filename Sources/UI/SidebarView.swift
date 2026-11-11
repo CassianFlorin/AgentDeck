@@ -4,6 +4,7 @@ struct SidebarView: View {
     @EnvironmentObject private var workspace: Workspace
     @State private var renamingGroup: String?
     @State private var newGroupFor: AgentSession?
+    @State private var serversExpanded = true
 
     var body: some View {
         List(selection: $workspace.selectedID) {
@@ -19,6 +20,19 @@ struct SidebarView: View {
                             Button("重命名分组…") { renamingGroup = group }
                             Button("解散分组") { workspace.ungroup(group) }
                         }
+                }
+            }
+            Section(isExpanded: $serversExpanded) {
+                ServerList()
+            } header: {
+                HStack {
+                    Text("服务器")
+                    Spacer()
+                    Button { workspace.editingHost = RemoteHost(name: "", host: "") } label: {
+                        Image(systemName: "plus")
+                    }
+                    .buttonStyle(.borderless)
+                    .help("添加服务器")
                 }
             }
         }
@@ -46,6 +60,24 @@ struct SidebarView: View {
 
     @ViewBuilder
     private func menu(for session: AgentSession) -> some View {
+        if session.remote != nil {
+            Button("重新连接") { workspace.reconnect(session) }
+            if let host = workspace.host(for: session) {
+                Button("编辑服务器…") { workspace.editingHost = host }
+            }
+            Divider()
+        }
+        if session.kind.isAgent && session.remote == nil {
+            if session.activity == .exited {
+                Button("重新启动 \(session.kind.name)") { workspace.restartAgent(session) }
+            }
+            if session.kind.history != .none {
+                Button("恢复这个文件夹的其他对话…") {
+                    workspace.showResume(directory: session.directory, agentID: session.kind.id)
+                }
+            }
+            Divider()
+        }
         Button("重命名…") { workspace.renaming = session }
         Menu("移到分组") {
             ForEach(workspace.groups.filter { $0 != session.group }, id: \.self) { g in
@@ -58,11 +90,13 @@ struct SidebarView: View {
             }
         }
         Divider()
-        Button("在 Finder 中显示") {
-            NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: session.directory)
-        }
-        Button("同目录再开一个") {
-            workspace.open(kind: session.kind, directory: session.directory, group: session.group)
+        if session.remote == nil {
+            Button("在 Finder 中显示") {
+                NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: session.directory)
+            }
+            Button("同目录再开一个") {
+                workspace.open(kind: session.kind, directory: session.directory, group: session.group)
+            }
         }
         Divider()
         Button("关闭", role: .destructive) { workspace.close(session) }
@@ -84,6 +118,7 @@ private struct GroupRef: Identifiable {
 
 struct SessionRow: View {
     @ObservedObject var session: AgentSession
+    @EnvironmentObject private var workspace: Workspace
 
     var body: some View {
         HStack(spacing: 8) {
@@ -95,6 +130,9 @@ struct SessionRow: View {
                     .lineLimit(1)
                     .truncationMode(.tail)
                 HStack(spacing: 4) {
+                    if let label = session.activity.label {
+                        ActivityBadge(activity: session.activity, label: label)
+                    }
                     Text(session.folderName)
                     if session.panes.count > 1 {
                         Text("· \(session.panes.count) 个窗格")
@@ -105,7 +143,21 @@ struct SessionRow: View {
                 .lineLimit(1)
             }
             Spacer(minLength: 4)
-            StatusDot(status: session.status)
+            if session.activity == .exited {
+                Button { workspace.restartAgent(session) } label: {
+                    Image(systemName: "play.circle.fill").foregroundStyle(.secondary)
+                }
+                .buttonStyle(.borderless)
+                .help(session.conversationID != nil ? "重新启动 \(session.kind.name)，回到同一段对话" : "重新启动 \(session.kind.name)")
+            } else if session.isDisconnected {
+                Button { workspace.reconnect(session) } label: {
+                    Image(systemName: "arrow.clockwise.circle.fill").foregroundStyle(.orange)
+                }
+                .buttonStyle(.borderless)
+                .help("已断开，点击重新连接（会重新附加服务器上的会话）")
+            } else {
+                StatusDot(status: session.status)
+            }
         }
         .padding(.vertical, 2)
         .help(helpText)
@@ -114,6 +166,8 @@ struct SessionRow: View {
     private var helpText: String {
         var parts = [session.directory.abbreviatingHome]
         if case .needsAttention(let msg?) = session.status { parts.append(msg) }
+        if case .waiting(let msg?) = session.activity { parts.append(msg) }
+        if let id = session.conversationID { parts.append("对话 \(id)") }
         return parts.joined(separator: "\n")
     }
 }
@@ -130,16 +184,19 @@ struct StatusDot: View {
                 .help("等你处理")
         case .finished(let code):
             Circle().fill(code == 0 || code == -1 ? Color.green.opacity(0.7) : .red).frame(width: 6, height: 6)
+        case .disconnected:
+            Image(systemName: "bolt.horizontal.circle").foregroundStyle(.orange)
         }
     }
 }
 
 struct NewSessionMenu: View {
     @EnvironmentObject private var workspace: Workspace
+    @EnvironmentObject private var catalog: AgentCatalog
 
     var body: some View {
         Menu {
-            ForEach(AgentKind.builtIn) { kind in
+            ForEach(catalog.visible) { kind in
                 Menu {
                     Button("选择文件夹…") { NewSessionPanel.present(kind: kind, in: workspace) }
                     if !workspace.recentDirectories.isEmpty {
@@ -148,9 +205,34 @@ struct NewSessionMenu: View {
                             Button(dir.abbreviatingHome) { workspace.open(kind: kind, directory: dir) }
                         }
                     }
+                    if kind.history != .none && kind.canResume {
+                        Divider()
+                        Button("恢复之前的对话…") { workspace.showResume(agentID: kind.id) }
+                    }
                 } label: {
-                    Label(kind.name, systemImage: kind.symbol)
+                    Label(catalog.isInstalled(kind) == false ? "\(kind.name)（未安装）" : kind.name,
+                          systemImage: kind.symbol)
                 }
+            }
+            Divider()
+            Button("管理 Agent…") { workspace.managingAgents = true }
+            Divider()
+            Menu {
+                ForEach(workspace.hosts) { host in
+                    Button { workspace.connect(host) } label: { Label(host.name, systemImage: host.symbol) }
+                }
+                if !workspace.sshConfigAliases.isEmpty {
+                    Divider()
+                    Section("~/.ssh/config") {
+                        ForEach(workspace.sshConfigAliases, id: \.self) { alias in
+                            Button(alias) { workspace.connect(alias: alias) }
+                        }
+                    }
+                }
+                Divider()
+                Button("添加服务器…") { workspace.editingHost = RemoteHost(name: "", host: "") }
+            } label: {
+                Label("连接服务器", systemImage: "server.rack")
             }
         } label: {
             Label("新建会话", systemImage: "plus")
@@ -172,5 +254,127 @@ enum NewSessionPanel {
         }
         guard panel.runModal() == .OK, let url = panel.url else { return }
         workspace.open(kind: kind, directory: url.path, group: workspace.selected?.group)
+    }
+}
+
+/// Saved servers plus ~/.ssh/config aliases, inside the sidebar's 服务器 section.
+struct ServerList: View {
+    @EnvironmentObject private var workspace: Workspace
+
+    var body: some View {
+        ForEach(workspace.hosts) { host in
+            HostRow(host: host, openCount: workspace.sessions.filter { $0.remote?.hostID == host.id }.count)
+                .contextMenu {
+                    Button("连接（新会话）") { workspace.connect(host) }
+                    if host.persistence.usesSessionName {
+                        Button("附加到已有会话…") { workspace.pickingSessionFor = host }
+                    }
+                    Divider()
+                    Button("编辑…") { workspace.editingHost = host }
+                    Button("复制") {
+                        var copy = host
+                        copy.id = UUID()
+                        copy.name += " 副本"
+                        workspace.editingHost = copy
+                    }
+                    Divider()
+                    Button("删除", role: .destructive) { confirmDelete(host) }
+                }
+        }
+        ForEach(workspace.sshConfigAliases, id: \.self) { alias in
+            HStack(spacing: 8) {
+                Image(systemName: "doc.text").frame(width: 18).foregroundStyle(.tertiary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(alias).lineLimit(1)
+                    Text("~/.ssh/config").font(.caption).foregroundStyle(.tertiary)
+                }
+                Spacer()
+                ConnectButton { workspace.connect(alias: alias) }
+            }
+            .padding(.vertical, 2)
+            .contextMenu {
+                Button("连接") { workspace.connect(alias: alias) }
+                Button("保存为服务器…") { workspace.editingHost = .fromSSHConfig(alias: alias) }
+            }
+        }
+        if workspace.hosts.isEmpty && workspace.sshConfigAliases.isEmpty {
+            Button("添加服务器…") { workspace.editingHost = RemoteHost(name: "", host: "") }
+                .buttonStyle(.link)
+        }
+    }
+
+    private func confirmDelete(_ host: RemoteHost) {
+        let alert = NSAlert()
+        alert.messageText = "删除服务器“\(host.name)”？"
+        alert.informativeText = "只删除 AgentDeck 里的配置和钥匙串里保存的密码，不会影响服务器，也不会关闭已打开的会话。"
+        alert.addButton(withTitle: "删除")
+        alert.addButton(withTitle: "取消")
+        if alert.runModal() == .alertFirstButtonReturn { workspace.deleteHost(host) }
+    }
+}
+
+struct HostRow: View {
+    let host: RemoteHost
+    let openCount: Int
+    @EnvironmentObject private var workspace: Workspace
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: host.symbol).frame(width: 18).foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 4) {
+                    Text(host.name).lineLimit(1)
+                    if let p = host.provider {
+                        Text(p)
+                            .font(.caption2)
+                            .padding(.horizontal, 4)
+                            .background(.quaternary, in: RoundedRectangle(cornerRadius: 3))
+                    }
+                }
+                Text(openCount > 0 ? "\(host.address) · \(openCount) 个已打开" : host.address)
+                    .font(.caption).foregroundStyle(.secondary).lineLimit(1)
+            }
+            Spacer()
+            ConnectButton { workspace.connect(host) }
+        }
+        .padding(.vertical, 2)
+        .help(host.address)
+    }
+}
+
+private struct ConnectButton: View {
+    let action: () -> Void
+    var body: some View {
+        Button(action: action) { Image(systemName: "play.circle") }
+            .buttonStyle(.borderless)
+            .help("连接")
+    }
+}
+
+/// "运行中 / 等你 / 本轮完成 …" next to the folder name.
+struct ActivityBadge: View {
+    let activity: AgentActivity
+    let label: String
+
+    var body: some View {
+        HStack(spacing: 3) {
+            switch activity {
+            case .working:
+                ProgressView().controlSize(.mini).scaleEffect(0.7).frame(width: 10, height: 10)
+            default:
+                Circle().fill(color).frame(width: 5, height: 5)
+            }
+            Text(label).foregroundStyle(color)
+        }
+    }
+
+    private var color: Color {
+        switch activity {
+        case .working: return .blue
+        case .waiting: return .orange
+        case .done: return .green
+        case .exited: return .secondary
+        default: return .secondary
+        }
     }
 }

@@ -2,20 +2,31 @@ import AppKit
 import Combine
 import GhosttyKit
 
-/// What runs in a session. The command is *typed* into a login shell, so
-/// anything on your PATH works and you get a shell back when it exits.
-struct AgentKind: Codable, Hashable, Identifiable {
-    var id: String
-    var name: String
-    var symbol: String
-    /// nil = plain shell.
-    var command: String?
+/// What an agent session's agent is doing right now (sidebar label).
+enum AgentActivity: Equatable {
+    /// Not an agent session (plain shell / SSH).
+    case none
+    /// Agent launched, waiting for your first prompt.
+    case ready
+    /// Working on a prompt.
+    case working
+    /// Needs you: a permission prompt, a question, or a notification.
+    case waiting(String?)
+    /// Finished its turn.
+    case done
+    /// The agent process exited; you're back at the shell.
+    case exited
 
-    static let claude = AgentKind(id: "claude", name: "Claude Code", symbol: "sparkle", command: "claude")
-    static let codex = AgentKind(id: "codex", name: "Codex", symbol: "chevron.left.forwardslash.chevron.right", command: "codex")
-    static let shell = AgentKind(id: "shell", name: "Shell", symbol: "terminal", command: nil)
-
-    static let builtIn: [AgentKind] = [.claude, .codex, .shell]
+    var label: String? {
+        switch self {
+        case .none: return nil
+        case .ready: return "就绪"
+        case .working: return "运行中"
+        case .waiting: return "等你"
+        case .done: return "本轮完成"
+        case .exited: return "已退出"
+        }
+    }
 }
 
 enum SessionStatus: Equatable {
@@ -26,6 +37,8 @@ enum SessionStatus: Equatable {
     case needsAttention(String?)
     /// The last shell command finished (from shell integration).
     case finished(exitCode: Int16)
+    /// Remote session whose ssh exited; reconnecting re-attaches tmux/zellij.
+    case disconnected(exitCode: Int16)
 }
 
 /// One sidebar entry: a split tree of terminal panes in a working folder.
@@ -49,23 +62,62 @@ final class AgentSession: ObservableObject, Identifiable {
 
     /// Session-level events (new session, goto/move/close session…) for the workspace.
     var onWorkspaceEvent: ((AgentSession, TerminalEvent) -> Void)?
+
+    /// For agent sessions: the agent's own conversation id, so the conversation
+    /// can be resumed after a relaunch. Known up front for agents that accept
+    /// one (Claude Code, Grok); discovered after launch for Codex.
+    @Published var conversationID: String?
+    @Published var activity: AgentActivity = .none
+    private var discovery: Task<Void, Never>?
+
+    /// Set for SSH sessions.
+    let remote: RemoteRef?
+    /// For SSH sessions: the server's name (title) and address (subtitle).
+    @Published var remoteName: String?
+    @Published var remoteLabel: String?
+    /// The line typed to (re)connect.
+    private(set) var connectCommand: String?
     /// Asks the workspace whether this session is the one on screen.
     var isFrontmost: () -> Bool = { false }
 
-    var displayName: String { customName ?? title }
-    var folderName: String { (directory as NSString).lastPathComponent }
+    /// SSH sessions are named after the server; the terminal title would just
+    /// be the local shell's cwd whenever we're disconnected.
+    var displayName: String { customName ?? remoteName ?? agentAwareTitle }
+
+    /// Shell integration titles a running command with its whole command line
+    /// ("claude --session-id … --settings …"); show the agent's name instead.
+    /// Titles the agent sets itself (e.g. the current task) pass through.
+    private var agentAwareTitle: String {
+        guard kind.isAgent, let exe = kind.executable else { return title }
+        let t = title.trimmingCharacters(in: .whitespaces)
+        if t == exe || t.hasPrefix(exe + " ") || (kind.command.map { t.hasPrefix($0) } ?? false) { return kind.name }
+        return title
+    }
+    var folderName: String { remoteLabel ?? (directory as NSString).lastPathComponent }
+    var isDisconnected: Bool { if case .disconnected = status { return true } else { return false } }
     var panes: [PaneView] { root.leaves }
 
+    /// - Parameters:
+    ///   - startCommand: for agent sessions, the agent line typed into the first pane.
+    ///   - connectCommand: for SSH sessions, the ssh line typed into the first pane.
     init(kind: AgentKind, directory: String, customName: String? = nil, group: String? = nil,
-         layout: PaneNode.Layout? = nil) {
+         layout: PaneNode.Layout? = nil, startCommand: String? = nil, conversationID: String? = nil,
+         remote: RemoteRef? = nil, remoteName: String? = nil,
+         remoteLabel: String? = nil, connectCommand: String? = nil) {
         self.kind = kind
         self.directory = directory
-        self.title = kind.name
+        self.title = remoteName ?? kind.name
         self.customName = customName
         self.group = group
+        self.remote = remote
+        self.remoteName = remoteName
+        self.remoteLabel = remoteLabel
+        self.connectCommand = connectCommand
+        self.conversationID = conversationID
+        if kind.isAgent && startCommand != nil { activity = .ready }
 
-        // Placeholder so `self` is fully initialised before panes capture it.
-        let agent = Self.makePane(kind: kind, directory: directory, isAgent: true)
+        let firstInput = connectCommand ?? startCommand
+        let agent = Self.makePane(input: firstInput, directory: directory, isAgent: true)
         if let layout {
             var usedAgent = false
             root = PaneNode.restore(layout) { l in
@@ -73,7 +125,7 @@ final class AgentSession: ObservableObject, Identifiable {
                     usedAgent = true
                     return agent
                 }
-                return Self.makePane(kind: .shell, directory: l.directory ?? directory, isAgent: false)
+                return Self.makePane(input: nil, directory: l.directory ?? directory, isAgent: false)
             }
             if !usedAgent { root = PaneNode(pane: agent) }
         } else {
@@ -81,13 +133,16 @@ final class AgentSession: ObservableObject, Identifiable {
         }
         focusedPane = root.leaves.first { $0.isAgentPane } ?? root.leaves.first
         panes.forEach(wire)
+        if kind.history == .codex && conversationID == nil && startCommand != nil { discoverCodexSession() }
     }
 
-    private static func makePane(kind: AgentKind, directory: String, isAgent: Bool) -> PaneView {
+    deinit { discovery?.cancel() }
+
+    private static func makePane(input: String?, directory: String, isAgent: Bool) -> PaneView {
         let term = TerminalSurfaceView(
             workingDirectory: directory,
-            initialInput: isAgent ? kind.command.map { $0 + "\n" } : nil,
-            env: ["AGENTDECK": "1"])
+            initialInput: input.map { $0 + "\n" },
+            env: [:])
         return PaneView(terminal: term, isAgentPane: isAgent)
     }
 
@@ -108,16 +163,41 @@ final class AgentSession: ObservableObject, Identifiable {
             if pane === focusedPane, let dir = pane.terminal.currentDirectory { directory = dir }
 
         case .attention(let message):
+            if isAgentPane(pane) { activity = .waiting(message) }
             if isFrontmost() && NSApp.isActive && pane === focusedPane { return }
             status = .needsAttention(message)
             NSApp.requestUserAttention(.informationalRequest)
 
         case .commandFinished(let code):
+            // In an SSH session the first pane's local command *is* ssh:
+            // when it finishes, we've been disconnected.
+            if remote != nil, pane.isAgentPane {
+                status = .disconnected(exitCode: code)
+                return
+            }
+            // The agent's own command finished: the agent exited.
+            if isAgentPane(pane) { activity = .exited }
             if case .needsAttention = status { return }
             if pane === focusedPane { status = .finished(exitCode: code) }
 
         case .childExited:
             break
+
+        case .userSubmitted:
+            guard isAgentPane(pane) else { return }
+            switch activity {
+            case .ready, .done, .waiting: activity = .working
+            default: break
+            }
+
+        case .progress(let state):
+            guard isAgentPane(pane) else { return }
+            switch state {
+            case GHOSTTY_PROGRESS_STATE_SET, GHOSTTY_PROGRESS_STATE_INDETERMINATE: activity = .working
+            case GHOSTTY_PROGRESS_STATE_ERROR: activity = .waiting("出错了")
+            case GHOSTTY_PROGRESS_STATE_REMOVE: if activity == .working { activity = .done }
+            default: break
+            }
 
         case .closeRequested(let processAlive):
             close(pane, confirm: processAlive)
@@ -143,6 +223,74 @@ final class AgentSession: ObservableObject, Identifiable {
         default:
             onWorkspaceEvent?(self, event)
         }
+    }
+
+    // MARK: Agent
+
+    /// The first pane runs the agent; other panes are plain shells.
+    private func isAgentPane(_ pane: PaneView) -> Bool {
+        kind.isAgent && remote == nil && pane.isAgentPane && activity != .none
+    }
+
+    /// Does this session contain the pane with this AGENTDECK_PANE id?
+    func pane(withID id: String) -> PaneView? {
+        panes.first { $0.terminal.paneID == id }
+    }
+
+    /// An event from the agent's own hooks (precise; see AgentHook).
+    func handleHook(_ name: String, message: String?) {
+        switch name {
+        case "UserPromptSubmit", "PreToolUse", "PostToolUse":
+            activity = .working
+        case "Notification":
+            activity = .waiting(message)
+            if !(isFrontmost() && NSApp.isActive) {
+                status = .needsAttention(message)
+                NSApp.requestUserAttention(.informationalRequest)
+            }
+        case "Stop":
+            activity = .done
+            if !(isFrontmost() && NSApp.isActive) { status = .needsAttention("本轮完成") }
+        default:
+            break
+        }
+    }
+
+    /// Type a (re)start line into the agent pane, e.g. after the agent exited.
+    func runInAgentPane(_ line: String, conversationID: String?) {
+        guard let pane = panes.first(where: { $0.isAgentPane }) else { return }
+        if let conversationID { self.conversationID = conversationID }
+        activity = .ready
+        pane.terminal.typeText(line + "\r")
+        pane.terminal.focus()
+        if kind.history == .codex && conversationID == nil { discoverCodexSession() }
+    }
+
+    /// Codex can't be given an id up front: watch its session folder for the
+    /// conversation started here after launch.
+    private func discoverCodexSession() {
+        discovery?.cancel()
+        let dir = directory, since = Date()
+        discovery = Task { [weak self] in
+            for _ in 0..<400 {   // ~20 minutes: Codex writes the file at the first prompt
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                if Task.isCancelled { return }
+                let found = await Task.detached { ConversationHistory.findNewCodexSession(directory: dir, since: since) }.value
+                if let found {
+                    await MainActor.run { self?.conversationID = found }
+                    return
+                }
+            }
+        }
+    }
+
+    /// Re-run ssh in the first pane; tmux/zellij brings the remote state back.
+    func reconnect(with command: String? = nil) {
+        if let command { connectCommand = command }
+        guard let cmd = connectCommand, let pane = panes.first(where: { $0.isAgentPane }) else { return }
+        status = .running
+        pane.terminal.typeText(cmd + "\r")
+        pane.terminal.focus()
     }
 
     private func setFocused(_ pane: PaneView) {

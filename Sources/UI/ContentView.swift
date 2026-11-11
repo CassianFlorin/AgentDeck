@@ -25,6 +25,21 @@ struct ContentView: View {
                 workspace.rename(session, to: name)
             }
         }
+        .sheet(item: $workspace.resumeRequest) { request in
+            ResumeConversationView(request: request)
+        }
+        .sheet(isPresented: $workspace.managingAgents) {
+            AgentManagerView()
+        }
+        .sheet(item: $workspace.editingHost) { host in
+            HostEditor(host: host, isNew: !workspace.hosts.contains { $0.id == host.id }) { saved, password in
+                if let password { HostKeychain.setPassword(password, for: saved.id, label: saved.name) }
+                workspace.saveHost(saved)
+            }
+        }
+        .sheet(item: $workspace.pickingSessionFor) { host in
+            RemoteSessionPicker(host: host) { name in workspace.connect(host, sessionName: name) }
+        }
     }
 }
 
@@ -93,6 +108,7 @@ final class SessionContainerView: NSView {
 
 struct EmptyStateView: View {
     @EnvironmentObject private var workspace: Workspace
+    @EnvironmentObject private var catalog: AgentCatalog
 
     var body: some View {
         VStack(spacing: 16) {
@@ -101,7 +117,7 @@ struct EmptyStateView: View {
                 .foregroundStyle(.secondary)
             Text("还没有会话").font(.title3)
             HStack {
-                ForEach(AgentKind.builtIn) { kind in
+                ForEach(catalog.visible) { kind in
                     Button {
                         NewSessionPanel.present(kind: kind, in: workspace)
                     } label: {

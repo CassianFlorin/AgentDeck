@@ -6,6 +6,10 @@ struct AgentDeckApp: App {
     @StateObject private var workspace: Workspace
 
     init() {
+        // When an agent hook runs us (AGENTDECK_HOOK), forward the event and exit.
+        AgentHook.runIfRequested()
+        // When ssh runs us as SSH_ASKPASS, answer and exit before any UI.
+        Askpass.runIfRequested()
         // libghostty must be initialised before any surface exists.
         GhosttyRuntime.shared.start()
         _workspace = StateObject(wrappedValue: Workspace())
@@ -15,6 +19,7 @@ struct AgentDeckApp: App {
         Window("AgentDeck", id: "main") {
             ContentView()
                 .environmentObject(workspace)
+                .environmentObject(workspace.catalog)
                 .frame(minWidth: 720, minHeight: 420)
                 .onAppear {
                     appDelegate.workspace = workspace
@@ -43,10 +48,15 @@ struct AppCommands: Commands {
 
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
-            ForEach(Array(AgentKind.builtIn.enumerated()), id: \.element.id) { i, kind in
+            // ⌘⇧1…9 follow the order in 管理 Agent.
+            ForEach(Array(workspace.catalog.visible.prefix(9).enumerated()), id: \.element.id) { i, kind in
                 Button("新建 \(kind.name)…") { NewSessionPanel.present(kind: kind, in: workspace) }
                     .keyboardShortcut(KeyEquivalent(Character("\(i + 1)")), modifiers: [.command, .shift])
             }
+            Divider()
+            Button("恢复之前的对话…") { workspace.showResume() }
+                .keyboardShortcut("o", modifiers: [.command, .shift])
+            Button("管理 Agent…") { workspace.managingAgents = true }
         }
 
         CommandGroup(after: .textEditing) {
@@ -101,6 +111,11 @@ struct AppCommands: Commands {
                 .keyboardShortcut("[", modifiers: [.command, .shift])
             Button("跳到等待中的会话") { workspace.selectNextNeedingAttention() }
                 .keyboardShortcut("j", modifiers: [.command, .shift])
+            Divider()
+            Button("重新连接") { workspace.selected.map(workspace.reconnect) }
+                .keyboardShortcut("r", modifiers: [.command, .shift])
+                .disabled(workspace.selected?.isDisconnected != true)
+            Button("添加服务器…") { workspace.editingHost = RemoteHost(name: "", host: "") }
             Divider()
             Button("重命名会话…") { workspace.renaming = workspace.selected }
                 .disabled(!hasSession)

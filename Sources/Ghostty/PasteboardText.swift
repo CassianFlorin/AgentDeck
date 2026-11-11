@@ -37,8 +37,7 @@ enum PasteboardText {
         }
         guard let png else { return nil }
 
-        let dir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("AgentDeck/pastes", isDirectory: true)
+        let dir = AppPaths.cache.appendingPathComponent("pastes", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let fmt = DateFormatter()
         fmt.dateFormat = "yyyyMMdd-HHmmss-SSS"
