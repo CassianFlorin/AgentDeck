@@ -135,6 +135,10 @@ struct AppCommands: Commands {
         CommandMenu("会话") {
             Button(workspace.showingDashboard ? "回到会话" : "Agent 总览") { workspace.showingDashboard.toggle() }
                 .keyboardShortcut("a", modifiers: [.command, .shift])
+            Button("下一个 Agent") { workspace.cycleAgent(1) }
+                .keyboardShortcut("]", modifiers: [.command, .option])
+            Button("上一个 Agent") { workspace.cycleAgent(-1) }
+                .keyboardShortcut("[", modifiers: [.command, .option])
             Divider()
             Button("下一个会话") { workspace.gotoSession(-2) }
                 .keyboardShortcut("]", modifiers: [.command, .shift])

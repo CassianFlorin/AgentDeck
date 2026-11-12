@@ -19,6 +19,11 @@ struct AgentKind: Codable, Hashable, Identifiable {
         /// Claude Code hooks, injected per launch with `--settings` (the
         /// user's own settings files are never touched).
         case claude
+        /// Grok and Codex run the same kind of hooks, but only load them from
+        /// their own config folder, and only once you trust them there. So
+        /// these are opt-in: a file of our own next to yours (see AgentHook.DropIn).
+        case grok
+        case codex
     }
 
     var id: String
@@ -33,6 +38,9 @@ struct AgentKind: Codable, Hashable, Identifiable {
     var resumeArgs: String = ""
     /// Arguments that continue the most recent conversation in this folder.
     var continueArgs: String = ""
+    /// Arguments that start a new conversation with a first prompt (`{prompt}`),
+    /// so a task can be handed over without going to the terminal.
+    var promptArgs: String = ""
     var history: History = .none
     var hooks: Hooks = .none
     var installHint: String?
@@ -46,9 +54,10 @@ struct AgentKind: Codable, Hashable, Identifiable {
     var assignsConversationID: Bool { newArgs.contains("{id}") }
     var canResume: Bool { isAgent && resumeArgs.contains("{id}") }
     var canContinue: Bool { isAgent && !continueArgs.isEmpty }
+    var canTakePrompt: Bool { isAgent && promptArgs.contains("{prompt}") }
 
     init(id: String, name: String, symbol: String, command: String?, newArgs: String = "",
-         resumeArgs: String = "", continueArgs: String = "", history: History = .none,
+         resumeArgs: String = "", continueArgs: String = "", promptArgs: String = "", history: History = .none,
          hooks: Hooks = .none, installHint: String? = nil, isBuiltIn: Bool = false) {
         self.id = id
         self.name = name
@@ -57,6 +66,7 @@ struct AgentKind: Codable, Hashable, Identifiable {
         self.newArgs = newArgs
         self.resumeArgs = resumeArgs
         self.continueArgs = continueArgs
+        self.promptArgs = promptArgs
         self.history = history
         self.hooks = hooks
         self.installHint = installHint
@@ -73,6 +83,7 @@ struct AgentKind: Codable, Hashable, Identifiable {
         newArgs = try c.decodeIfPresent(String.self, forKey: .newArgs) ?? ""
         resumeArgs = try c.decodeIfPresent(String.self, forKey: .resumeArgs) ?? ""
         continueArgs = try c.decodeIfPresent(String.self, forKey: .continueArgs) ?? ""
+        promptArgs = try c.decodeIfPresent(String.self, forKey: .promptArgs) ?? ""
         history = (try? c.decodeIfPresent(History.self, forKey: .history)) ?? .none
         hooks = (try? c.decodeIfPresent(Hooks.self, forKey: .hooks)) ?? .none
         installHint = try c.decodeIfPresent(String.self, forKey: .installHint)
@@ -85,23 +96,23 @@ struct AgentKind: Codable, Hashable, Identifiable {
     static let claude = AgentKind(
         id: "claude", name: "Claude Code", symbol: "sparkle", command: "claude",
         newArgs: "--session-id {id}", resumeArgs: "--resume {id}", continueArgs: "--continue",
-        history: .claude, hooks: .claude,
+        promptArgs: "{prompt}", history: .claude, hooks: .claude,
         installHint: "curl -fsSL https://claude.ai/install.sh | bash", isBuiltIn: true)
 
     static let codex = AgentKind(
         id: "codex", name: "Codex", symbol: "chevron.left.forwardslash.chevron.right", command: "codex",
         newArgs: "", resumeArgs: "resume {id}", continueArgs: "resume --last",
-        history: .codex, installHint: "brew install codex", isBuiltIn: true)
+        promptArgs: "{prompt}", history: .codex, hooks: .codex, installHint: "brew install codex", isBuiltIn: true)
 
     static let grok = AgentKind(
         id: "grok", name: "Grok", symbol: "bolt", command: "grok",
         newArgs: "--session-id {id}", resumeArgs: "--resume {id}", continueArgs: "--continue",
-        history: .grok, installHint: "见 x.ai 的 Grok CLI 安装说明", isBuiltIn: true)
+        promptArgs: "{prompt}", history: .grok, hooks: .grok, installHint: "见 x.ai 的 Grok CLI 安装说明", isBuiltIn: true)
 
     static let gemini = AgentKind(
         id: "gemini", name: "Gemini", symbol: "diamond", command: "gemini",
         newArgs: "", resumeArgs: "--resume {id}", continueArgs: "--resume latest",
-        installHint: "npm install -g @google/gemini-cli", isBuiltIn: true)
+        promptArgs: "-i {prompt}", installHint: "npm install -g @google/gemini-cli", isBuiltIn: true)
 
     static let shell = AgentKind(id: "shell", name: "Shell", symbol: "terminal", command: nil, isBuiltIn: true)
 
@@ -125,15 +136,19 @@ extension AgentKind {
         return a.isEmpty ? command : "\(command) \(a)"
     }
 
-    /// A new conversation. Returns the command and the conversation id we
-    /// assigned (if the agent supports choosing one).
-    func newConversation() -> (line: String?, conversationID: String?) {
+    /// A new conversation, optionally opened with a first prompt. Returns the
+    /// command and the conversation id we assigned (if the agent supports
+    /// choosing one).
+    func newConversation(prompt: String? = nil) -> (line: String?, conversationID: String?) {
         guard isAgent else { return (nil, nil) }
-        if assignsConversationID {
-            let id = UUID().uuidString.lowercased()
-            return (line(newArgs, id: id), id)
+        let id = assignsConversationID ? UUID().uuidString.lowercased() : nil
+        var result = line(newArgs, id: id)
+        if let prompt, canTakePrompt, let base = result {
+            // One line: the command is typed into a shell.
+            let oneLine = prompt.split(whereSeparator: \.isNewline).joined(separator: " ")
+            result = base + " " + promptArgs.replacingOccurrences(of: "{prompt}", with: SSH.quote(oneLine))
         }
-        return (line(newArgs, id: nil), nil)
+        return (result, id)
     }
 
     func resumeLine(_ conversationID: String) -> String? {
