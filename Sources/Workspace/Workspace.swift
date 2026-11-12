@@ -108,6 +108,7 @@ final class Workspace: ObservableObject {
                                                              hadAgent: leaf.hadAgent)
                                            }
                                        })
+            session.pinned = s.pinned == true
             add(session, select: false)
         }
         // Nothing to restore (first launch, or everything was closed): start in a shell at ~.
@@ -190,8 +191,7 @@ final class Workspace: ObservableObject {
     // MARK: Agents
 
     private func withHooks(_ line: String, _ kind: AgentKind) -> String {
-        let extra = AgentHook.launchArguments(for: kind)
-        return extra.isEmpty ? line : "\(line) \(extra)"
+        AgentHook.decorate(line, for: kind)
     }
 
     /// How to start `kind`: in the conversation `resume` if it can go back to
@@ -231,6 +231,50 @@ final class Workspace: ObservableObject {
         guard session.remote == nil, let launch = launch(kind) else { return }
         session.split(agent: launch)
         persist()
+    }
+
+    /// Hand a task to a new agent without going to it: a session of its own,
+    /// started with the prompt, opened behind whatever is on screen.
+    @discardableResult
+    func dispatch(_ prompt: String, to kind: AgentKind, in directory: String) -> AgentSession? {
+        let text = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty, kind.canTakePrompt else { return nil }
+        let (line, id) = kind.newConversation(prompt: text)
+        guard let line else { return nil }
+        let launch = AgentLaunch(kind: kind, line: withHooks(line, kind), conversationID: id, startsWorking: true)
+        let session = AgentSession(kind: kind, directory: directory, agent: launch)
+        // Until the agent titles its own work, the task is the best name for it.
+        session.customName = text.count > 40 ? String(text.prefix(40)) + "…" : text
+        add(session, select: false)
+        remember(directory)
+        persist()
+        return session
+    }
+
+    func togglePinned(_ session: AgentSession) {
+        session.pinned.toggle()
+        persist()
+    }
+
+    /// Where the agent on screen sits among all agents (sidebar order), for "2/5".
+    var agentPosition: (index: Int?, count: Int) {
+        let all = agentEntries
+        return (all.firstIndex { $0.session.id == selectedID && $0.pane === $0.session.focusedPane }, all.count)
+    }
+
+    /// Go to the next / previous agent, across sessions, without the 总览.
+    func cycleAgent(_ delta: Int) {
+        let all = agentEntries
+        guard !all.isEmpty else { return }
+        let next: Int
+        if let i = agentPosition.index {
+            next = (i + delta + all.count) % all.count
+        } else if let i = all.firstIndex(where: { $0.session.id == selectedID }) {
+            next = i   // on a shell pane of a session with an agent: go to that agent first
+        } else {
+            next = delta > 0 ? 0 : all.count - 1
+        }
+        show(all[next].pane, in: all[next].session)
     }
 
     /// Select the session and bring one of its agents' panes forward.
@@ -496,7 +540,8 @@ final class Workspace: ObservableObject {
                 return .init(kindID: $0.kind.id, directory: $0.directory, customName: $0.customName,
                              group: $0.group, layout: $0.root.layout, remote: $0.remote,
                              conversationID: first?.conversationID,
-                             hadAgent: first != nil ? true : nil)
+                             hadAgent: first != nil ? true : nil,
+                             pinned: $0.pinned ? true : nil)
             },
             recentDirectories: recentDirectories,
             groups: groups))
@@ -532,6 +577,7 @@ struct WorkspaceStore {
             /// pane's agent, this one included, is in `layout`.
             var conversationID: String?
             var hadAgent: Bool?
+            var pinned: Bool?
         }
         var sessions: [Session] = []
         var recentDirectories: [String] = []

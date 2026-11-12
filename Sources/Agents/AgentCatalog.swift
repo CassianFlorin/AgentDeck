@@ -73,6 +73,9 @@ final class AgentCatalog: ObservableObject {
             for var a in saved {
                 if let i = list.firstIndex(where: { $0.id == a.id }) {
                     a.isBuiltIn = true
+                    // Saved by a version that knew fewer ways to get status.
+                    if a.hooks == .none { a.hooks = list[i].hooks }
+                    if a.promptArgs.isEmpty { a.promptArgs = list[i].promptArgs }
                     list[i] = a
                 } else {
                     a.isBuiltIn = false

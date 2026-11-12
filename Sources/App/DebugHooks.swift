@@ -24,6 +24,10 @@ import SwiftUI
 ///   dashboard[:show|hide]      toggle the Agent 总览, and log its rows
 ///   reply:<n>:<text>           answer the n-th agent (sidebar order) as the dashboard's reply field does
 ///   open:<n>                   open the n-th agent as the dashboard does
+///   dispatch:<agentID>:<dir>:<prompt>   hand a task to a new agent, as the dashboard's field does
+///   pin:<n> | stop:<n> | press:<n>:<keys>   pin / interrupt / press keys in the n-th agent
+///   cycle:<±1>                 next / previous agent
+///   hook:<agentID>:install|uninstall   the status hook file of Grok / Codex
 ///   monitor:show|hide|<kinds>  open/close the 性能 panel, or set its monitors (e.g. cpu,sessions)
 ///   monitor                    log the 性能 panel's latest readings (monitor:script dumps the server script)
 ///   dump                       write sessions/split trees to ~/Library/Caches/AgentDeck/debug.log
@@ -152,6 +156,31 @@ enum DebugHooks {
         case "open":
             let entries = workspace.agentEntries
             if let n = Int(arg), entries.indices.contains(n - 1) { workspace.show(entries[n - 1].pane, in: entries[n - 1].session) }
+        case "dispatch":
+            let parts = arg.split(separator: ":", maxSplits: 2).map(String.init)
+            if parts.count == 3, let kind = workspace.catalog.agent(id: parts[0]) {
+                let s = workspace.dispatch(parts[2], to: kind, in: parts[1])
+                log("dispatch \(s == nil ? "refused" : "ok") canTakePrompt=\(kind.canTakePrompt)")
+            }
+        case "pin", "stop", "press":
+            let parts = arg.split(separator: ":", maxSplits: 1).map(String.init)
+            let entries = workspace.agentEntries
+            guard let n = parts.first.flatMap({ Int($0) }), entries.indices.contains(n - 1) else { break }
+            let e = entries[n - 1]
+            if verb == "pin" { workspace.togglePinned(e.session) }
+            if verb == "stop" { e.session.interrupt(e.pane) }
+            if verb == "press", parts.count == 2 { e.session.press(parts[1], in: e.pane) }
+        case "cycle":
+            workspace.cycleAgent(Int(arg) ?? 1)
+            let pos = workspace.agentPosition
+            log("cycle -> \(pos.index.map { String($0 + 1) } ?? "-")/\(pos.count) session=\(workspace.selected?.displayName ?? "-")")
+        case "hook":
+            let parts = arg.split(separator: ":").map(String.init)
+            if parts.count == 2, let kind = workspace.catalog.agent(id: parts[0]), let dropIn = AgentHook.dropIn(for: kind) {
+                if parts[1] == "install" { dropIn.install() } else { dropIn.uninstall() }
+                log("hook \(kind.id) installed=\(dropIn.isInstalled) file=\(dropIn.file.path)")
+                log("  launch: \(AgentHook.decorate(kind.newConversation().line ?? "", for: kind))")
+            }
         case "agent":
             if let s = workspace.selected, let kind = workspace.catalog.agent(id: arg) { workspace.addAgent(kind, to: s) }
         case "hosts":

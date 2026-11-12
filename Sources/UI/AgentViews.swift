@@ -69,7 +69,7 @@ private struct AgentRow: View {
                     if agent.hidden { Tag(text: "已隐藏") }
                     if !agent.isBuiltIn { Tag(text: "自定义") }
                     if agent.history != .none { Tag(text: "可恢复对话") }
-                    if agent.hooks == .claude { Tag(text: "精确状态") }
+                    if AgentHook.isPrecise(agent) { Tag(text: "精确状态") }
                 }
                 Text(agent.command ?? "登录 shell")
                     .font(.caption.monospaced()).foregroundStyle(.secondary).lineLimit(1)
@@ -115,6 +115,8 @@ struct AgentEditor: View {
     @State var agent: AgentKind
     let onSave: (AgentKind) -> Void
     @Environment(\.dismiss) private var dismiss
+    /// Whether the agent's status hook file is in place (Grok / Codex).
+    @State private var hookInstalled = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -137,10 +139,11 @@ struct AgentEditor: View {
                     TextField("新对话参数", text: $agent.newArgs, prompt: Text("可选，例如 --session-id {id}"))
                     TextField("恢复对话参数", text: $agent.resumeArgs, prompt: Text("例如 --resume {id}"))
                     TextField("继续最近对话参数", text: $agent.continueArgs, prompt: Text("例如 --continue"))
+                    TextField("带提示词启动参数", text: $agent.promptArgs, prompt: Text("例如 {prompt}，或 -i {prompt}"))
                 } header: {
                     Text("对话")
                 } footer: {
-                    Text("{id} 会被替换成对话 ID。新对话参数里带 {id} 时，AgentDeck 会自己生成 ID 并记住，重启后能精确恢复。")
+                    Text("{id} 会被替换成对话 ID。新对话参数里带 {id} 时，AgentDeck 会自己生成 ID 并记住，重启后能精确恢复。{prompt} 会被替换成在 Agent 总览里派发的任务；留空则这个 Agent 不能被派发。")
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Section {
@@ -152,8 +155,30 @@ struct AgentEditor: View {
                     }
                     Toggle("在新建会话菜单中隐藏", isOn: $agent.hidden)
                 }
+                Section {
+                    Picker("状态来源", selection: $agent.hooks) {
+                        Text("通用信号（回车、响铃、进度）").tag(AgentKind.Hooks.none)
+                        Text("Claude Code hooks").tag(AgentKind.Hooks.claude)
+                        Text("Grok hooks").tag(AgentKind.Hooks.grok)
+                        Text("Codex hooks").tag(AgentKind.Hooks.codex)
+                    }
+                    if let dropIn = AgentHook.dropIn(for: agent) {
+                        Toggle("安装状态 hook", isOn: Binding(
+                            get: { hookInstalled },
+                            set: { on in
+                                if on { dropIn.install() } else { dropIn.uninstall() }
+                                hookInstalled = dropIn.isInstalled
+                            }))
+                    }
+                } header: {
+                    Text("精确状态")
+                } footer: {
+                    Text(hooksNote).font(.caption).foregroundStyle(.secondary)
+                }
             }
             .formStyle(.grouped)
+            .onAppear { hookInstalled = AgentHook.dropIn(for: agent)?.isInstalled ?? false }
+            .onChange(of: agent.hooks) { _, _ in hookInstalled = AgentHook.dropIn(for: agent)?.isInstalled ?? false }
             HStack {
                 Spacer()
                 Button("取消") { dismiss() }.keyboardShortcut(.cancelAction)
@@ -167,7 +192,22 @@ struct AgentEditor: View {
             }
             .padding(16)
         }
-        .frame(width: 560, height: 520)
+        .frame(width: 560, height: 640)
+    }
+
+    private var hooksNote: String {
+        switch agent.hooks {
+        case .none:
+            return "从回车、响铃、通知和进度推断状态，不需要 Agent 配合。"
+        case .claude:
+            return "每次启动时用 --settings 带上 hooks，由 Agent 自己报告运行中、等你、本轮完成。你的设置文件不会被改。"
+        case .grok:
+            let path = AgentHook.DropIn.grok.file.path.abbreviatingHome
+            return "Grok 只从它自己的配置目录读 hooks。打开后会新建 \(path)，你已有的文件不动；这个 hook 在 AgentDeck 之外什么也不做。Grok 可能要你先信任这个文件夹的 hooks，之后才生效。"
+        case .codex:
+            let path = AgentHook.DropIn.codex.file.path.abbreviatingHome
+            return "打开后会新建 \(path)，并在启动 Codex 时加上 -p \(AgentHook.DropIn.codexProfile)；你的 config.toml 和 hooks.json 不动。Codex 会把新 hook 标为待审核，在 Codex 里用 /hooks 信任之后才生效。"
+        }
     }
 }
 

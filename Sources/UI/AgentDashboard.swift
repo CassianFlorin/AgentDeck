@@ -25,6 +25,14 @@ struct AgentEntry: Identifiable {
         default: return .idle
         }
     }
+
+    /// Search: the words you would look for it by.
+    func matches(_ query: String) -> Bool {
+        let q = query.trimmingCharacters(in: .whitespaces)
+        guard !q.isEmpty else { return true }
+        return [title, agent.kind.name, directory, session.displayName]
+            .contains { $0.localizedCaseInsensitiveContains(q) }
+    }
 }
 
 /// The dashboard's sections, in the order you'd want to look at them.
@@ -53,12 +61,14 @@ extension Workspace {
 }
 
 /// Every agent on one screen, grouped by what it is doing. Select one to peek
-/// at its terminal and reply; open it to go to its session.
+/// at its terminal and answer it; open it to go to its session. New work can
+/// be handed out from here without leaving.
 struct AgentDashboard: View {
     @EnvironmentObject private var workspace: Workspace
     @EnvironmentObject private var catalog: AgentCatalog
     @AppStorage("dashboard.groupByDirectory") private var groupByDirectory = false
     @State private var selection: String?
+    @State private var query = ""
     @FocusState private var listFocused: Bool
 
     private struct Group: Identifiable {
@@ -68,21 +78,27 @@ struct AgentDashboard: View {
     }
 
     private var groups: [Group] {
-        let all = workspace.agentEntries
+        let all = workspace.agentEntries.filter { $0.matches(query) }
+        // Pinned ones stay on top, whatever they are doing.
+        let pinned = all.filter { $0.session.pinned }
+        let rest = all.filter { !$0.session.pinned }
+        var result: [Group] = pinned.isEmpty ? [] : [Group(id: "pinned", title: "置顶", entries: pinned)]
         if groupByDirectory {
             var order: [String] = []
             var byDir: [String: [AgentEntry]] = [:]
-            for e in all {
+            for e in rest {
                 if byDir[e.directory] == nil { order.append(e.directory) }
                 byDir[e.directory, default: []].append(e)
             }
-            return order.map { Group(id: $0, title: $0.abbreviatingHome, entries: byDir[$0] ?? []) }
+            result += order.map { Group(id: $0, title: $0.abbreviatingHome, entries: byDir[$0] ?? []) }
+        } else {
+            result += AgentDashboardState.allCases.compactMap { state in
+                // Within a state, whatever changed most recently comes first.
+                let entries = rest.filter { $0.state == state }.sorted { $0.agent.since > $1.agent.since }
+                return entries.isEmpty ? nil : Group(id: "\(state.rawValue)", title: state.title, entries: entries)
+            }
         }
-        return AgentDashboardState.allCases.compactMap { state in
-            // Within a state, whatever changed most recently comes first.
-            let entries = all.filter { $0.state == state }.sorted { $0.agent.since > $1.agent.since }
-            return entries.isEmpty ? nil : Group(id: "\(state.rawValue)", title: state.title, entries: entries)
-        }
+        return result
     }
 
     private var selected: AgentEntry? {
@@ -93,6 +109,7 @@ struct AgentDashboard: View {
         let groups = groups
         VStack(spacing: 0) {
             header
+            AgentDispatchBar(suggestedDirectory: selected?.directory)
             if groups.isEmpty {
                 empty
             } else {
@@ -112,6 +129,10 @@ struct AgentDashboard: View {
                 .contextMenu(forSelectionType: String.self) { ids in
                     if let entry = workspace.agentEntries.first(where: { ids.contains($0.id) }) {
                         Button("打开") { open(entry) }
+                        Button(entry.session.pinned ? "取消置顶" : "置顶") { workspace.togglePinned(entry.session) }
+                        if entry.agent.activity == .working {
+                            Button("停止这一轮") { entry.session.interrupt(entry.pane) }
+                        }
                         if entry.agent.activity == .exited {
                             Button("重新启动 \(entry.agent.kind.name)") {
                                 workspace.restartAgent(entry.session, pane: entry.pane)
@@ -149,10 +170,26 @@ struct AgentDashboard: View {
                               systemImage: kind.symbol)
                     }
                 }
+                Divider()
+                Button("恢复之前的对话…") { workspace.showResume() }
             } label: {
                 Label("新建 Agent", systemImage: "plus")
             }
             .fixedSize()
+            HStack(spacing: 6) {
+                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+                TextField("筛选：名称、Agent、文件夹", text: $query)
+                    .textFieldStyle(.plain)
+                if !query.isEmpty {
+                    Button { query = "" } label: { Image(systemName: "xmark.circle.fill") }
+                        .buttonStyle(.borderless)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 6))
+            .frame(maxWidth: 280)
             Spacer()
             Picker("分组", selection: $groupByDirectory) {
                 Text("按状态").tag(false)
@@ -163,7 +200,8 @@ struct AgentDashboard: View {
             .fixedSize()
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.top, 10)
+        .padding(.bottom, 8)
     }
 
     private var empty: some View {
@@ -171,15 +209,87 @@ struct AgentDashboard: View {
             Image(systemName: "sparkles.rectangle.stack")
                 .font(.system(size: 36, weight: .light))
                 .foregroundStyle(.secondary)
-            Text("还没有正在运行的 Agent").font(.title3)
-            Text("用左上角的“新建 Agent”开一个，它会出现在这里。")
-                .font(.callout).foregroundStyle(.secondary)
+            if query.isEmpty {
+                Text("还没有正在运行的 Agent").font(.title3)
+                Text("在上面写一个任务派给 Agent，或者用“新建 Agent”开一个。")
+                    .font(.callout).foregroundStyle(.secondary)
+            } else {
+                Text("没有匹配“\(query)”的 Agent").font(.title3)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private func open(_ entry: AgentEntry) {
         workspace.show(entry.pane, in: entry.session)
+    }
+}
+
+/// Hand a task to a new agent: pick the agent and the folder, write the task,
+/// Return. You stay on the list, so several can go out in a row.
+private struct AgentDispatchBar: View {
+    /// The selected row's folder: the likeliest place for the next task.
+    let suggestedDirectory: String?
+    @EnvironmentObject private var workspace: Workspace
+    @EnvironmentObject private var catalog: AgentCatalog
+    @AppStorage("dashboard.dispatchAgent") private var agentID = ""
+    @State private var directory: String?
+    @State private var prompt = ""
+
+    /// Only agents that can be started with a prompt.
+    private var agents: [AgentKind] { catalog.visible.filter(\.canTakePrompt) }
+    private var agent: AgentKind? { agents.first { $0.id == agentID } ?? agents.first }
+    private var folder: String {
+        directory ?? suggestedDirectory ?? workspace.recentDirectories.first ?? NSHomeDirectory()
+    }
+
+    var body: some View {
+        if let agent {
+            HStack(spacing: 8) {
+                Picker("Agent", selection: Binding(get: { agent.id }, set: { agentID = $0 })) {
+                    ForEach(agents) { a in Label(a.name, systemImage: a.symbol).tag(a.id) }
+                }
+                .labelsHidden()
+                .fixedSize()
+                Menu {
+                    ForEach(workspace.recentDirectories, id: \.self) { dir in
+                        Button(dir.abbreviatingHome) { directory = dir }
+                    }
+                    if !workspace.recentDirectories.isEmpty { Divider() }
+                    Button("选择文件夹…", action: pickFolder)
+                } label: {
+                    Label((folder as NSString).lastPathComponent, systemImage: "folder")
+                }
+                .fixedSize()
+                .help(folder.abbreviatingHome)
+                TextField("派一个新任务给 \(agent.name)，回车开始", text: $prompt)
+                    .textFieldStyle(.plain)
+                    .onSubmit(send)
+                if catalog.isInstalled(agent) == false {
+                    Label("未安装", systemImage: "exclamationmark.triangle")
+                        .font(.caption).foregroundStyle(.orange)
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 8))
+            .padding(.horizontal, 16)
+            .padding(.bottom, 8)
+        }
+    }
+
+    private func send() {
+        guard let agent, workspace.dispatch(prompt, to: agent, in: folder) != nil else { return }
+        prompt = ""
+    }
+
+    private func pickFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.directoryURL = URL(fileURLWithPath: folder)
+        panel.prompt = "在此派发"
+        if panel.runModal() == .OK, let url = panel.url { directory = url.path }
     }
 }
 
@@ -201,6 +311,9 @@ private struct AgentDashboardRow: View {
             if showsFolder {
                 Text((entry.directory as NSString).lastPathComponent)
                     .foregroundStyle(.tertiary).lineLimit(1)
+            }
+            if entry.session.pinned {
+                Image(systemName: "pin.fill").font(.caption2).foregroundStyle(.tertiary)
             }
             Spacer(minLength: 12)
             Text(detail)
@@ -245,7 +358,7 @@ private struct AgentDashboardRow: View {
         }
     }
 
-    /// "now", "5m", "2h", "3d": how long the agent has been in this state.
+    /// "刚刚", "5 分", "2 时", "3 天": how long the agent has been in this state.
     static func age(from start: Date, to now: Date) -> String {
         let s = max(0, Int(now.timeIntervalSince(start)))
         if s < 60 { return "刚刚" }
@@ -255,8 +368,9 @@ private struct AgentDashboardRow: View {
     }
 }
 
-/// The selected agent's terminal at a glance, with a field to answer it
-/// without leaving the dashboard.
+/// The selected agent's terminal at a glance, with what you need to answer
+/// it without leaving the dashboard: a reply field, the keys a prompt takes,
+/// and a way to stop it.
 private struct AgentPeek: View {
     let entry: AgentEntry
     let open: () -> Void
@@ -265,6 +379,17 @@ private struct AgentPeek: View {
     @State private var reply = ""
 
     private static let shownLines = 10
+    /// What an agent's own prompts are answered with: an option's number,
+    /// Return for the highlighted one, Escape to back out.
+    private static let quickKeys: [(label: String, keys: String, help: String)] = [
+        ("1", "1", "选第 1 项"), ("2", "2", "选第 2 项"), ("3", "3", "选第 3 项"),
+        ("↩", "\r", "回车：确认当前选中的那一项"), ("esc", "\u{1b}", "Esc：取消"),
+    ]
+
+    private var isWaiting: Bool {
+        if case .waiting = entry.agent.activity { return true }
+        return false
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -274,6 +399,10 @@ private struct AgentPeek: View {
                 Text(entry.directory.abbreviatingHome)
                     .foregroundStyle(.secondary).lineLimit(1).truncationMode(.head)
                 Spacer()
+                if entry.agent.activity == .working {
+                    Button("停止") { entry.session.interrupt(entry.pane) }
+                        .help("停止这一轮（向它发送 Esc）")
+                }
                 if entry.agent.activity == .exited {
                     Button("重新启动") { workspace.restartAgent(entry.session, pane: entry.pane) }
                 }
@@ -289,15 +418,25 @@ private struct AgentPeek: View {
                 .textSelection(.enabled)
 
             HStack(spacing: 8) {
-                Image(systemName: "chevron.right").foregroundStyle(.secondary)
-                TextField("回复 \(entry.agent.kind.name)，回车发送", text: $reply)
-                    .textFieldStyle(.plain)
-                    .onSubmit(send)
-                    .disabled(entry.agent.activity == .exited)
+                HStack(spacing: 8) {
+                    Image(systemName: "chevron.right").foregroundStyle(.secondary)
+                    TextField("回复 \(entry.agent.kind.name)，回车发送", text: $reply)
+                        .textFieldStyle(.plain)
+                        .onSubmit(send)
+                        .disabled(entry.agent.activity == .exited)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 7))
+                // A prompt with options is answered with a key, not a sentence.
+                if isWaiting {
+                    ForEach(Self.quickKeys, id: \.label) { key in
+                        Button(key.label) { entry.session.press(key.keys, in: entry.pane) }
+                            .help(key.help)
+                    }
+                    .controlSize(.small)
+                }
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 7)
-            .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 7))
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)

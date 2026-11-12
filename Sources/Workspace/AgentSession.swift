@@ -55,6 +55,8 @@ struct AgentLaunch {
     let kind: AgentKind
     let line: String
     let conversationID: String?
+    /// Launched with a prompt: it is at work from the first moment.
+    var startsWorking = false
 }
 
 /// An agent running in one pane. A session can hold several, one per pane;
@@ -105,6 +107,8 @@ final class AgentSession: ObservableObject, Identifiable {
     @Published var status: SessionStatus = .running
     @Published var customName: String?
     @Published var group: String?
+    /// Kept at the top of the Agent 总览.
+    @Published var pinned = false
     /// Bumped whenever the split structure changes, so the host re-lays out.
     @Published private(set) var layoutVersion = 0
     @Published private(set) var zoomedPane: PaneView?
@@ -218,8 +222,9 @@ final class AgentSession: ObservableObject, Identifiable {
             workingDirectory: directory,
             initialInput: input.map { $0 + "\n" },
             env: [:])
-        return PaneView(terminal: term, isPrimary: isPrimary,
-                        agent: agent.map { PaneAgent(kind: $0.kind, conversationID: $0.conversationID) })
+        let paneAgent = agent.map { PaneAgent(kind: $0.kind, conversationID: $0.conversationID) }
+        if agent?.startsWorking == true { paneAgent?.activity = .working }
+        return PaneView(terminal: term, isPrimary: isPrimary, agent: paneAgent)
     }
 
     private func wire(_ pane: PaneView) {
@@ -344,8 +349,8 @@ final class AgentSession: ObservableObject, Identifiable {
         switch name {
         case "UserPromptSubmit", "PreToolUse", "PostToolUse":
             setActivity(.working, in: pane)
-        case "Notification":
-            setActivity(.waiting(message), in: pane)
+        case "Notification", "PermissionRequest", "StopFailure":
+            setActivity(.waiting(message ?? (name == "StopFailure" ? "出错了" : nil)), in: pane)
             if !(isFrontmost() && NSApp.isActive) {
                 status = .needsAttention(message)
                 NSApp.requestUserAttention(.informationalRequest)
@@ -353,6 +358,9 @@ final class AgentSession: ObservableObject, Identifiable {
         case "Stop":
             setActivity(.done, in: pane)
             if !(isFrontmost() && NSApp.isActive) { status = .needsAttention("本轮完成") }
+        case "StopCancelled", "Interrupt":
+            // You stopped it yourself: the turn is over, and you know.
+            setActivity(.done, in: pane)
         default:
             break
         }
@@ -386,6 +394,19 @@ final class AgentSession: ObservableObject, Identifiable {
         case .ready, .done, .waiting: setActivity(.working, in: pane)
         default: break
         }
+    }
+
+    /// Press keys in the agent's pane as they are, with no Return after them:
+    /// a digit to pick an option of a prompt, Return, Escape.
+    func press(_ keys: String, in pane: PaneView) {
+        guard root.find(pane) != nil else { return }
+        pane.terminal.typeText(keys)
+    }
+
+    /// Stop the turn the agent is on. Escape is what Claude Code, Codex and
+    /// Grok all take as "stop"; unlike Ctrl-C it can't end the agent itself.
+    func interrupt(_ pane: PaneView) {
+        press("\u{1b}", in: pane)
     }
 
     /// Bring a pane forward, e.g. from the sidebar's agent list.

@@ -36,6 +36,10 @@ struct ContentView: View {
             }
         }
         .toolbar {
+            // In a session: which agent this is among all of them, and its neighbours.
+            if !workspace.showingDashboard, workspace.agentPosition.count > 1 {
+                ToolbarItem(placement: .primaryAction) { AgentSwitcher() }
+            }
             ToolbarItem(placement: .primaryAction) {
                 Button { workspace.showingDashboard.toggle() } label: {
                     Label("Agent 总览", systemImage: "list.bullet.rectangle")
@@ -81,6 +85,26 @@ extension ContentView {
         let agents = workspace.agentEntries
         let waiting = agents.filter { $0.state == .waiting }.count
         return waiting > 0 ? "\(agents.count) 个 Agent · \(waiting) 个等你" : "\(agents.count) 个 Agent"
+    }
+}
+
+/// "‹ 2/5 ›": step through every agent without going back to the 总览.
+struct AgentSwitcher: View {
+    @EnvironmentObject private var workspace: Workspace
+
+    var body: some View {
+        let position = workspace.agentPosition
+        HStack(spacing: 2) {
+            Button { workspace.cycleAgent(-1) } label: { Image(systemName: "chevron.left") }
+                .help("上一个 Agent（⌥⌘[）")
+            Text("\(position.index.map { String($0 + 1) } ?? "–")/\(position.count)")
+                .font(.callout.monospacedDigit())
+                .foregroundStyle(.secondary)
+                .frame(minWidth: 30)
+                .help("当前是第几个 Agent（按侧边栏顺序）")
+            Button { workspace.cycleAgent(1) } label: { Image(systemName: "chevron.right") }
+                .help("下一个 Agent（⌥⌘]）")
+        }
     }
 }
 
