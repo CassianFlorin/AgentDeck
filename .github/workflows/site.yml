@@ -1,0 +1,38 @@
+name: Site
+
+# The landing page (site/) is served by Cloudflare Pages, which builds the
+# site/landing-page branch and nothing else. This moves that branch up to
+# main, and only when a push to main changed site/, so Cloudflare builds
+# once per landing-page change rather than once per commit.
+on:
+  push:
+    branches: [main]
+    paths: ["site/**"]
+  # By hand, e.g. after a sync was refused (see below).
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: site
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    # A manual run from another branch must not publish that branch.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The deploy branch is fast-forwarded, so the history between it
+          # and main has to be here.
+          fetch-depth: 0
+      # A plain push: it only succeeds as a fast-forward, so the deploy
+      # branch can never lose commits. GitHub refuses it when the commits
+      # being published touch .github/workflows (the default token may not
+      # push workflow changes); then publish by hand:
+      #   git push origin origin/main:refs/heads/site/landing-page
+      - name: Fast-forward site/landing-page to main
+        run: git push origin "$GITHUB_SHA:refs/heads/site/landing-page"
