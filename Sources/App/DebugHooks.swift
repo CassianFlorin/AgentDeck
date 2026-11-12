@@ -19,7 +19,11 @@ import SwiftUI
 ///   history:<agentID>:<dir>    log the newest conversations found for that agent and folder
 ///   agents                     log the agent catalog and install detection
 ///   ui:agents | ui:resume[:<agentID>:<dir>] | ui:close   open/close the agent manager / resume sheet
-///   restart                    restart the selected session's agent (resume if known)
+///   restart                    restart an exited agent in the selected session (resume if known)
+///   agent:<agentID>            start that agent in a new split of the selected session
+///   dashboard[:show|hide]      toggle the Agent 总览, and log its rows
+///   reply:<n>:<text>           answer the n-th agent (sidebar order) as the dashboard's reply field does
+///   open:<n>                   open the n-th agent as the dashboard does
 ///   monitor:show|hide|<kinds>  open/close the 性能 panel, or set its monitors (e.g. cpu,sessions)
 ///   monitor                    log the 性能 panel's latest readings (monitor:script dumps the server script)
 ///   dump                       write sessions/split trees to ~/Library/Caches/AgentDeck/debug.log
@@ -65,8 +69,14 @@ enum DebugHooks {
             if let text = PasteboardText.read(NSPasteboard(name: .init(arg))) { pane?.terminal.insertPasteText(text) }
         case "dump":
             for (i, sess) in workspace.orderedSessions.enumerated() {
-                log("\(i + 1) \(sess.displayName) kind=\(sess.kind.id) activity=\(sess.activity) conv=\(sess.conversationID ?? "-") "
-                    + "panes=\(sess.panes.count) zoom=\(sess.zoomedPane != nil) agentPane=\(sess.panes.first { $0.isAgentPane }?.terminal.paneID ?? "-") tree=\(sess.root.signature)")
+                log("\(i + 1) \(sess.displayName) kind=\(sess.kind.id) activity=\(sess.activity) "
+                    + "panes=\(sess.panes.count) zoom=\(sess.zoomedPane != nil) tree=\(sess.root.signature)")
+                for p in sess.panes {
+                    let a = p.agent
+                    log("   pane \(p.terminal.paneID) primary=\(p.isPrimary) focused=\(p === sess.focusedPane) "
+                        + "agent=\(a?.kind.id ?? "-") activity=\(a.map { "\($0.activity)" } ?? "-") "
+                        + "conv=\(a?.conversationID ?? "-") adopted=\(a?.adopted ?? false)")
+                }
             }
         case "history":
             // history:<agentID>:<directory>
@@ -126,7 +136,24 @@ enum DebugHooks {
             let host = workspace.selected.flatMap(workspace.host(for:))
             workspace.openCommand(DockerControl.logsCommand(arg), title: "日志 · \(arg)", on: host)
         case "restart":
-            workspace.selected.map(workspace.restartAgent)
+            workspace.selected.map { workspace.restartAgent($0) }
+        case "dashboard":
+            workspace.showingDashboard = arg.isEmpty ? !workspace.showingDashboard : arg == "show"
+            log("dashboard showing=\(workspace.showingDashboard)")
+            for (i, e) in workspace.agentEntries.enumerated() {
+                log("   \(i + 1) [\(e.state.title)] \(e.title) agent=\(e.agent.kind.id) dir=\(e.directory)")
+            }
+        case "reply":
+            let parts = arg.split(separator: ":", maxSplits: 1).map(String.init)
+            let entries = workspace.agentEntries
+            if parts.count == 2, let n = Int(parts[0]), entries.indices.contains(n - 1) {
+                entries[n - 1].session.send(parts[1], to: entries[n - 1].pane)
+            }
+        case "open":
+            let entries = workspace.agentEntries
+            if let n = Int(arg), entries.indices.contains(n - 1) { workspace.show(entries[n - 1].pane, in: entries[n - 1].session) }
+        case "agent":
+            if let s = workspace.selected, let kind = workspace.catalog.agent(id: arg) { workspace.addAgent(kind, to: s) }
         case "hosts":
             for h in workspace.hosts { log("host \(h.name) | \(SSH.commandLine(for: h, sessionName: "agentdeck"))") }
             log("aliases \(workspace.sshConfigAliases.count)")

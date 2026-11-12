@@ -7,7 +7,17 @@ struct SidebarView: View {
     @State private var serversExpanded = true
 
     var body: some View {
-        List(selection: $workspace.selectedID) {
+        // While the Agent 总览 is up no session is "the current one": clicking
+        // any of them, the selected one included, goes to it.
+        List(selection: Binding(
+            get: { workspace.showingDashboard ? nil : workspace.selectedID },
+            set: { id in
+                if workspace.showingDashboard {
+                    if let s = workspace.sessions.first(where: { $0.id == id }) { workspace.select(s) }
+                } else {
+                    workspace.selectedID = id
+                }
+            })) {
             Section("会话") {
                 rows(for: nil)
             }
@@ -67,11 +77,11 @@ struct SidebarView: View {
             }
             Divider()
         }
-        if session.kind.isAgent && session.remote == nil {
-            if session.activity == .exited {
-                Button("重新启动 \(session.kind.name)") { workspace.restartAgent(session) }
+        if session.remote == nil, session.kind.isAgent || !session.agentPanes.isEmpty {
+            ForEach(session.agentPanes.filter { $0.agent?.activity == .exited }, id: \.terminal.paneID) { pane in
+                Button("重新启动 \(pane.agent?.kind.name ?? "")") { workspace.restartAgent(session, pane: pane) }
             }
-            if session.kind.history != .none {
+            if session.kind.isAgent && session.kind.history != .none {
                 Button("恢复这个文件夹的其他对话…") {
                     workspace.showResume(directory: session.directory, agentID: session.kind.id)
                 }
@@ -142,7 +152,7 @@ struct SessionRow: View {
                     .lineLimit(1)
                     .truncationMode(.tail)
                 HStack(spacing: 4) {
-                    if let label = session.activity.label {
+                    if !listsAgents, let label = session.activity.label {
                         ActivityBadge(activity: session.activity, label: label)
                     }
                     Text(session.folderName)
@@ -153,14 +163,15 @@ struct SessionRow: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
+                if listsAgents {
+                    ForEach(session.agentPanes, id: \.terminal.paneID) { pane in
+                        AgentLine(session: session, pane: pane)
+                    }
+                }
             }
             Spacer(minLength: 4)
-            if session.activity == .exited {
-                Button { workspace.restartAgent(session) } label: {
-                    Image(systemName: "play.circle.fill").foregroundStyle(.secondary)
-                }
-                .buttonStyle(.borderless)
-                .help(session.conversationID != nil ? "重新启动 \(session.kind.name)，回到同一段对话" : "重新启动 \(session.kind.name)")
+            if !listsAgents, session.activity == .exited, let pane = session.agentPanes.first {
+                RestartAgentButton(session: session, pane: pane)
             } else if session.isDisconnected {
                 Button { workspace.reconnect(session) } label: {
                     Image(systemName: "arrow.clockwise.circle.fill").foregroundStyle(.orange)
@@ -178,12 +189,71 @@ struct SessionRow: View {
         }
     }
 
+    /// One agent, the one the session was opened with, is summed up in the
+    /// row itself. Anything else gets a line per agent.
+    private var listsAgents: Bool {
+        !session.agentPanes.isEmpty && !session.hasOnlyPrimaryAgent
+    }
+
     private var helpText: String {
         var parts = [session.directory.abbreviatingHome]
         if case .needsAttention(let msg?) = session.status { parts.append(msg) }
-        if case .waiting(let msg?) = session.activity { parts.append(msg) }
-        if let id = session.conversationID { parts.append("对话 \(id)") }
+        let agents = session.agentPanes.compactMap(\.agent)
+        for agent in agents {
+            let who = agents.count > 1 ? "\(agent.kind.name)：" : ""
+            if case .waiting(let msg?) = agent.activity { parts.append(who + msg) }
+            if let id = agent.conversationID { parts.append("\(who)对话 \(id)") }
+        }
         return parts.joined(separator: "\n")
+    }
+}
+
+/// One agent of a session that holds several: its own state, and a click
+/// goes to its pane.
+private struct AgentLine: View {
+    @ObservedObject var session: AgentSession
+    let pane: PaneView
+    @EnvironmentObject private var workspace: Workspace
+
+    var body: some View {
+        if let agent = pane.agent {
+            HStack(spacing: 4) {
+                Image(systemName: agent.kind.symbol)
+                    .font(.caption2)
+                    .frame(width: 12)
+                Text(session.agentLabel(for: pane))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                if let label = agent.activity.label {
+                    ActivityBadge(activity: agent.activity, label: label)
+                        .fixedSize()
+                }
+                Spacer(minLength: 0)
+                if agent.activity == .exited {
+                    RestartAgentButton(session: session, pane: pane)
+                }
+            }
+            .font(.caption)
+            .foregroundStyle(pane === session.focusedPane ? .primary : .secondary)
+            .contentShape(Rectangle())
+            .onTapGesture { workspace.show(pane, in: session) }
+            .help("点击切到这个 Agent 的窗格")
+        }
+    }
+}
+
+private struct RestartAgentButton: View {
+    let session: AgentSession
+    let pane: PaneView
+    @EnvironmentObject private var workspace: Workspace
+
+    var body: some View {
+        let name = pane.agent?.kind.name ?? ""
+        Button { workspace.restartAgent(session, pane: pane) } label: {
+            Image(systemName: "play.circle.fill").foregroundStyle(.secondary)
+        }
+        .buttonStyle(.borderless)
+        .help(pane.agent?.conversationID != nil ? "重新启动 \(name)，回到同一段对话" : "重新启动 \(name)")
     }
 }
 

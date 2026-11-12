@@ -55,7 +55,8 @@ struct AppCommands: Commands {
     @ObservedObject private var updater = AppUpdater.shared
     @AppStorage(MonitorSettings.visibleKey) private var showMonitor = false
 
-    private var hasSession: Bool { workspace.selected != nil }
+    /// Terminal commands need a terminal on screen.
+    private var hasSession: Bool { workspace.selected != nil && !workspace.showingDashboard }
 
     private func act(_ action: String) {
         workspace.selected?.focusedPane?.terminal.performBindingAction(action)
@@ -132,6 +133,9 @@ struct AppCommands: Commands {
         }
 
         CommandMenu("会话") {
+            Button(workspace.showingDashboard ? "回到会话" : "Agent 总览") { workspace.showingDashboard.toggle() }
+                .keyboardShortcut("a", modifiers: [.command, .shift])
+            Divider()
             Button("下一个会话") { workspace.gotoSession(-2) }
                 .keyboardShortcut("]", modifiers: [.command, .shift])
             Button("上一个会话") { workspace.gotoSession(-1) }

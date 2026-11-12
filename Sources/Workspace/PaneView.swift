@@ -5,8 +5,12 @@ import GhosttyKit
 /// belongs to it (search bar, scrollbar, unfocused dimming).
 final class PaneView: NSView {
     let terminal: TerminalSurfaceView
-    /// True for the pane that runs the session's agent (vs. extra shells).
-    let isAgentPane: Bool
+    /// True for the session's first pane: the one its agent or ssh connection
+    /// was started in (vs. panes split off later).
+    let isPrimary: Bool
+    /// The agent running in this pane, if any. Changed only through the
+    /// owning AgentSession, which publishes the change.
+    var agent: PaneAgent?
 
     /// Events the pane doesn't handle itself go up to the session.
     var onEvent: ((PaneView, TerminalEvent) -> Void)?
@@ -21,9 +25,10 @@ final class PaneView: NSView {
         didSet { dim.isHidden = !isDimmed }
     }
 
-    init(terminal: TerminalSurfaceView, isAgentPane: Bool) {
+    init(terminal: TerminalSurfaceView, isPrimary: Bool, agent: PaneAgent? = nil) {
         self.terminal = terminal
-        self.isAgentPane = isAgentPane
+        self.isPrimary = isPrimary
+        self.agent = agent
         super.init(frame: terminal.frame)
 
         terminal.translatesAutoresizingMaskIntoConstraints = true

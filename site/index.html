@@ -306,6 +306,60 @@
     }
     .perf svg { width: 14px; height: 14px; }
     .perf:hover, .perf[aria-expanded="true"] { background: rgba(62, 236, 200, 0.12); color: var(--mint); }
+    .tools { display: flex; gap: 2px; }
+
+    .main { display: flex; flex-direction: column; min-width: 0; }
+    .dash { display: none; flex: 1; flex-direction: column; min-height: 0; }
+    .main.show-dash .dash { display: flex; }
+    .main.show-dash .term { display: none; }
+    .dash-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 12px 4px; font-size: 11px; }
+    .chip { padding: 2px 9px; border-radius: 6px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.05); color: var(--ink); white-space: nowrap; }
+    .seg { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; color: var(--muted); white-space: nowrap; }
+    .seg span { padding: 2px 8px; }
+    .seg .cur { background: rgba(255, 255, 255, 0.1); color: var(--ink); }
+    .dash-list { flex: 1; padding: 0 6px 6px; }
+    .dash-group { margin: 8px 6px 2px; font-size: 10.5px; color: var(--muted); }
+    .dash-row {
+      display: grid;
+      grid-template-columns: 8px 14px minmax(0, auto) minmax(0, 1fr) auto;
+      gap: 7px;
+      align-items: center;
+      width: 100%;
+      padding: 6px 6px;
+      border-radius: 7px;
+      text-align: left;
+      font-size: 12px;
+    }
+    .dash-row:hover { background: rgba(255, 255, 255, 0.05); }
+    .dash-row.on { background: rgba(255, 255, 255, 0.1); }
+    .dash-row .kind { width: 13px; height: 13px; color: #8b98b0; }
+    .dash-row .who { color: var(--ink); white-space: nowrap; }
+    .dash-row .who small { margin-left: 5px; font-size: 11px; color: var(--muted); }
+    .dash-row .what { justify-self: end; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+    .dash-row .age { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .dot.idle { background: none; border: 1px solid #8b98b0; }
+    .peek { border-top: 1px solid var(--line); padding: 9px 12px 12px; background: rgba(0, 0, 0, 0.16); }
+    .peek-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 11.5px; color: var(--muted); }
+    .peek-head b { color: var(--ink); font-weight: 600; margin-right: 6px; }
+    .peek-open { padding: 2px 10px; border-radius: 6px; background: rgba(62, 236, 200, 0.14); color: var(--mint); font-size: 11.5px; font-weight: 600; }
+    .peek-open:hover { background: rgba(62, 236, 200, 0.24); }
+    .peek-body {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      height: 74px;
+      margin-top: 6px;
+      overflow: hidden;
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.55;
+      color: #aab6ca;
+      mask-image: linear-gradient(transparent, #000 34%);
+    }
+    .peek-body .ask { margin-top: 6px; padding: 6px 10px; }
+    .peek-body .gap { margin-top: 4px !important; }
+    .reply { margin-top: 8px; padding: 5px 10px; border-radius: 7px; background: rgba(255, 255, 255, 0.06); color: var(--muted); font-size: 11.5px; }
+    .reply::before { content: "›"; margin-right: 8px; color: var(--mint); }
 
     .workspace { display: grid; grid-template-columns: 196px minmax(0, 1fr); min-height: 430px; }
     .window.show-monitor .workspace { grid-template-columns: 188px minmax(0, 1fr) 148px; }
@@ -492,7 +546,21 @@
     .path { color: var(--mint); font-size: 14px; }
     .config .label { color: var(--muted); font-size: 12px; }
 
-    .keys { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(5, auto); grid-auto-flow: column; gap: 0 40px; }
+    .points { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .points li {
+      padding: 20px;
+      border-radius: 14px;
+      background: rgba(14, 24, 40, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(14px) saturate(1.2);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+      transition: border-color 0.2s ease, transform 0.2s ease;
+    }
+    .points li:hover { border-color: rgba(62, 236, 200, 0.4); transform: translateY(-2px); }
+    .points h3 { margin-bottom: 8px; color: var(--ink); font-size: 17px; font-weight: 600; }
+    .points p { font-size: 15px; }
+
+    .keys { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(6, auto); grid-auto-flow: column; gap: 0 40px; }
     .keyrow {
       display: grid;
       grid-template-columns: 168px minmax(0, 1fr);
@@ -572,7 +640,7 @@
     @media (max-width: 760px) {
       .wrap { width: min(1120px, calc(100% - 28px)); }
       .status-list li, .config, .keyrow { grid-template-columns: 1fr; }
-      .split, .keys, .limits { grid-template-columns: 1fr; }
+      .split, .keys, .limits, .points { grid-template-columns: 1fr; }
       .keys { grid-template-rows: none; grid-auto-flow: row; }
       .workspace, .window.show-monitor .workspace { grid-template-columns: 1fr; }
       .sidebar { border-right: 0; border-bottom: 1px solid var(--line); }
@@ -597,6 +665,7 @@
       </a>
       <nav class="nav-links" aria-label="AgentDeck">
         <a href="#status"><span class="zh">状态</span><span class="en">Status</span></a>
+        <a href="#overview"><span class="zh">总览</span><span class="en">Overview</span></a>
         <a href="#remote"><span class="zh">远程</span><span class="en">Remote</span></a>
         <a href="#keys"><span class="zh">快捷键</span><span class="en">Keys</span></a>
         <a href="#get"><span class="zh">下载</span><span class="en">Download</span></a>
@@ -637,6 +706,10 @@
             <div class="traffic" aria-hidden="true"><i class="r"></i><i class="y"></i><i class="g"></i></div>
             <p class="wt">AgentDeck</p>
             <div class="tools">
+              <button type="button" class="perf" id="dash" aria-expanded="false" aria-controls="dash-view">
+                <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.8" y="2.6" width="12.4" height="10.8" rx="2" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M4.6 6h.1M4.6 8h.1M4.6 10h.1M7 6h4.6M7 8h4.6M7 10h4.6" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                <span class="zh">总览</span><span class="en">Agents</span>
+              </button>
               <button type="button" class="perf" id="perf" aria-expanded="false" aria-controls="monitor">
                 <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 8 11 5.2" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
                 <span class="zh">性能</span><span class="en">Stats</span>
@@ -681,6 +754,51 @@
             </div>
             <div class="main">
               <p class="tabbar" id="tab-label" aria-live="polite">codex · shop</p>
+              <div class="dash" id="dash-view">
+                <div class="dash-head">
+                  <span class="chip">+ <span class="zh">新建 Agent</span><span class="en">New agent</span></span>
+                  <span class="seg" aria-hidden="true"><span class="cur"><span class="zh">按状态</span><span class="en">By state</span></span><span><span class="zh">按文件夹</span><span class="en">By folder</span></span></span>
+                </div>
+                <div class="dash-list">
+                  <p class="dash-group"><span class="zh">等你</span><span class="en">Needs you</span> 1</p>
+                  <button type="button" class="dash-row on" data-pick="codex" data-name="Codex" data-dir="~/src/shop">
+                    <i class="dot wait"></i>
+                    <svg class="kind" viewBox="0 0 16 16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" d="M6.2 3.5 2.6 8l3.6 4.5M9.8 3.5 13.4 8 9.8 12.5"/></svg>
+                    <span class="who">codex<small>shop</small></span>
+                    <span class="what warn"><span class="zh">允许这次修改？</span><span class="en">Allow this edit?</span></span>
+                    <span class="age"><span class="zh">2 分</span><span class="en">2m</span></span>
+                  </button>
+                  <p class="dash-group"><span class="zh">运行中</span><span class="en">Working</span> 1</p>
+                  <button type="button" class="dash-row" data-pick="claude" data-name="Claude Code" data-dir="~/src/agentdeck">
+                    <i class="dot work"></i>
+                    <svg class="kind" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.2 9.15 6.2 14.2 8 9.15 9.8 8 14.8 6.85 9.8 1.8 8l5.05-1.8z"/></svg>
+                    <span class="who">claude<small>agentdeck</small></span>
+                    <span class="what badge working"><b><span class="zh">运行中</span><span class="en">Working</span></b></span>
+                    <span class="age"><span class="zh">刚刚</span><span class="en">now</span></span>
+                  </button>
+                  <p class="dash-group"><span class="zh">空闲</span><span class="en">Idle</span> 1</p>
+                  <button type="button" class="dash-row" data-pick="grok" data-name="Grok" data-dir="~/src/api">
+                    <i class="dot done"></i>
+                    <svg class="kind" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M9.1 1 3.2 9h3.4L5.6 15 13 6.6H9.2L9.1 1z"/></svg>
+                    <span class="who">grok<small>api</small></span>
+                    <span class="what dim"><span class="zh">本轮完成</span><span class="en">Turn done</span></span>
+                    <span class="age"><span class="zh">12 分</span><span class="en">12m</span></span>
+                  </button>
+                  <p class="dash-group"><span class="zh">已退出</span><span class="en">Exited</span> 1</p>
+                  <button type="button" class="dash-row" data-pick="gemini" data-name="Gemini" data-dir="~/notes">
+                    <i class="dot idle"></i>
+                    <svg class="kind" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.6 9.7 6.3 14.4 8 9.7 9.7 8 14.4 6.3 9.7 1.6 8 6.3 6.3z"/></svg>
+                    <span class="who">gemini<small>notes</small></span>
+                    <span class="what dim"><span class="zh">已退出</span><span class="en">Exited</span></span>
+                    <span class="age"><span class="zh">1 时</span><span class="en">1h</span></span>
+                  </button>
+                </div>
+                <div class="peek">
+                  <p class="peek-head"><span><b id="peek-name">Codex</b><span id="peek-dir">~/src/shop</span></span><button type="button" class="peek-open" id="peek-open"><span class="zh">打开</span><span class="en">Open</span></button></p>
+                  <div class="peek-body" id="peek-body"></div>
+                  <p class="reply" aria-hidden="true"><span class="zh">回复它，回车发送</span><span class="en">Reply, Return to send</span></p>
+                </div>
+              </div>
               <div class="term" data-id="claude">
                 <p><span class="dim">~/src/agentdeck</span> <span class="info">main</span></p>
                 <p><span class="ps">❯</span> claude</p>
@@ -758,7 +876,7 @@
             </aside>
           </div>
         </div>
-        <p class="caption"><span class="zh">可点的界面示意。点左侧会话会换掉终端内容，右上角可以打开性能面板。颜色和 App 里的状态一致。</span><span class="en">A clickable sketch. Choose a session to change the terminal, or open the performance panel at the top right. Status colors match the app.</span></p>
+        <p class="caption"><span class="zh">可点的界面示意。点左侧会话会换掉终端内容；右上角的「总览」把所有 Agent 列在一起，旁边可以打开性能面板。颜色和 App 里的状态一致。</span><span class="en">A clickable sketch. Choose a session to change the terminal. Agents, at the top right, lists every agent together, next to the performance panel. Status colors match the app.</span></p>
       </div>
     </div>
   </div>
@@ -811,6 +929,35 @@
       </div>
     </section>
 
+    <section class="block reveal" id="overview">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow"><span class="zh">总览</span><span class="en">Overview</span></p>
+          <h2><span class="zh">所有 Agent，列在一屏里。</span><span class="en">Every agent, on one screen.</span></h2>
+          <p class="intro zh">侧边栏按会话排。Agent 多了以后，你想问的其实是另一件事：现在谁在等我。<kbd>⇧⌘A</kbd> 把终端换成一张列表，每个 Agent 一行，不管它在哪个会话、哪个文件夹。会话都还在后台跑着。</p>
+          <p class="intro en">The sidebar is ordered by session. With enough agents, the question changes: who is waiting on me right now. <kbd>⇧⌘A</kbd> swaps the terminal for a list with one row per agent, whichever session or folder it lives in. Every session keeps running behind it.</p>
+        </div>
+        <ul class="points">
+          <li>
+            <h3><span class="zh">等你的排在最前</span><span class="en">Waiting comes first</span></h3>
+            <p class="zh">按状态分组：等你、运行中、空闲、已退出。等你的那一行直接写着它在等什么，每行还有它在这个状态里停了多久。也可以改成按文件夹分组。</p>
+            <p class="en">Grouped by state: needs you, working, idle, exited. A waiting row says what it is waiting for, and every row shows how long it has been in that state. You can group by folder instead.</p>
+          </li>
+          <li>
+            <h3><span class="zh">不进去也能回</span><span class="en">Answer without going in</span></h3>
+            <p class="zh">选中一行，下面是它终端的最后几行。在输入框里打字、回车，回复就发给这个 Agent，你还留在列表里。</p>
+            <p class="en">Select a row and the last lines of its terminal appear below. Type in the field and press Return: the reply goes to that agent, and you stay on the list.</p>
+          </li>
+          <li>
+            <h3><span class="zh">回车进到它的会话</span><span class="en">Return opens its session</span></h3>
+            <p class="zh"><kbd>↩</kbd> 或双击，切到它所在的会话，光标落在它的窗格里。<kbd>esc</kbd> 或点侧边栏里任何一个会话，回到终端。</p>
+            <p class="en"><kbd>↩</kbd> or a double-click goes to its session, with the cursor in its pane. <kbd>esc</kbd>, or any session in the sidebar, returns to the terminal.</p>
+          </li>
+        </ul>
+        <p class="footnote"><button type="button" class="textlink" data-dash><span class="zh">在上面的窗口里看</span><span class="en">Show in the window</span></button></p>
+      </div>
+    </section>
+
     <section class="block reveal" id="remote">
       <div class="wrap">
         <div class="split">
@@ -854,9 +1001,11 @@
         </div>
         <div class="keys">
           <div class="keyrow"><div class="combo"><kbd>⌘⇧J</kbd></div><p><span class="zh">跳到下一个等你的会话</span><span class="en">Jump to the next session that needs you</span></p></div>
+          <div class="keyrow"><div class="combo"><kbd>⇧⌘A</kbd></div><p><span class="zh">Agent 总览：所有 Agent 的列表</span><span class="en">Agent overview: the list of every agent</span></p></div>
           <div class="keyrow"><div class="combo"><kbd>⌘⇧[</kbd><kbd>⌘⇧]</kbd></div><p><span class="zh">上一个 / 下一个会话</span><span class="en">Previous / next session</span></p></div>
           <div class="keyrow"><div class="combo"><kbd>⌘1</kbd><kbd>⌘9</kbd></div><p><span class="zh">跳到对应的会话</span><span class="en">Jump to a session by number</span></p></div>
           <div class="keyrow"><div class="combo"><kbd>⌘D</kbd><kbd>⌘⇧D</kbd></div><p><span class="zh">向右分屏 / 向下分屏</span><span class="en">Split right / split down</span></p></div>
+          <div class="keyrow"><div class="combo"><kbd>⌘⇧↩</kbd></div><p><span class="zh">放大 / 还原当前窗格</span><span class="en">Zoom / restore the current pane</span></p></div>
           <div class="keyrow"><div class="combo"><kbd>⌘F</kbd></div><p><span class="zh">在回滚里查找</span><span class="en">Find in the scrollback</span></p></div>
           <div class="keyrow"><div class="combo"><kbd>⌘V</kbd></div><p><span class="zh">把截图或文件贴成路径</span><span class="en">Paste a screenshot or file as a path</span></p></div>
           <div class="keyrow"><div class="combo"><kbd>⌘⇧R</kbd></div><p><span class="zh">重新连接 SSH</span><span class="en">Reconnect SSH</span></p></div>
@@ -867,6 +1016,7 @@
         <h3 class="subhead"><span class="zh">还有这些</span><span class="en">Also</span></h3>
         <ul class="more">
           <li><span class="zh">内置 Claude Code、Codex、Grok、Gemini 和 Shell。其他命令行工具可以自己加。还没安装的，会给出安装命令。命令是打进登录 shell 的，Agent 退出以后，你还在那个 shell 里。</span><span class="en">Built in: Claude Code, Codex, Grok, Gemini, and a shell. Any other CLI can be added. Ones that are not installed come with an install command. The command is typed into your login shell, so when the agent exits you are still in that shell.</span></li>
+          <li><span class="zh">状态跟着窗格走，不跟着会话。在分屏里自己敲 <span class="path">claude</span> 或 <span class="path">codex</span>，AgentDeck 也认得出来，它会有自己的状态，也会出现在总览里。</span><span class="en">Status belongs to the pane, not the session. Type <span class="path">claude</span> or <span class="path">codex</span> into a split yourself and AgentDeck notices: it gets its own status and its own row in the overview.</span></li>
           <li><span class="zh">剪贴板里如果是截图，⌘V 会先存成 PNG，再贴上路径，这样就能把图交给 Agent。拷进来或拖进来的文件，会变成 shell 转义后的路径。</span><span class="en">If the clipboard holds a screenshot, ⌘V saves a PNG and pastes the path, which is how you hand an image to an agent. Copied or dragged files paste as shell-escaped paths.</span></li>
           <li><span class="zh">中文、日文、韩文输入法可以用，候选窗贴着光标。</span><span class="en">Chinese, Japanese, and Korean input methods work, with the candidate window anchored at the cursor.</span></li>
           <li><span class="zh">会话可以重命名，也可以放进分组。分组是侧边栏里可折叠的一段。</span><span class="en">Sessions can be renamed or moved into a group. A group is a collapsible section in the sidebar.</span></li>
@@ -966,7 +1116,37 @@
         }
       };
 
+      var main = document.querySelector(".main");
+      var dashBtn = document.getElementById("dash");
+      var rows = Array.prototype.slice.call(document.querySelectorAll(".dash-row"));
+      var current = "codex";
+      var picked = "codex";
+
+      // The overview's peek shows the same terminal the session would.
+      function pick(id) {
+        picked = id;
+        rows.forEach(function (row) {
+          var on = row.getAttribute("data-pick") === id;
+          row.classList.toggle("on", on);
+          if (!on) return;
+          document.getElementById("peek-name").textContent = row.getAttribute("data-name");
+          document.getElementById("peek-dir").textContent = row.getAttribute("data-dir");
+        });
+        var pane = document.querySelector('.term[data-id="' + id + '"]');
+        document.getElementById("peek-body").innerHTML = pane ? pane.innerHTML : "";
+      }
+
+      function showDash() {
+        main.classList.add("show-dash");
+        dashBtn.setAttribute("aria-expanded", "true");
+        if (tab) tab.innerHTML = '<span class="zh">Agent 总览 · 4 个 Agent · 1 个等你</span><span class="en">Agents · 4 agents · 1 needs you</span>';
+        pick(picked);
+      }
+
       function select(id) {
+        current = id;
+        main.classList.remove("show-dash");
+        dashBtn.setAttribute("aria-expanded", "false");
         sessions.forEach(function (btn) {
           var on = btn.getAttribute("data-id") === id;
           btn.classList.toggle("on", on);
@@ -994,6 +1174,30 @@
           product.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
         });
       });
+
+      function toStage() {
+        var still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        document.getElementById("product").scrollIntoView({ behavior: still ? "auto" : "smooth", block: "center" });
+      }
+      dashBtn.addEventListener("click", function () {
+        if (main.classList.contains("show-dash")) select(current); else showDash();
+      });
+      rows.forEach(function (row) {
+        row.addEventListener("click", function () { pick(row.getAttribute("data-pick")); });
+        row.addEventListener("dblclick", function () { select(row.getAttribute("data-pick")); });
+        row.addEventListener("keydown", function (e) {
+          if (e.key === "Enter") { e.preventDefault(); select(row.getAttribute("data-pick")); }
+        });
+      });
+      document.getElementById("peek-open").addEventListener("click", function () { select(picked); });
+      document.querySelectorAll("[data-dash]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          showDash();
+          dashBtn.focus({ preventScroll: true });
+          toStage();
+        });
+      });
+      pick(picked);
 
       perf.addEventListener("click", function () {
         var open = win.classList.toggle("show-monitor");

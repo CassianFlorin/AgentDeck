@@ -79,7 +79,13 @@ final class PaneNode {
 
     struct Layout: Codable {
         var directory: String?
+        /// The session's first pane. (Named for when only that pane could run an agent.)
         var isAgent: Bool?
+        /// The agent running in this pane, its conversation, and whether it was
+        /// started at all, so each pane's agent comes back in its conversation.
+        var agentID: String?
+        var conversationID: String?
+        var hadAgent: Bool?
         var horizontal: Bool?
         var ratio: Double?
         var children: [Layout]?
@@ -87,9 +93,25 @@ final class PaneNode {
 
     var layout: Layout {
         if let pane {
-            return Layout(directory: pane.terminal.currentDirectory, isAgent: pane.isAgentPane)
+            var leaf = Layout(directory: pane.terminal.currentDirectory, isAgent: pane.isPrimary)
+            // An agent we only noticed (typed by hand) is worth restoring only
+            // if we know which conversation it was in.
+            if let agent = pane.agent, !(agent.adopted && agent.conversationID == nil) {
+                leaf.agentID = agent.kind.id
+                leaf.conversationID = agent.conversationID
+                leaf.hadAgent = true
+            }
+            return leaf
         }
         return Layout(horizontal: horizontal, ratio: Double(ratio), children: children.map(\.layout))
+    }
+
+    /// The saved leaf of the session's first pane.
+    static func primaryLeaf(of layout: Layout) -> Layout? {
+        if let kids = layout.children, kids.count == 2 {
+            return kids.lazy.compactMap(primaryLeaf(of:)).first
+        }
+        return layout.isAgent == true ? layout : nil
     }
 
     /// Rebuild a tree from a saved layout, creating panes with `make`.
