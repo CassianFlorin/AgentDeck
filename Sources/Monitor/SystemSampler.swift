@@ -11,22 +11,35 @@ struct PerfReadings {
     var disk: DiskReading?
     var gpu: GPUReading?
     var sessions: SessionsReading?
+    /// Top processes on a server (the 会话占用 card's remote counterpart).
+    var processes: [TopProcess]?
+    var docker: DockerReading?
+}
+
+struct TopProcess: Identifiable {
+    let id: Int
+    let name: String
+    let cpu: Double     // percent of one core
+    let memory: UInt64
 }
 
 struct CPUReading {
     var user: Double       // 0…1
     var system: Double     // 0…1
     var perCore: [Double]  // 0…1 each
+    /// 1/5/15-minute load average (servers only).
+    var load: [Double]?
     var total: Double { user + system }
 }
 
 struct MemoryReading {
     var used: UInt64
     var total: UInt64
-    var compressed: UInt64
-    var wired: UInt64
+    /// Breakdown shown under the chart: 联动/压缩 on the Mac, 缓存 on Linux.
+    var extras: [(label: String, bytes: UInt64)]
     var swapUsed: UInt64
-    /// kern.memorystatus_vm_pressure_level: 1 normal, 2 warning, 4 critical.
+    /// 1 normal, 2 warning, 4 critical (kern.memorystatus_vm_pressure_level
+    /// on the Mac; estimated from MemAvailable on Linux).
     var pressure: Int
     var fraction: Double { total == 0 ? 0 : Double(used) / Double(total) }
 }
@@ -46,6 +59,8 @@ struct DiskReading {
 struct GPUReading {
     var utilization: Double  // 0…1
     var memoryInUse: UInt64?
+    var memoryTotal: UInt64?
+    var name: String?
 }
 
 struct SessionsReading {
@@ -102,6 +117,7 @@ final class SystemSampler: @unchecked Sendable {
         if kinds.contains(.network) { lastNet = nil }
         if kinds.contains(.disk) { lastDisk = nil; diskSpace = nil; diskSpaceAge = 0 }
         if kinds.contains(.sessions) { lastProcCPU = [:]; lastProcTime = 0 }
+        // .docker is read by DockerStream, not here.
     }
 
     func sample(_ kinds: Set<MonitorKind>, sessions: [SessionProbe]) -> PerfReadings {
@@ -182,7 +198,7 @@ final class SystemSampler: @unchecked Sendable {
 
         return MemoryReading(used: app * page + wired + compressed,
                              total: ProcessInfo.processInfo.physicalMemory,
-                             compressed: compressed, wired: wired,
+                             extras: [("联动", wired), ("压缩", compressed)],
                              swapUsed: swap.xsu_used, pressure: Int(pressure))
     }
 

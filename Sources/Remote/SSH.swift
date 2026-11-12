@@ -63,6 +63,11 @@ enum SSH {
 
     /// The full line typed into the local shell to connect.
     static func commandLine(for host: RemoteHost, sessionName: String?) -> String {
+        commandLine(for: host, remoteCommand: remoteCommand(for: host, sessionName: sessionName))
+    }
+
+    /// Same, running `remoteCommand` (nil = the login shell) on the server.
+    static func commandLine(for host: RemoteHost, remoteCommand: String?) -> String {
         var env = ["TERM=\(quote(host.term.isEmpty ? "xterm-256color" : host.term))"]
         if host.auth == .password, let exe = Bundle.main.executablePath {
             env += ["SSH_ASKPASS=\(quote(exe))", "SSH_ASKPASS_REQUIRE=force",
@@ -71,7 +76,7 @@ enum SSH {
         // `command` skips shell-integration's ssh wrapper (ghostty +ssh), so the
         // host's own TERM setting is what the server sees.
         var parts = env + ["command", "ssh"] + options(for: host, interactive: true).map(quote) + [quote(host.host)]
-        if let cmd = remoteCommand(for: host, sessionName: sessionName) { parts.append(quote(cmd)) }
+        if let remoteCommand { parts.append(quote(remoteCommand)) }
         return parts.joined(separator: " ")
     }
 
@@ -86,23 +91,7 @@ enum SSH {
     static func run(_ host: RemoteHost, command: String, timeout: TimeInterval = 15,
                     verbose: Bool = false) async -> ProbeResult {
         await withCheckedContinuation { cont in
-            let p = Process()
-            p.executableURL = URL(fileURLWithPath: "/usr/bin/ssh")
-            var args = options(for: host, interactive: false)
-            args += ["-o", "ConnectTimeout=8"]
-            if verbose { args.append("-v") }
-            var env = ProcessInfo.processInfo.environment
-            if host.auth == .password, let exe = Bundle.main.executablePath {
-                env["SSH_ASKPASS"] = exe
-                env["SSH_ASKPASS_REQUIRE"] = "force"
-                env[Askpass.hostEnv] = host.id.uuidString
-            } else {
-                // Never hang on a prompt nobody can see.
-                args += ["-o", "BatchMode=yes"]
-            }
-            args += [host.host, command]
-            p.arguments = args
-            p.environment = env
+            let p = backgroundProcess(host, command: command, verbose: verbose)
             p.standardInput = FileHandle.nullDevice
             let pipe = Pipe()
             p.standardOutput = pipe
@@ -132,6 +121,30 @@ enum SSH {
                 finish(ProbeResult(ok: false, output: "超时（\(Int(timeout)) 秒）"))
             }
         }
+    }
+
+    /// A non-interactive ssh to `host` running `command`, not yet started.
+    /// Never prompts in a terminal: passwords come from the Keychain through
+    /// SSH_ASKPASS, everything else runs in BatchMode.
+    static func backgroundProcess(_ host: RemoteHost, command: String, verbose: Bool = false) -> Process {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/usr/bin/ssh")
+        var args = options(for: host, interactive: false)
+        args += ["-o", "ConnectTimeout=8"]
+        if verbose { args.append("-v") }
+        var env = ProcessInfo.processInfo.environment
+        if host.auth == .password, let exe = Bundle.main.executablePath {
+            env["SSH_ASKPASS"] = exe
+            env["SSH_ASKPASS_REQUIRE"] = "force"
+            env[Askpass.hostEnv] = host.id.uuidString
+        } else {
+            // Never hang on a prompt nobody can see.
+            args += ["-o", "BatchMode=yes"]
+        }
+        args += [host.host, command]
+        p.arguments = args
+        p.environment = env
+        return p
     }
 
     struct ServerInfo {

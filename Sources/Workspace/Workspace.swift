@@ -145,7 +145,32 @@ final class Workspace: ObservableObject {
         if select { selectedID = session.id }
     }
 
+    /// Sessions opened for a one-off command (container logs / shell from the
+    /// 性能 panel). They are not restored on relaunch.
+    private var ephemeral: Set<UUID> = []
+
+    /// Open a session that runs `command`, locally or on `host`. With a host
+    /// the session counts as that server's, so the 性能 panel stays on it.
+    @discardableResult
+    func openCommand(_ command: String, title: String, on host: RemoteHost?) -> AgentSession {
+        let session: AgentSession
+        if let host {
+            session = AgentSession(kind: .ssh, directory: NSHomeDirectory(), customName: title,
+                                   group: selected?.group,
+                                   remote: RemoteRef(hostID: host.id, sessionName: nil),
+                                   remoteName: host.name, remoteLabel: host.address,
+                                   connectCommand: SSH.commandLine(for: host, remoteCommand: command))
+        } else {
+            session = AgentSession(kind: .shell, directory: NSHomeDirectory(), customName: title,
+                                   group: selected?.group, startCommand: command)
+        }
+        ephemeral.insert(session.id)
+        add(session, select: true)
+        return session
+    }
+
     func close(_ session: AgentSession) {
+        ephemeral.remove(session.id)
         let order = orderedSessions
         guard let idx = order.firstIndex(where: { $0.id == session.id }) else { return }
         cancellables[session.id] = nil
@@ -418,7 +443,7 @@ final class Workspace: ObservableObject {
 
     func persist() {
         store.save(.init(
-            sessions: orderedSessions.map {
+            sessions: orderedSessions.filter { !ephemeral.contains($0.id) }.map {
                 .init(kindID: $0.kind.id, directory: $0.directory, customName: $0.customName,
                       group: $0.group, layout: $0.root.layout, remote: $0.remote,
                       conversationID: $0.conversationID,

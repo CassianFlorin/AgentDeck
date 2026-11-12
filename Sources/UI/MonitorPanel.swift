@@ -11,6 +11,13 @@ struct MonitorPanel: View {
 
     private var kinds: Set<MonitorKind> { MonitorSettings.decode(kindsRaw) }
 
+    /// Follows the selected session: its server for an SSH session, else this Mac.
+    private var target: MonitorTarget {
+        workspace.selected.flatMap(workspace.host(for:)).map(MonitorTarget.remote) ?? .local
+    }
+
+    private var isRemote: Bool { target.host != nil }
+
     var body: some View {
         VStack(spacing: 0) {
             header
@@ -20,10 +27,11 @@ struct MonitorPanel: View {
             } else {
                 ScrollView {
                     VStack(spacing: 10) {
+                        if let error = monitor.remoteError { errorBanner(error) }
                         ForEach(MonitorKind.allCases.filter(kinds.contains)) { kind in
                             card(kind)
                                 .contextMenu {
-                                    Button("隐藏\(kind.title)") { set(kind, on: false) }
+                                    Button("隐藏\(title(kind))") { set(kind, on: false) }
                                 }
                         }
                     }
@@ -33,22 +41,43 @@ struct MonitorPanel: View {
         }
         .onAppear {
             monitor.workspace = workspace
-            monitor.start(kinds: kinds, interval: interval)
+            monitor.start(kinds: kinds, interval: interval, target: target)
         }
         .onDisappear { monitor.stop() }
-        .onChange(of: kindsRaw) { _, _ in monitor.update(kinds: kinds, interval: interval) }
-        .onChange(of: interval) { _, _ in monitor.update(kinds: kinds, interval: interval) }
+        .onChange(of: kindsRaw) { _, _ in refresh() }
+        .onChange(of: interval) { _, _ in refresh() }
+        .onChange(of: target) { _, _ in refresh() }
+    }
+
+    private func refresh() {
+        monitor.update(kinds: kinds, interval: interval, target: target)
+    }
+
+    private func title(_ kind: MonitorKind) -> String {
+        kind == .sessions && isRemote ? "进程" : kind.title
     }
 
     private var header: some View {
         HStack(spacing: 6) {
-            Text("性能").font(.headline)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("性能").font(.headline)
+                HStack(spacing: 4) {
+                    Image(systemName: isRemote ? "server.rack" : "laptopcomputer")
+                    Text(target.host?.name ?? "本机").lineLimit(1).truncationMode(.middle)
+                    if monitor.connecting {
+                        ProgressView().controlSize(.mini)
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .help(target.host.map { "服务器 \($0.address)，跟随当前选中的会话" } ?? "这台 Mac，跟随当前选中的会话")
+            }
             Spacer()
             Menu {
                 Section("显示") {
                     ForEach(MonitorKind.allCases) { kind in
                         Toggle(isOn: Binding(get: { kinds.contains(kind) }, set: { set(kind, on: $0) })) {
-                            Label(kind.title, systemImage: kind.symbol)
+                            Label(title(kind), systemImage: kind.symbol)
                         }
                     }
                 }
@@ -71,6 +100,16 @@ struct MonitorPanel: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
+    }
+
+    private func errorBanner(_ text: String) -> some View {
+        HStack(alignment: .top, spacing: 6) {
+            Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+            Text(text).font(.caption).textSelection(.enabled)
+            Spacer(minLength: 0)
+        }
+        .padding(8)
+        .background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 
     private var emptyState: some View {
@@ -97,10 +136,13 @@ struct MonitorPanel: View {
         switch kind {
         case .cpu: CPUCard(reading: r.cpu, history: h["cpu.total"])
         case .memory: MemoryCard(reading: r.memory, history: h["memory.used"])
-        case .gpu: GPUCard(reading: r.gpu, history: h["gpu.util"])
+        case .gpu: GPUCard(reading: r.gpu, history: h["gpu.util"], remote: isRemote && !monitor.connecting)
         case .network: NetworkCard(reading: r.network, inHistory: h["network.in"], outHistory: h["network.out"])
         case .disk: DiskCard(reading: r.disk, readHistory: h["disk.read"], writeHistory: h["disk.write"])
-        case .sessions: SessionsCard(reading: r.sessions, history: h["sessions.cpu"])
+        case .sessions:
+            if isRemote { ProcessesCard(processes: r.processes) }
+            else { SessionsCard(reading: r.sessions, history: h["sessions.cpu"]) }
+        case .docker: DockerCard(reading: r.docker, target: target)
         }
     }
 }
@@ -109,6 +151,7 @@ struct MonitorPanel: View {
 
 private struct MonitorCard<Content: View>: View {
     let kind: MonitorKind
+    var title: String?
     let value: String
     var valueColor: Color = .primary
     @ViewBuilder let content: Content
@@ -116,7 +159,7 @@ private struct MonitorCard<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
-                Label(kind.title, systemImage: kind.symbol)
+                Label(title ?? kind.title, systemImage: kind.symbol)
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(.secondary)
                 Spacer()
@@ -150,6 +193,11 @@ private struct CPUCard: View {
                     Text("\(reading.perCore.count) 核").foregroundStyle(.secondary)
                 }
                 .font(.caption)
+                if let load = reading.load, load.count == 3 {
+                    Text("负载 " + load.map { String(format: "%.2f", $0) }.joined(separator: "  "))
+                        .font(.caption).foregroundStyle(.secondary).monospacedDigit()
+                        .help("1 / 5 / 15 分钟平均负载")
+                }
             }
         }
     }
@@ -178,8 +226,9 @@ private struct MemoryCard: View {
                         LegendDot(color: pressureColor, text: r.pressure >= 4 ? "压力高" : r.pressure >= 2 ? "压力中" : "压力正常")
                     }
                     HStack {
-                        Text("联动 \(Fmt.bytes(r.wired))")
-                        Text("压缩 \(Fmt.bytes(r.compressed))")
+                        ForEach(r.extras, id: \.label) { e in
+                            Text("\(e.label) \(Fmt.bytes(e.bytes))")
+                        }
                         Spacer()
                         if r.swapUsed > 0 { Text("交换 \(Fmt.bytes(r.swapUsed))") }
                     }
@@ -195,14 +244,27 @@ private struct MemoryCard: View {
 private struct GPUCard: View {
     let reading: GPUReading?
     let history: Series?
+    /// A server: no reading means no NVIDIA GPU (or no nvidia-smi).
+    var remote = false
 
     var body: some View {
         MonitorCard(kind: .gpu, value: reading.map { Fmt.percent($0.utilization) } ?? "—",
-                    valueColor: Fmt.loadColor(reading?.utilization ?? 0)) {
-            Sparkline(series: [.init(values: history?.values ?? [], color: .purple)], maxValue: 1)
-            if let mem = reading?.memoryInUse {
-                Text("显存占用 \(Fmt.bytes(mem))")
+                    valueColor: reading.map { Fmt.loadColor($0.utilization) } ?? .secondary) {
+            if remote && reading == nil {
+                Text("服务器上没有找到 NVIDIA GPU（nvidia-smi）")
+                    .font(.caption).foregroundStyle(.secondary)
+            } else {
+                Sparkline(series: [.init(values: history?.values ?? [], color: .purple)], maxValue: 1)
+                if let r = reading {
+                    HStack {
+                        if let mem = r.memoryInUse {
+                            Text("显存 \(Fmt.bytes(mem))" + (r.memoryTotal.map { " / \(Fmt.bytes($0))" } ?? ""))
+                        }
+                        Spacer()
+                        if let name = r.name { Text(name).lineLimit(1).truncationMode(.tail) }
+                    }
                     .font(.caption).foregroundStyle(.secondary).monospacedDigit()
+                }
             }
         }
     }
@@ -299,6 +361,183 @@ private struct SessionsCard: View {
             Text(Fmt.bytes(memory))
                 .foregroundStyle(.secondary)
                 .frame(minWidth: 54, alignment: .trailing)
+        }
+    }
+}
+
+/// A server's busiest processes (the 会话占用 card's server counterpart).
+private struct ProcessesCard: View {
+    let processes: [TopProcess]?
+
+    var body: some View {
+        MonitorCard(kind: .sessions, title: "进程", value: processes?.first.map { Fmt.cpu($0.cpu) } ?? "—") {
+            if let processes {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(processes) { p in
+                        HStack(spacing: 6) {
+                            Text(p.name).lineLimit(1).truncationMode(.tail)
+                                .help("PID \(String(p.id))")
+                            Spacer(minLength: 4)
+                            Text(Fmt.cpu(p.cpu))
+                                .foregroundStyle(Fmt.loadColor(p.cpu / 100))
+                                .frame(minWidth: 44, alignment: .trailing)
+                            Text(Fmt.bytes(p.memory))
+                                .foregroundStyle(.secondary)
+                                .frame(minWidth: 54, alignment: .trailing)
+                        }
+                    }
+                }
+                .font(.caption)
+                .monospacedDigit()
+            } else {
+                Text("正在读取…").font(.caption).foregroundStyle(.secondary)
+            }
+        }
+        .help("CPU 占用最高的进程，以单核为 100%")
+    }
+}
+
+/// Containers on this Mac or the server, with logs / shell / start / stop.
+private struct DockerCard: View {
+    typealias Container = DockerReading.Container
+
+    let reading: DockerReading?
+    let target: MonitorTarget
+    @EnvironmentObject private var workspace: Workspace
+    @State private var busy: Set<String> = []
+    @State private var failure: String?
+    @State private var confirming: PendingAction?
+
+    struct PendingAction {
+        let container: Container
+        let verb: String   // stop / restart
+        var label: String { verb == "stop" ? "停止" : "重启" }
+    }
+
+    private var sorted: [Container] {
+        (reading?.containers ?? []).sorted {
+            $0.isRunning != $1.isRunning ? $0.isRunning : $0.name.localizedStandardCompare($1.name) == .orderedAscending
+        }
+    }
+
+    var body: some View {
+        MonitorCard(kind: .docker,
+                    value: reading.flatMap { $0.installed && $0.error == nil ? "\($0.runningCount)/\($0.containers.count)" : nil } ?? "—") {
+            if let r = reading {
+                if !r.installed {
+                    Text(target.host == nil ? "这台 Mac 上没有找到 docker 命令" : "服务器上没有安装 Docker")
+                        .font(.caption).foregroundStyle(.secondary)
+                } else if let error = r.error {
+                    Text(error).font(.caption).foregroundStyle(.orange).textSelection(.enabled)
+                } else if r.containers.isEmpty {
+                    Text("没有容器").font(.caption).foregroundStyle(.secondary)
+                } else {
+                    VStack(alignment: .leading, spacing: 6) {
+                        ForEach(sorted) { row($0) }
+                    }
+                }
+            } else {
+                Text("正在读取容器…").font(.caption).foregroundStyle(.secondary)
+            }
+        }
+        .help("运行中 / 全部容器")
+        .alert("Docker 操作失败", isPresented: Binding(get: { failure != nil }, set: { if !$0 { failure = nil } })) {
+            Button("好") { failure = nil }
+        } message: {
+            Text(failure ?? "")
+        }
+        .confirmationDialog(confirming.map { "\($0.label)容器“\($0.container.name)”？" } ?? "",
+                            isPresented: Binding(get: { confirming != nil }, set: { if !$0 { confirming = nil } }),
+                            presenting: confirming) { action in
+            Button(action.label, role: .destructive) { run(action.verb, action.container) }
+            Button("取消", role: .cancel) {}
+        } message: { _ in
+            Text(target.host.map { "在服务器 \($0.name) 上。" } ?? "在这台 Mac 上。")
+        }
+    }
+
+    private func row(_ c: Container) -> some View {
+        HStack(spacing: 6) {
+            Circle().fill(color(c)).frame(width: 7, height: 7)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(c.name).lineLimit(1).truncationMode(.tail)
+                Text(c.status).foregroundStyle(.secondary).lineLimit(1).truncationMode(.tail)
+            }
+            Spacer(minLength: 4)
+            if busy.contains(c.id) {
+                ProgressView().controlSize(.mini)
+            } else if c.isRunning {
+                VStack(alignment: .trailing, spacing: 1) {
+                    Text(c.cpu.map(Fmt.cpu) ?? "—").foregroundStyle(Fmt.loadColor((c.cpu ?? 0) / 100))
+                    if let mem = c.memory?.components(separatedBy: " / ").first {
+                        Text(mem).foregroundStyle(.secondary)
+                    }
+                }
+            }
+            Menu {
+                actions(c)
+            } label: {
+                Image(systemName: "ellipsis.circle")
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .disabled(busy.contains(c.id))
+        }
+        .font(.caption)
+        .monospacedDigit()
+        .contentShape(Rectangle())
+        .contextMenu { actions(c) }
+        .help("\(c.name)\n\(c.image)\n\(c.status)")
+    }
+
+    @ViewBuilder
+    private func actions(_ c: Container) -> some View {
+        Button("查看日志") {
+            workspace.openCommand(DockerControl.logsCommand(c.id), title: "日志 · \(c.name)", on: target.host)
+        }
+        if c.isRunning {
+            Button("进入容器（shell）") {
+                workspace.openCommand(DockerControl.shellCommand(c.id), title: "容器 · \(c.name)", on: target.host)
+            }
+        }
+        Divider()
+        if c.isRunning {
+            Button("重启…") { confirming = .init(container: c, verb: "restart") }
+            Button("停止…") { confirming = .init(container: c, verb: "stop") }
+        } else if c.state == "paused" {
+            Button("恢复") { run("unpause", c) }
+        } else {
+            Button("启动") { run("start", c) }
+        }
+        Divider()
+        Button("拷贝容器 ID") {
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(c.id, forType: .string)
+        }
+    }
+
+    private func run(_ verb: String, _ c: Container) {
+        busy.insert(c.id)
+        let target = target
+        Task {
+            let r = await DockerControl.run([verb, c.id], on: target)
+            busy.remove(c.id)
+            if !r.ok {
+                failure = r.output.trimmingCharacters(in: .whitespacesAndNewlines)
+                if failure?.isEmpty ?? true { failure = "docker \(verb) 失败" }
+            }
+            PerformanceMonitor.shared.dockerChanged()
+        }
+    }
+
+    private func color(_ c: Container) -> Color {
+        switch c.state {
+        case "running": .green
+        case "paused": .yellow
+        case "restarting": .orange
+        case "dead": .red
+        default: .gray
         }
     }
 }
