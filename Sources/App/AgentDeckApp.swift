@@ -39,6 +39,8 @@ struct AgentDeckApp: App {
             TabView {
                 AppearanceSettingsView()
                     .tabItem { Label("外观", systemImage: "paintbrush") }
+                TerminalSettingsView()
+                    .tabItem { Label("终端", systemImage: "terminal") }
             }
             .preferredColorScheme(.dark)
         }

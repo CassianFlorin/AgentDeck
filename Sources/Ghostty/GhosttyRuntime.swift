@@ -1,5 +1,6 @@
 import AppKit
 import GhosttyKit
+import SwiftUI
 
 /// Everything libghostty tells a surface that AgentDeck cares about.
 /// Delivered on the main thread via `TerminalSurfaceView.onEvent`.
@@ -144,17 +145,81 @@ final class GhosttyRuntime {
 
     // MARK: - Config
 
-    /// The user's Ghostty config, then AgentDeck's appearance overlay on top
-    /// (background opacity / blur from 设置 → 外观).
+    /// The user's Ghostty config, then AgentDeck's overlay on top: the options
+    /// changed in 设置 → 终端, then background opacity / blur from 设置 → 外观
+    /// (last, so the glass window always gets the opacity it needs).
     private static func makeConfig() -> ghostty_config_t? {
         guard let cfg = ghostty_config_new() else { return nil }
         ghostty_config_load_default_files(cfg)
         ghostty_config_load_recursive_files(cfg)
         let overlay = AppPaths.support.appendingPathComponent("ghostty-appearance.conf")
-        try? AppearanceSettings.ghosttyOverlay.write(to: overlay, atomically: true, encoding: .utf8)
+        let text = TerminalSettings.ghosttyOverlay + "\n" + AppearanceSettings.ghosttyOverlay
+        try? text.write(to: overlay, atomically: true, encoding: .utf8)
         overlay.path.withCString { ghostty_config_load_file(cfg, $0) }
         ghostty_config_finalize(cfg)
         return cfg
+    }
+
+    /// The user's own Ghostty config without AgentDeck's overlay. Caller frees it.
+    static func userConfig() -> ghostty_config_t? {
+        guard let cfg = ghostty_config_new() else { return nil }
+        ghostty_config_load_default_files(cfg)
+        ghostty_config_load_recursive_files(cfg)
+        ghostty_config_finalize(cfg)
+        return cfg
+    }
+
+    /// A scalar config value (Bool, Float for f32 keys, Double for f64 keys…).
+    static func value<T>(_ cfg: ghostty_config_t, _ key: String) -> T? where T: ExpressibleByBooleanLiteral {
+        var v: T = false
+        return ghostty_config_get(cfg, &v, key, UInt(key.utf8.count)) ? v : nil
+    }
+
+    static func value<T>(_ cfg: ghostty_config_t, _ key: String) -> T? where T: BinaryFloatingPoint {
+        var v: T = 0
+        return ghostty_config_get(cfg, &v, key, UInt(key.utf8.count)) ? v : nil
+    }
+
+    /// A string or enum config value.
+    static func string(_ cfg: ghostty_config_t, _ key: String) -> String? {
+        var ptr: UnsafePointer<CChar>?
+        guard ghostty_config_get(cfg, &ptr, key, UInt(key.utf8.count)), let ptr else { return nil }
+        return String(cString: ptr)
+    }
+
+    /// Open the user's Ghostty config file (libghostty creates it if missing).
+    static func openUserConfig() {
+        let s = ghostty_config_open_path()
+        defer { ghostty_string_free(s) }
+        guard let ptr = s.ptr else { return }
+        let path = String(decoding: UnsafeRawBufferPointer(start: ptr, count: Int(s.len)), as: UTF8.self)
+        let url = URL(fileURLWithPath: path)
+        // Plain-text files without an extension have no default app; use TextEdit.
+        if NSWorkspace.shared.urlForApplication(toOpen: url) == nil,
+           let editor = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.TextEdit") {
+            NSWorkspace.shared.open([url], withApplicationAt: editor, configuration: NSWorkspace.OpenConfiguration())
+        } else {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
+    /// Background, foreground and the 16 ANSI colors currently in effect.
+    func currentColors() -> (background: Color, foreground: Color, palette: [Color]) {
+        var palette = [Color](repeating: .gray, count: 16)
+        guard let config else { return (.black, .white, palette) }
+        func color(_ key: String) -> Color? {
+            var c = ghostty_config_color_s()
+            return ghostty_config_get(config, &c, key, UInt(key.utf8.count)) ? Color(c) : nil
+        }
+        var p = ghostty_config_palette_s()
+        let key = "palette"
+        if ghostty_config_get(config, &p, key, UInt(key.utf8.count)) {
+            withUnsafeBytes(of: &p.colors) { raw in
+                let colors = raw.bindMemory(to: ghostty_config_color_s.self)
+                for i in 0..<16 { palette[i] = Color(colors[i]) }
+            }
+        }
+        return (color("background") ?? .black, color("foreground") ?? .white, palette)
     }
 
     /// Re-read config after an appearance change; libghostty pushes it to every surface.
@@ -185,7 +250,7 @@ final class GhosttyRuntime {
 
     /// Overlay for unfocused splits, from the user's Ghostty config
     /// (`unfocused-split-fill`, falling back to `background`; `unfocused-split-opacity`).
-    lazy var unfocusedSplitOverlay: NSColor = {
+    var unfocusedSplitOverlay: NSColor {
         guard let config else { return NSColor.black.withAlphaComponent(0.3) }
         var opacity: Double = 0.85
         let okey = "unfocused-split-opacity"
@@ -198,7 +263,7 @@ final class GhosttyRuntime {
         }
         return NSColor(srgbRed: CGFloat(color.r) / 255, green: CGFloat(color.g) / 255,
                        blue: CGFloat(color.b) / 255, alpha: CGFloat(1 - opacity))
-    }()
+    }
 
     func setColorScheme(dark: Bool) {
         guard let app else { return }
