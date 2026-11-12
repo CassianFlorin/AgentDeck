@@ -2,25 +2,42 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject private var workspace: Workspace
+    @AppStorage(MonitorSettings.visibleKey) private var showMonitor = false
 
     var body: some View {
         NavigationSplitView {
             SidebarView()
                 .navigationSplitViewColumnWidth(min: 200, ideal: 240, max: 360)
         } detail: {
-            if let session = workspace.selected {
-                SessionHost(session: session)
-                    .ignoresSafeArea(.container, edges: .bottom)
-                    .navigationTitle(session.displayName)
-                    .navigationSubtitle(session.directory.abbreviatingHome)
-                    // The window paints the tint (see GlassWindowConfigurator); the title bar adds none.
-                    .toolbarBackground(.hidden, for: .windowToolbar)
-            } else {
-                EmptyStateView()
+            Group {
+                if let session = workspace.selected {
+                    SessionHost(session: session)
+                        .ignoresSafeArea(.container, edges: .bottom)
+                        .navigationTitle(session.displayName)
+                        .navigationSubtitle(session.directory.abbreviatingHome)
+                        // The window paints the tint (see GlassWindowConfigurator); the title bar adds none.
+                        .toolbarBackground(.hidden, for: .windowToolbar)
+                } else {
+                    EmptyStateView()
+                }
+            }
+            // 性能 panel. A collapsed inspector keeps its content alive, so build
+            // the panel only while open: its sampling starts and stops with it.
+            .inspector(isPresented: $showMonitor) {
+                Group {
+                    if showMonitor { MonitorPanel() } else { Color.clear }
+                }
+                .inspectorColumnWidth(min: 230, ideal: 270, max: 400)
             }
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) { NewSessionMenu() }
+            ToolbarItem(placement: .primaryAction) {
+                Button { showMonitor.toggle() } label: {
+                    Label("性能监视器", systemImage: "gauge.with.dots.needle.33percent")
+                }
+                .help(showMonitor ? "隐藏性能监视器（⌥⌘P）" : "显示性能监视器（⌥⌘P）")
+            }
         }
         .background(GlassWindowConfigurator())
         .preferredColorScheme(.dark)

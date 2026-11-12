@@ -20,6 +20,8 @@ import SwiftUI
 ///   agents                     log the agent catalog and install detection
 ///   ui:agents | ui:resume[:<agentID>:<dir>] | ui:close   open/close the agent manager / resume sheet
 ///   restart                    restart the selected session's agent (resume if known)
+///   monitor:show|hide|<kinds>  open/close the 性能 panel, or set its monitors (e.g. cpu,sessions)
+///   monitor                    log the 性能 panel's latest readings
 ///   dump                       write sessions/split trees to ~/Library/Caches/AgentDeck/debug.log
 ///
 /// From a shell:
@@ -90,6 +92,26 @@ enum DebugHooks {
             if parts.first == "close" { workspace.managingAgents = false; workspace.resumeRequest = nil }
             if parts.first == "resume" {
                 workspace.showResume(directory: parts.count > 2 ? parts[2] : nil, agentID: parts.count > 1 ? parts[1] : nil)
+            }
+        case "monitor":
+            let d = UserDefaults.standard
+            switch arg {
+            case "show": d.set(true, forKey: MonitorSettings.visibleKey)
+            case "hide": d.set(false, forKey: MonitorSettings.visibleKey)
+            case "":
+                let m = PerformanceMonitor.shared, r = m.readings
+                log("monitor running=\(m.isRunning) kinds=\(d.string(forKey: MonitorSettings.kindsKey) ?? "-")")
+                if let c = r.cpu { log("  cpu \(Fmt.percent(c.total)) user=\(Fmt.percent(c.user)) sys=\(Fmt.percent(c.system)) cores=\(c.perCore.count)") }
+                if let m = r.memory { log("  mem \(Fmt.bytes(m.used))/\(Fmt.bytes(m.total)) wired=\(Fmt.bytes(m.wired)) comp=\(Fmt.bytes(m.compressed)) swap=\(Fmt.bytes(m.swapUsed)) p=\(m.pressure)") }
+                if let g = r.gpu { log("  gpu \(Fmt.percent(g.utilization)) mem=\(g.memoryInUse.map(Fmt.bytes) ?? "-")") }
+                if let n = r.network { log("  net in=\(Fmt.rate(n.a)) out=\(Fmt.rate(n.b))") }
+                if let k = r.disk { log("  disk r=\(k.rate.map { Fmt.rate($0.a) } ?? "-") w=\(k.rate.map { Fmt.rate($0.b) } ?? "-") free=\(k.free.map(Fmt.bytes) ?? "-")") }
+                if let s = r.sessions {
+                    log("  procs=\(s.totalProcesses) cpu=\(Fmt.cpu(s.totalCPU)) mem=\(Fmt.bytes(s.totalMemory)) app=\(Fmt.cpu(s.appCPU))/\(Fmt.bytes(s.appMemory))")
+                    for row in s.rows { log("    \(row.name) \(Fmt.cpu(row.cpu)) \(Fmt.bytes(row.memory)) n=\(row.processes)") }
+                }
+                log("  history " + m.history.map { "\($0.key)=\($0.value.values.count)" }.sorted().joined(separator: " "))
+            default: d.set(arg, forKey: MonitorSettings.kindsKey)
             }
         case "restart":
             workspace.selected.map(workspace.restartAgent)
