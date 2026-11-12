@@ -311,7 +311,7 @@
     .main { display: flex; flex-direction: column; min-width: 0; container-type: inline-size; }
     .tabbar { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     @container (max-width: 330px) {
-      .seg, .dash-row .what { display: none; }
+      .seg, .dash-row .what, .send .hint, .quick kbd:nth-child(-n+3) { display: none; }
       .dash-row { grid-template-columns: 8px 14px minmax(0, 1fr) auto; }
       .dash-row .who { overflow: hidden; text-overflow: ellipsis; }
     }
@@ -323,6 +323,9 @@
     .seg { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; color: var(--muted); white-space: nowrap; }
     .seg span { padding: 2px 8px; }
     .seg .cur { background: rgba(255, 255, 255, 0.1); color: var(--ink); }
+    .send { display: flex; align-items: center; gap: 6px; margin: 6px 12px 0; padding: 5px 8px; border-radius: 7px; background: rgba(255, 255, 255, 0.06); font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; }
+    .send .chip { padding: 1px 7px; }
+    .send .hint { overflow: hidden; text-overflow: ellipsis; }
     .dash-list { flex: 1; padding: 0 6px 6px; }
     .dash-group { margin: 8px 6px 2px; font-size: 10.5px; color: var(--muted); }
     .dash-row {
@@ -368,6 +371,15 @@
     .peek-body .gap { margin-top: 4px !important; }
     .reply { margin-top: 8px; padding: 5px 10px; border-radius: 7px; background: rgba(255, 255, 255, 0.06); color: var(--muted); font-size: 11.5px; }
     .reply::before { content: "›"; margin-right: 8px; color: var(--mint); }
+    .reply-row { display: flex; align-items: center; gap: 5px; margin-top: 8px; }
+    .reply-row .reply { flex: 1; margin-top: 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .quick { display: none; gap: 4px; }
+    .peek.waiting .quick { display: flex; }
+    .quick kbd { font-size: 10.5px; padding: 0 5px; }
+    .switch { display: inline-flex; align-items: center; gap: 1px; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+    .switch button { min-width: 20px; min-height: 28px; border-radius: 6px; color: var(--text); }
+    .switch button:hover { background: rgba(255, 255, 255, 0.08); color: var(--ink); }
+    .switch[hidden] { display: none; }
 
     .workspace { display: grid; grid-template-columns: 196px minmax(0, 1fr); min-height: clamp(430px, 28vw, 540px); }
     .window.show-monitor .workspace { grid-template-columns: 188px minmax(0, 1fr) 148px; }
@@ -568,7 +580,7 @@
     .points h3 { margin-bottom: 8px; color: var(--ink); font-size: 17px; font-weight: 600; }
     .points p { font-size: 15px; }
 
-    .keys { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(6, auto); grid-auto-flow: column; gap: 0 40px; }
+    .keys { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(7, auto); grid-auto-flow: column; gap: 0 40px; }
     .keyrow {
       display: grid;
       grid-template-columns: 168px minmax(0, 1fr);
@@ -701,6 +713,7 @@
     }
     @media (max-width: 480px) {
       [id] { scroll-margin-top: 112px; }
+      .switch { display: none; }
       .nav-inner { flex-wrap: wrap; row-gap: 2px; padding: 8px 0 10px; }
       .nav-links { flex: 1 0 100%; justify-content: flex-start; gap: 6px 14px; }
     }
@@ -757,6 +770,11 @@
             <div class="traffic" aria-hidden="true"><i class="r"></i><i class="y"></i><i class="g"></i></div>
             <p class="wt">AgentDeck</p>
             <div class="tools">
+              <span class="switch" id="switch">
+                <button type="button" id="agent-prev" aria-label="Previous agent">‹</button>
+                <span id="agent-pos">2/4</span>
+                <button type="button" id="agent-next" aria-label="Next agent">›</button>
+              </span>
               <button type="button" class="perf" id="dash" aria-expanded="false" aria-controls="dash-view">
                 <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.8" y="2.6" width="12.4" height="10.8" rx="2" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M4.6 6h.1M4.6 8h.1M4.6 10h.1M7 6h4.6M7 8h4.6M7 10h4.6" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
                 <span class="zh">总览</span><span class="en">Agents</span>
@@ -810,6 +828,7 @@
                   <span class="chip">+ <span class="zh">新建 Agent</span><span class="en">New agent</span></span>
                   <span class="seg" aria-hidden="true"><span class="cur"><span class="zh">按状态</span><span class="en">By state</span></span><span><span class="zh">按文件夹</span><span class="en">By folder</span></span></span>
                 </div>
+                <p class="send" aria-hidden="true"><span class="chip">Claude Code</span><span class="chip">shop</span><span class="hint"><span class="zh">派一个新任务，回车开始</span><span class="en">Hand out a task, Return to start</span></span></p>
                 <div class="dash-list">
                   <p class="dash-group"><span class="zh">等你</span><span class="en">Needs you</span> 1</p>
                   <button type="button" class="dash-row on" data-pick="codex" data-name="Codex" data-dir="~/src/shop">
@@ -847,7 +866,10 @@
                 <div class="peek">
                   <p class="peek-head"><span><b id="peek-name">Codex</b><span id="peek-dir">~/src/shop</span></span><button type="button" class="peek-open" id="peek-open"><span class="zh">打开</span><span class="en">Open</span></button></p>
                   <div class="peek-body" id="peek-body"></div>
-                  <p class="reply" aria-hidden="true"><span class="zh">回复它，回车发送</span><span class="en">Reply, Return to send</span></p>
+                  <div class="reply-row" aria-hidden="true">
+                    <p class="reply"><span class="zh">回复它，回车发送</span><span class="en">Reply, Return to send</span></p>
+                    <span class="quick"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>↩</kbd><kbd>esc</kbd></span>
+                  </div>
                 </div>
               </div>
               <div class="term" data-id="claude">
@@ -927,7 +949,7 @@
             </aside>
           </div>
         </div>
-        <p class="caption"><span class="zh">可点的界面示意。点左侧会话会换掉终端内容；右上角的「总览」把所有 Agent 列在一起，旁边可以打开性能面板。颜色和 App 里的状态一致。</span><span class="en">A clickable sketch. Choose a session to change the terminal. Agents, at the top right, lists every agent together, next to the performance panel. Status colors match the app.</span></p>
+        <p class="caption"><span class="zh">可点的界面示意。点左侧会话会换掉终端内容；右上角的「‹ ›」在 Agent 之间前后切，「总览」把所有 Agent 列在一起，旁边可以打开性能面板。颜色和 App 里的状态一致。</span><span class="en">A clickable sketch. Choose a session to change the terminal. At the top right, ‹ › steps through the agents, Agents lists them all together, and the performance panel sits next to it. Status colors match the app.</span></p>
       </div>
     </div>
   </div>
@@ -945,8 +967,8 @@
           <li class="s-work">
             <h3 class="badge working mark"><i class="dot work"></i><b><span class="zh">运行中</span><span class="en">Working</span></b></h3>
             <div>
-              <p class="zh">这一轮还没结束。Claude Code 用它自己的 hooks 报告状态。AgentDeck 只在启动时加上参数，不改你的设置文件。其他 Agent 则靠回车、响铃、通知和进度来判断。</p>
-              <p class="en">This turn is still going. Claude Code reports through its own hooks. AgentDeck passes flags at launch and never edits your settings files. Other agents are read from generic signals: Return, the bell, notifications, and progress.</p>
+              <p class="zh">这一轮还没结束。Claude Code 用它自己的 hooks 报告状态：AgentDeck 只在启动时加上参数，不改你的设置文件。Grok 和 Codex 也能这样报告，在「管理 Agent」里打开就行：它们只从自己的配置目录读 hooks，所以会各新建一个 AgentDeck 自己的文件，你已有的配置不动。没有 hooks 的 Agent 靠回车、响铃、通知和进度来判断。</p>
+              <p class="en">This turn is still going. Claude Code reports through its own hooks: AgentDeck passes flags at launch and never edits your settings files. Grok and Codex can report the same way once you turn it on in Manage Agents. They only read hooks from their own config folder, so each gets one new file of AgentDeck's own, and your existing config is left as it is. Agents without hooks are read from generic signals: Return, the bell, notifications, and progress.</p>
               <button type="button" class="textlink" data-jump="claude"><span class="zh">在上面的窗口里看</span><span class="en">Show in the window</span></button>
             </div>
           </li>
@@ -1004,6 +1026,21 @@
             <p class="zh"><kbd>↩</kbd> 或双击，切到它所在的会话，光标落在它的窗格里。<kbd>esc</kbd> 或点侧边栏里任何一个会话，回到终端。</p>
             <p class="en"><kbd>↩</kbd> or a double-click goes to its session, with the cursor in its pane. <kbd>esc</kbd>, or any session in the sidebar, returns to the terminal.</p>
           </li>
+          <li>
+            <h3><span class="zh">在列表里派任务</span><span class="en">Hand out tasks from the list</span></h3>
+            <p class="zh">列表上方有一条派发栏：选 Agent、选文件夹、写下任务、回车。新的 Agent 带着这个任务在后台开工，你留在列表里，可以接着派下一个。</p>
+            <p class="en">A bar above the list starts new work: pick the agent and the folder, write the task, press Return. A new agent starts on it in the background, and you stay on the list to hand out the next one.</p>
+          </li>
+          <li>
+            <h3><span class="zh">停下它，或者替它选</span><span class="en">Stop it, or pick for it</span></h3>
+            <p class="zh">运行中的 Agent 可以直接「停止」这一轮。它停下来等你选的时候，回复框旁边有 <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>↩</kbd><kbd>esc</kbd>，对应它提示里的选项，不用进终端。</p>
+            <p class="en">A working agent can be stopped for this turn. When it stops to ask you to choose, <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>↩</kbd><kbd>esc</kbd> sit next to the reply field and answer its prompt, without going to the terminal.</p>
+          </li>
+          <li>
+            <h3><span class="zh">筛选和置顶</span><span class="en">Filter and pin</span></h3>
+            <p class="zh">顶部的输入框按名称、Agent 或文件夹筛选。右键可以把一个 Agent 置顶，它不管在干什么都排在最上面，重启 App 后还在。</p>
+            <p class="en">The field at the top filters by name, agent, or folder. Right-click to pin an agent: it stays at the top whatever it is doing, and stays pinned after a relaunch.</p>
+          </li>
         </ul>
         <p class="footnote"><button type="button" class="textlink" data-dash><span class="zh">在上面的窗口里看</span><span class="en">Show in the window</span></button></p>
       </div>
@@ -1053,6 +1090,7 @@
         <div class="keys">
           <div class="keyrow"><div class="combo"><kbd>⌘⇧J</kbd></div><p><span class="zh">跳到下一个等你的会话</span><span class="en">Jump to the next session that needs you</span></p></div>
           <div class="keyrow"><div class="combo"><kbd>⇧⌘A</kbd></div><p><span class="zh">Agent 总览：所有 Agent 的列表</span><span class="en">Agent overview: the list of every agent</span></p></div>
+          <div class="keyrow"><div class="combo"><kbd>⌥⌘[</kbd><kbd>⌥⌘]</kbd></div><p><span class="zh">上一个 / 下一个 Agent，跨会话</span><span class="en">Previous / next agent, across sessions</span></p></div>
           <div class="keyrow"><div class="combo"><kbd>⌘⇧[</kbd><kbd>⌘⇧]</kbd></div><p><span class="zh">上一个 / 下一个会话</span><span class="en">Previous / next session</span></p></div>
           <div class="keyrow"><div class="combo"><kbd>⌘1</kbd><kbd>⌘9</kbd></div><p><span class="zh">跳到对应的会话</span><span class="en">Jump to a session by number</span></p></div>
           <div class="keyrow"><div class="combo"><kbd>⌘D</kbd><kbd>⌘⇧D</kbd></div><p><span class="zh">向右分屏 / 向下分屏</span><span class="en">Split right / split down</span></p></div>
@@ -1062,6 +1100,7 @@
           <div class="keyrow"><div class="combo"><kbd>⌘⇧R</kbd></div><p><span class="zh">重新连接 SSH</span><span class="en">Reconnect SSH</span></p></div>
           <div class="keyrow"><div class="combo"><kbd>⇧⌘O</kbd></div><p><span class="zh">恢复这个文件夹里以前的对话</span><span class="en">Resume an earlier conversation for this folder</span></p></div>
           <div class="keyrow"><div class="combo"><kbd>⌥⌘P</kbd></div><p><span class="zh">打开性能监视器</span><span class="en">Open the performance panel</span></p></div>
+          <div class="keyrow"><div class="combo"><kbd>⌘⇧W</kbd></div><p><span class="zh">关闭当前会话</span><span class="en">Close the current session</span></p></div>
           <div class="keyrow"><div class="combo"><kbd>⌘,</kbd></div><p><span class="zh">设置</span><span class="en">Settings</span></p></div>
         </div>
         <h3 class="subhead"><span class="zh">还有这些</span><span class="en">Also</span></h3>
@@ -1096,6 +1135,9 @@
             <div>
               <h4><span class="zh">Agent</span><span class="en">Agents</span></h4>
               <ul>
+                <li><span class="zh">在会话里，工具栏显示当前是第几个 Agent（比如 2/5），两边的箭头去上一个和下一个。</span><span class="en">In a session, the toolbar shows which agent you are on (2/5, say), with arrows to the previous and the next.</span></li>
+                <li><span class="zh">派发的任务通过「带提示词启动参数」里的 <span class="path">{prompt}</span> 交给 Agent。内置的几个已经配好；自定义 Agent 填了才会出现在派发栏里。</span><span class="en">A task reaches the agent through <span class="path">{prompt}</span> in its prompt arguments. The built-in agents have it set; a custom agent is offered in the bar once you fill it in.</span></li>
+                <li><span class="zh">Grok 和 Codex 的状态 hook 分别是 <span class="path">~/.grok/hooks/agentdeck.json</span> 和 <span class="path">~/.codex/agentdeck.config.toml</span>。关掉开关就删除；它们在 AgentDeck 之外什么也不做。两个 Agent 都会先让你信任新 hook。</span><span class="en">The status hooks for Grok and Codex are <span class="path">~/.grok/hooks/agentdeck.json</span> and <span class="path">~/.codex/agentdeck.config.toml</span>. Turning the switch off deletes the file, and the hook does nothing outside AgentDeck. Both agents ask you to trust a new hook first.</span></li>
                 <li><span class="zh"><kbd>⌘⇧1</kbd>…<kbd>⌘⇧9</kbd> 按「管理 Agent」里的顺序新建会话。</span><span class="en"><kbd>⌘⇧1</kbd>…<kbd>⌘⇧9</kbd> open a new session, in the order shown in Manage Agents.</span></li>
                 <li><span class="zh">自定义 Agent 可以分别填新对话、恢复对话、继续最近对话的参数。参数里的 <span class="path">{id}</span> 会换成对话 id。</span><span class="en">A custom agent takes separate arguments for a new conversation, resuming one, and continuing the latest. <span class="path">{id}</span> in them becomes the conversation id.</span></li>
                 <li><span class="zh">AgentDeck 在你登录 shell 的 PATH 里找这些命令，所以 nvm、<span class="path">~/.local/bin</span> 里装的也能找到。</span><span class="en">AgentDeck looks for the commands on the PATH of your login shell, so ones installed through nvm or in <span class="path">~/.local/bin</span> are found.</span></li>
@@ -1293,10 +1335,28 @@ Parts of Sources/Ghostty/ are adapted from Ghostty&#x27;s macOS app under that l
         });
         var pane = document.querySelector('.term[data-id="' + id + '"]');
         document.getElementById("peek-body").innerHTML = pane ? pane.innerHTML : "";
+        var row = document.querySelector('.dash-row[data-pick="' + id + '"]');
+        document.querySelector(".peek").classList.toggle("waiting", !!(row && row.querySelector(".dot.wait")));
       }
+
+      // Agents in sidebar order, for "2/4" and its arrows.
+      var agents = rows.length ? ["claude", "codex", "grok", "gemini"] : [];
+      var switcher = document.getElementById("switch");
+      function position() {
+        var i = agents.indexOf(current);
+        document.getElementById("agent-pos").textContent = (i < 0 ? "–" : i + 1) + "/" + agents.length;
+        switcher.hidden = main.classList.contains("show-dash");
+      }
+      function step(delta) {
+        var i = agents.indexOf(current);
+        select(agents[i < 0 ? (delta > 0 ? 0 : agents.length - 1) : (i + delta + agents.length) % agents.length]);
+      }
+      document.getElementById("agent-prev").addEventListener("click", function () { step(-1); });
+      document.getElementById("agent-next").addEventListener("click", function () { step(1); });
 
       function showDash() {
         main.classList.add("show-dash");
+        switcher.hidden = true;
         dashBtn.setAttribute("aria-expanded", "true");
         if (tab) tab.innerHTML = '<span class="zh">Agent 总览 · 4 个 Agent · 1 个等你</span><span class="en">Agents · 4 agents · 1 needs you</span>';
         pick(picked);
@@ -1316,6 +1376,7 @@ Parts of Sources/Ghostty/ are adapted from Ghostty&#x27;s macOS app under that l
         terms.forEach(function (pane) {
           pane.classList.toggle("on", pane.getAttribute("data-id") === id);
         });
+        position();
       }
 
       sessions.forEach(function (btn) {
