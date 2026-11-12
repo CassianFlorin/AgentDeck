@@ -15,6 +15,9 @@ struct TerminalOptions: Codable, Equatable {
     /// `adjust-cell-height`, in percent.
     var cellHeight: Double?
     var fontThicken: Bool?
+    /// Font for Chinese/Japanese/Korean text. nil = PingFang SC (AgentDeck's
+    /// default), "" = leave it to Ghostty's own fallback.
+    var cjkFont: String?
     /// block, bar, underline, block_hollow
     var cursorStyle: String?
     var cursorBlink: Bool?
@@ -44,6 +47,25 @@ enum TerminalSettings {
         }
     }
 
+    static let defaultCJKFont = "PingFang SC"
+
+    /// CJK punctuation, kana, Hangul, ideographs and fullwidth forms.
+    ///
+    /// Left to itself Ghostty only asks macOS (locale-aware) for the
+    /// ideograph block U+4E00–U+9FFF; everything else, CJK punctuation
+    /// included, goes to a generic "monospace fonts first" search that on a
+    /// stock Mac lands on Lantinghei TC Demibold. Once loaded, that font is
+    /// also reused for every ideograph it happens to contain, so text ends up
+    /// a mix of bold Traditional-Chinese glyphs (with centred ，。) and
+    /// PingFang SC. Pinning the whole range to one font fixes both.
+    static let cjkRanges = [
+        "U+2E80-U+2FDF", "U+2FF0-U+2FFF", "U+3000-U+303F", "U+3040-U+30FF",
+        "U+3100-U+312F", "U+3130-U+318F", "U+3190-U+31FF", "U+3200-U+33FF",
+        "U+3400-U+4DBF", "U+4E00-U+9FFF", "U+AC00-U+D7AF", "U+F900-U+FAFF",
+        "U+FE10-U+FE1F", "U+FE30-U+FE4F", "U+FF00-U+FFEF",
+        "U+20000-U+2FA1F",
+    ].joined(separator: ",")
+
     /// Ghostty config lines for the options that were changed.
     static var ghosttyOverlay: String {
         let o = load()
@@ -59,6 +81,8 @@ enum TerminalSettings {
         if let v = o.fontSize { lines.append("font-size = \(v)") }
         if let v = o.cellHeight { lines.append("adjust-cell-height = \(Int(v))%") }
         if let v = o.fontThicken { lines.append("font-thicken = \(b(v))") }
+        let cjk = o.cjkFont ?? defaultCJKFont
+        if !cjk.isEmpty { lines.append("font-codepoint-map = \(cjkRanges)=\(cjk.replacingOccurrences(of: "\"", with: ""))") }
         if let v = o.cursorStyle { lines.append("cursor-style = \(v)") }
         if let v = o.cursorBlink { lines.append("cursor-style-blink = \(b(v))") }
         if let v = o.padding {
@@ -177,6 +201,20 @@ enum MonospacedFonts {
         .filter { !$0.hasPrefix(".") }
         .sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
     }
+
+    /// Installed families that can render Simplified Chinese.
+    static func loadCJK() -> [String] {
+        let fm = NSFontManager.shared
+        let probe = "中文简体，。".unicodeScalars
+        return fm.availableFontFamilies.filter { family in
+            guard !family.hasPrefix("."),
+                  let first = fm.availableMembers(ofFontFamily: family)?.first,
+                  let name = first.first as? String,
+                  let set = NSFont(name: name, size: 12)?.coveredCharacterSet else { return false }
+            return probe.allSatisfy { set.contains($0) }
+        }
+        .sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+    }
 }
 
 // MARK: - View
@@ -193,6 +231,7 @@ final class TerminalSettingsModel: ObservableObject {
     @Published var user = GhosttyUserValues()
     @Published var themes: [GhosttyTheme] = []
     @Published var fonts: [String] = []
+    @Published var cjkFonts: [String] = []
     private var pending: DispatchWorkItem?
     private var loaded = false
 
@@ -206,6 +245,7 @@ final class TerminalSettingsModel: ObservableObject {
         }
         // NSFontManager is happiest on the main thread; it's quick enough.
         fonts = MonospacedFonts.load()
+        cjkFonts = MonospacedFonts.loadCJK()
     }
 
     /// Steppers fire continuously; settle before rebuilding the Ghostty config.
@@ -253,6 +293,17 @@ struct TerminalSettingsView: View {
                 OptionalNumberRow(title: "行高", value: o.cellHeight, follow: "默认",
                                   range: -20...100, step: 5, start: 10) { "\($0 >= 0 ? "+" : "")\(Int($0))%" }
                 TriStatePicker(title: "字体加粗", value: o.fontThicken, follow: model.user.fontThicken)
+                Picker("中文字体", selection: o.cjkFont) {
+                    Text("\(TerminalSettings.defaultCJKFont)（默认）").tag(String?.none)
+                    Text("跟随 Ghostty（系统自动回退）").tag(Optional(""))
+                    Divider()
+                    if let f = model.options.cjkFont, !f.isEmpty, !model.cjkFonts.contains(f) {
+                        Text(f).tag(Optional(f))
+                    }
+                    ForEach(model.cjkFonts.filter { $0 != TerminalSettings.defaultCJKFont }, id: \.self) { f in
+                        Text(f).tag(Optional(f))
+                    }
+                }
             }
 
             Section("光标") {
