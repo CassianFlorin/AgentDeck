@@ -33,7 +33,6 @@ Troubleshooting:
 ## Releasing
 
 - **CI** (`.github/workflows/ci.yml`) builds pull requests (and runs by hand from the Actions tab). Pushes to main are not built, since a release tag runs a full Release build. GhosttyKit is cached by submodule commit and Zig version.
-- **Pages** (`.github/workflows/pages.yml`) publishes the landing page in `site/` to https://cassianflorin.github.io/AgentDeck/ whenever `site/` changes on main. It's a single static file: preview it with `python3 -m http.server --directory site`.
 - **Release** (`.github/workflows/release.yml`) runs on a `v*` tag. It builds, signs with Developer ID, notarizes and staples the app and the DMG, then publishes a GitHub Release with the DMG, a ZIP, SHA-256 checksums and `appcast.xml`. The appcast is the in-app update feed, and both it and the ZIP are EdDSA-signed. The version comes from the tag, so `project.yml` doesn't need a bump:
 
   ```bash
