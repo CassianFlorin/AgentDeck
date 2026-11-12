@@ -592,6 +592,37 @@
     .limits strong { display: block; margin-bottom: 6px; color: var(--ink); font-size: 14px; }
     .limits span { color: var(--muted); font-size: 13px; line-height: 1.5; }
 
+    .fold { margin-top: 28px; border: 1px solid var(--line); border-radius: 14px; background: rgba(14, 24, 40, 0.5); backdrop-filter: blur(14px) saturate(1.2); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14); }
+    .fold > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; cursor: pointer; color: var(--ink); font-size: 17px; font-weight: 600; list-style: none; border-radius: 14px; }
+    .fold > summary::-webkit-details-marker { display: none; }
+    .fold > summary::after { content: "+"; color: var(--mint); font-size: 20px; font-weight: 400; line-height: 1; }
+    .fold[open] > summary::after { content: "−"; }
+    .fold > summary:hover { background: rgba(255, 255, 255, 0.035); }
+    .fold-body { padding: 0 20px 20px; }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px 40px; }
+    .detail-grid h4 { margin: 0 0 6px; color: var(--mint); font-size: 13px; font-weight: 600; }
+    .detail-grid li { padding: 5px 0; font-size: 15px; line-height: 1.6; }
+    .detail-grid li + li { border-top: 1px solid rgba(232, 238, 248, 0.06); }
+    .code {
+      margin: 12px 0 0;
+      padding: 14px 16px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: rgba(0, 0, 0, 0.32);
+      color: #e7eef8;
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.7;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    .code .dim { color: #8b98b0; }
+    .steps p { margin-top: 12px; max-width: 46em; }
+    .legal { margin: 0; color: var(--muted); font-family: var(--mono); font-size: 12px; line-height: 1.65; white-space: pre-wrap; }
+    .footer .fold { margin-top: 24px; }
+    .footer .fold > summary { font-size: 14px; padding: 12px 16px; }
+    .footer .fold-body { padding: 0 16px 16px; }
+
     .cta { text-align: left; }
     .cta .actions { margin-top: 22px; }
     .cta p { margin-top: 12px; max-width: 38em; }
@@ -640,7 +671,7 @@
     @media (max-width: 760px) {
       .wrap { width: min(1120px, calc(100% - 28px)); }
       .status-list li, .config, .keyrow { grid-template-columns: 1fr; }
-      .split, .keys, .limits, .points { grid-template-columns: 1fr; }
+      .split, .keys, .limits, .points, .detail-grid { grid-template-columns: 1fr; }
       .keys { grid-template-rows: none; grid-auto-flow: row; }
       .workspace, .window.show-monitor .workspace { grid-template-columns: 1fr; }
       .sidebar { border-right: 0; border-bottom: 1px solid var(--line); }
@@ -1023,7 +1054,61 @@
           <li><span class="zh">性能面板里还有 Docker。可以看容器日志、进容器开一个 shell，也可以启动、停止或重启。从容器打开的会话，下次启动 App 时不会恢复。</span><span class="en">The performance panel also lists Docker containers. You can open logs, a shell inside a container, and start, stop, or restart one. Sessions opened from a container are not restored on the next launch.</span></li>
           <li><span class="zh">每天会查一次更新，菜单里也可以自己检查。更新来自 GitHub Releases，要有 EdDSA 签名，并且 Developer ID 得和当前这个 App 一致。如果有 Agent 正处在这一轮里，重启前会先问你。</span><span class="en">AgentDeck checks for an update once a day, and you can check from the menu. Updates come from GitHub Releases. Each one is EdDSA-signed and must carry the same Developer ID as the app you have. If an agent is mid-turn, it asks before restarting.</span></li>
         </ul>
-        <p class="footnote inline"><span class="zh">分屏移动、查找步进和其他细节在 <a href="https://github.com/CassianFlorin/AgentDeck/blob/main/docs/FEATURES.md">功能说明</a> 里。</span><span class="en">Moving between panes, stepping through matches, and the rest are in the <a href="https://github.com/CassianFlorin/AgentDeck/blob/main/docs/FEATURES.md">feature notes</a>.</span></p>
+        <details class="fold" id="details">
+          <summary><span class="zh">全部细节</span><span class="en">All the details</span></summary>
+          <div class="fold-body detail-grid">
+            <div>
+              <h4><span class="zh">窗格</span><span class="en">Panes</span></h4>
+              <ul>
+                <li><span class="zh"><kbd>⌘[</kbd><kbd>⌘]</kbd> 或 <kbd>⌘⌥←↑↓→</kbd> 在窗格之间移动。</span><span class="en"><kbd>⌘[</kbd><kbd>⌘]</kbd> or <kbd>⌘⌥←↑↓→</kbd> move between panes.</span></li>
+                <li><span class="zh"><kbd>⌘⌃←↑↓→</kbd> 调整大小，<kbd>⌃⌘=</kbd> 均分，<kbd>⌘W</kbd> 关闭当前窗格。</span><span class="en"><kbd>⌘⌃←↑↓→</kbd> resize, <kbd>⌃⌘=</kbd> equalizes, <kbd>⌘W</kbd> closes the pane.</span></li>
+                <li><span class="zh">新窗格沿用当前文件夹。布局在重启 App 后恢复。</span><span class="en">A new pane starts in the current folder. Layouts are restored on relaunch.</span></li>
+              </ul>
+            </div>
+            <div>
+              <h4><span class="zh">查找与回滚</span><span class="en">Find and scrollback</span></h4>
+              <ul>
+                <li><span class="zh"><kbd>↩</kbd><kbd>⇧↩</kbd> 或 <kbd>⌘G</kbd><kbd>⇧⌘G</kbd> 在匹配之间前后跳，旁边有匹配计数。</span><span class="en"><kbd>↩</kbd><kbd>⇧↩</kbd> or <kbd>⌘G</kbd><kbd>⇧⌘G</kbd> step through matches, with a match counter.</span></li>
+                <li><span class="zh"><kbd>⌘E</kbd> 用选中的文字查找。</span><span class="en"><kbd>⌘E</kbd> searches for the current selection.</span></li>
+                <li><span class="zh"><kbd>⌘↑</kbd><kbd>⌘↓</kbd> 在提示符之间跳。滚动指示条可以直接拖。</span><span class="en"><kbd>⌘↑</kbd><kbd>⌘↓</kbd> jump between prompts. The scroll indicator can be dragged.</span></li>
+              </ul>
+            </div>
+            <div>
+              <h4><span class="zh">Agent</span><span class="en">Agents</span></h4>
+              <ul>
+                <li><span class="zh"><kbd>⌘⇧1</kbd>…<kbd>⌘⇧9</kbd> 按「管理 Agent」里的顺序新建会话。</span><span class="en"><kbd>⌘⇧1</kbd>…<kbd>⌘⇧9</kbd> open a new session, in the order shown in Manage Agents.</span></li>
+                <li><span class="zh">自定义 Agent 可以分别填新对话、恢复对话、继续最近对话的参数。参数里的 <span class="path">{id}</span> 会换成对话 id。</span><span class="en">A custom agent takes separate arguments for a new conversation, resuming one, and continuing the latest. <span class="path">{id}</span> in them becomes the conversation id.</span></li>
+                <li><span class="zh">AgentDeck 在你登录 shell 的 PATH 里找这些命令，所以 nvm、<span class="path">~/.local/bin</span> 里装的也能找到。</span><span class="en">AgentDeck looks for the commands on the PATH of your login shell, so ones installed through nvm or in <span class="path">~/.local/bin</span> are found.</span></li>
+              </ul>
+            </div>
+            <div>
+              <h4><span class="zh">服务器</span><span class="en">Servers</span></h4>
+              <ul>
+                <li><span class="zh">编辑服务器时有命令预览和「测试连接」，会显示系统、有没有 tmux 或 zellij、已有哪些会话。</span><span class="en">The server editor shows a command preview and a Test Connection button, which reports the OS, whether tmux or zellij is installed, and existing sessions.</span></li>
+                <li><span class="zh">可以按服务器指定用 tmux 或 zellij，也可以附加到一个已有的会话。</span><span class="en">You can force tmux or zellij per server, or attach to an existing session.</span></li>
+                <li><span class="zh">右键 <span class="path">~/.ssh/config</span> 里的条目可以把它从列表里拿掉。只是在 AgentDeck 里隐藏，文件不会被改，之后可以恢复。</span><span class="en">Right-click an entry from <span class="path">~/.ssh/config</span> to remove it from the list. It is only hidden in AgentDeck; the file is not edited, and hidden entries can be restored.</span></li>
+                <li><span class="zh">Ghostty 的 ssh 集成照常可用（<span class="path">ssh-terminfo</span>、<span class="path">ssh-env</span>）。</span><span class="en">The ssh integration from Ghostty works as usual (<span class="path">ssh-terminfo</span>, <span class="path">ssh-env</span>).</span></li>
+              </ul>
+            </div>
+            <div>
+              <h4><span class="zh">性能面板</span><span class="en">Performance panel</span></h4>
+              <ul>
+                <li><span class="zh">CPU（每核，服务器上还有负载）、内存、GPU（Apple GPU，服务器上通过 <span class="path">nvidia-smi</span> 读 NVIDIA）、网络、磁盘。</span><span class="en">CPU (per core, plus load average on servers), memory, GPU (Apple GPU, or NVIDIA through <span class="path">nvidia-smi</span> on servers), network, and disk.</span></li>
+                <li><span class="zh">「会话占用」：在 Mac 上是每个会话的进程树，在服务器上是最忙的几个进程。</span><span class="en">Session usage: the process tree of each session on the Mac, the busiest processes on a server.</span></li>
+                <li><span class="zh">显示哪些、多久刷新一次（1、2 或 5 秒）可以在面板菜单里选。</span><span class="en">Choose which monitors to show and how often they refresh (1, 2, or 5 seconds) from the panel menu.</span></li>
+                <li><span class="zh">面板默认关着。关着或窗口隐藏时不采样，也不保持连接。</span><span class="en">The panel is closed by default. While it is closed or the window is hidden, nothing is sampled and no connection is kept.</span></li>
+              </ul>
+            </div>
+            <div>
+              <h4><span class="zh">设置</span><span class="en">Settings</span></h4>
+              <ul>
+                <li><span class="zh">终端：配色主题（Ghostty 自带的全部主题加你自己的，带色块和搜索）、字体、字号、行高、光标样式和闪烁、内边距。</span><span class="en">Terminal: color theme (every theme bundled with Ghostty plus your own, with swatches and search), font, size, line height, cursor style and blink, padding.</span></li>
+                <li><span class="zh">还有 Option 当作 Alt、选中即复制、打字时隐藏鼠标。改动带实时预览。</span><span class="en">Also Option as Alt, copy on select, and hiding the mouse while typing. Changes preview live.</span></li>
+                <li><span class="zh">外观：背景不透明度 30–100%，以及模糊程度。只在 AgentDeck 里生效。</span><span class="en">Appearance: background opacity from 30 to 100%, and blur. This applies inside AgentDeck only.</span></li>
+              </ul>
+            </div>
+          </div>
+        </details>
       </div>
     </section>
 
@@ -1044,8 +1129,30 @@
             <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.5v7.2l2.6-2.6 1.1 1.1L8 11.9 4.3 7.2l1.1-1.1L8 8.7V1.5H8zM3 13h10v1.5H3z"/></svg>
             <span class="zh">打开 Releases</span><span class="en">Open Releases</span>
           </a>
-          <a class="btn ghost" href="https://github.com/CassianFlorin/AgentDeck/blob/main/docs/DEVELOPMENT.md"><span class="zh">从源码构建</span><span class="en">Build from source</span></a>
+          <a class="btn ghost" href="#build"><span class="zh">从源码构建</span><span class="en">Build from source</span></a>
         </div>
+        <details class="fold steps" id="build">
+          <summary><span class="zh">从源码构建</span><span class="en">Build from source</span></summary>
+          <div class="fold-body">
+            <p class="zh">需要 macOS 14 或更高、Xcode 16 或更高、<a href="https://github.com/yonaskolb/XcodeGen">XcodeGen</a>，以及 Zig（版本看 <span class="path">vendor/ghostty/build.zig.zon</span> 里的 <span class="path">minimum_zig_version</span>）。</p>
+            <p class="en">You need macOS 14 or later, Xcode 16 or later, <a href="https://github.com/yonaskolb/XcodeGen">XcodeGen</a>, and Zig (the version named by <span class="path">minimum_zig_version</span> in <span class="path">vendor/ghostty/build.zig.zon</span>).</p>
+<pre class="code">git clone --recursive https://github.com/CassianFlorin/AgentDeck.git
+cd AgentDeck
+scripts/build-ghosttykit.sh      <span class="dim"># <span class="zh">构建 GhosttyKit，第一次约 5 分钟</span><span class="en">builds GhosttyKit, about 5 minutes the first time</span></span>
+scripts/fetch-sparkle.sh         <span class="dim"># <span class="zh">下载 Sparkle 更新框架</span><span class="en">downloads the Sparkle updater</span></span>
+xcodegen
+open AgentDeck.xcodeproj</pre>
+            <p class="zh">Debug 配置是 ad-hoc 签名，不需要证书。Xcode 26 及以后，Metal 编译器是单独的组件，装一次就行：</p>
+            <p class="en">The Debug configuration is ad-hoc signed, so no certificate is needed. On Xcode 26 and later the Metal compiler is a separate component; install it once:</p>
+<pre class="code">xcodebuild -downloadComponent MetalToolchain</pre>
+            <p class="zh">如果 Zig 自己下载依赖失败（走 HTTP 代理时报 400，或者报 <span class="path">hash mismatch</span>、<span class="path">DirNotEmpty</span>），先用 curl 把依赖取下来，再离线构建：</p>
+            <p class="en">If Zig fails to fetch its dependencies (a 400 behind an HTTP proxy, or <span class="path">hash mismatch</span> / <span class="path">DirNotEmpty</span>), fetch them with curl first and build offline:</p>
+<pre class="code">scripts/prefetch-zig-deps.sh
+ZIG_SYSTEM_DIR=vendor/zig-deps/pkg scripts/build-ghosttykit.sh</pre>
+            <p class="zh">构建被打断之后报 <span class="path">hash mismatch</span>，用 <span class="path">CLEAN=1 scripts/build-ghosttykit.sh</span> 重来。</p>
+            <p class="en">For a <span class="path">hash mismatch</span> after an interrupted build, run <span class="path">CLEAN=1 scripts/build-ghosttykit.sh</span>.</p>
+          </div>
+        </details>
       </div>
     </section>
   </main>
@@ -1060,12 +1167,44 @@
         <p class="fine zh">终端引擎是 <a href="https://ghostty.org">Ghostty</a>，作者是 Mitchell Hashimoto 与各位贡献者，MIT 许可。</p>
         <p class="fine en">The terminal engine is <a href="https://ghostty.org">Ghostty</a> by Mitchell Hashimoto and contributors, MIT.</p>
         <div class="foot-links">
-          <a href="https://github.com/CassianFlorin/AgentDeck/blob/main/docs/FEATURES.md"><span class="zh">功能说明</span><span class="en">Features</span></a>
-          <a href="https://github.com/CassianFlorin/AgentDeck/blob/main/docs/DEVELOPMENT.md"><span class="zh">从源码构建</span><span class="en">Build</span></a>
+          <a href="#details"><span class="zh">全部细节</span><span class="en">Details</span></a>
+          <a href="#build"><span class="zh">从源码构建</span><span class="en">Build</span></a>
+          <a href="#license"><span class="zh">许可证</span><span class="en">License</span></a>
           <a href="https://github.com/CassianFlorin/AgentDeck">GitHub</a>
-          <a href="https://github.com/CassianFlorin/AgentDeck/blob/main/LICENSE"><span class="zh">许可证</span><span class="en">License</span></a>
         </div>
       </div>
+    </div>
+    <div class="wrap">
+      <details class="fold" id="license">
+        <summary><span class="zh">许可证全文（MIT）</span><span class="en">License text (MIT)</span></summary>
+        <div class="fold-body"><pre class="legal">MIT License
+
+Copyright (c) 2026 CassianFlorin
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the &quot;Software&quot;), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---------------------------------------------------------------------------
+
+This project embeds libghostty from Ghostty (https://github.com/ghostty-org/ghostty),
+Copyright (c) 2024 Mitchell Hashimoto, Ghostty contributors, MIT License.
+Parts of Sources/Ghostty/ are adapted from Ghostty&#x27;s macOS app under that license.</pre></div>
+      </details>
     </div>
   </footer>
 
@@ -1198,6 +1337,19 @@
         });
       });
       pick(picked);
+
+      function unfold() {
+        var target = location.hash.length > 1 && document.getElementById(location.hash.slice(1));
+        if (target && target.tagName === "DETAILS") target.open = true;
+      }
+      window.addEventListener("hashchange", unfold);
+      document.querySelectorAll('a[href^="#"]').forEach(function (a) {
+        a.addEventListener("click", function () {
+          var target = document.getElementById(a.getAttribute("href").slice(1));
+          if (target && target.tagName === "DETAILS") target.open = true;
+        });
+      });
+      unfold();
 
       perf.addEventListener("click", function () {
         var open = win.classList.toggle("show-monitor");
