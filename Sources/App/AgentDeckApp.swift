@@ -53,6 +53,7 @@ struct AgentDeckApp: App {
 struct AppCommands: Commands {
     @ObservedObject var workspace: Workspace
     @ObservedObject private var updater = AppUpdater.shared
+    @AppStorage(MonitorSettings.visibleKey) private var showMonitor = false
 
     private var hasSession: Bool { workspace.selected != nil }
 
@@ -78,6 +79,11 @@ struct AppCommands: Commands {
             Button("恢复之前的对话…") { workspace.showResume() }
                 .keyboardShortcut("o", modifiers: [.command, .shift])
             Button("管理 Agent…") { workspace.managingAgents = true }
+        }
+
+        CommandGroup(after: .sidebar) {
+            Button(showMonitor ? "隐藏性能监视器" : "显示性能监视器") { showMonitor.toggle() }
+                .keyboardShortcut("p", modifiers: [.command, .option])
         }
 
         CommandGroup(after: .textEditing) {

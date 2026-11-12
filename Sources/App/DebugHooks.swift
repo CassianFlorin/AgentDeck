@@ -14,12 +14,14 @@ import SwiftUI
 ///   find:<text>                open the find bar with this text
 ///   session:<n>                select session n (1-based, sidebar order)
 ///   hosts                      log saved hosts and their ssh command lines
-///   connect:<host name> / reconnect
+///   connect:<host name or ssh config alias> / reconnect
 ///   screen                     log the focused pane's visible text (no screenshot needed)
 ///   history:<agentID>:<dir>    log the newest conversations found for that agent and folder
 ///   agents                     log the agent catalog and install detection
 ///   ui:agents | ui:resume[:<agentID>:<dir>] | ui:close   open/close the agent manager / resume sheet
 ///   restart                    restart the selected session's agent (resume if known)
+///   monitor:show|hide|<kinds>  open/close the 性能 panel, or set its monitors (e.g. cpu,sessions)
+///   monitor                    log the 性能 panel's latest readings (monitor:script dumps the server script)
 ///   dump                       write sessions/split trees to ~/Library/Caches/AgentDeck/debug.log
 ///
 /// From a shell:
@@ -91,6 +93,38 @@ enum DebugHooks {
             if parts.first == "resume" {
                 workspace.showResume(directory: parts.count > 2 ? parts[2] : nil, agentID: parts.count > 1 ? parts[1] : nil)
             }
+        case "monitor":
+            let d = UserDefaults.standard
+            switch arg {
+            case "show": d.set(true, forKey: MonitorSettings.visibleKey)
+            case "hide": d.set(false, forKey: MonitorSettings.visibleKey)
+            case "script":
+                log(MonitorScript.build(kinds: Set(MonitorKind.allCases), interval: 1, system: true))
+            case "":
+                let m = PerformanceMonitor.shared, r = m.readings
+                log("monitor running=\(m.isRunning) kinds=\(d.string(forKey: MonitorSettings.kindsKey) ?? "-")")
+                if let c = r.cpu { log("  cpu \(Fmt.percent(c.total)) user=\(Fmt.percent(c.user)) sys=\(Fmt.percent(c.system)) cores=\(c.perCore.count)") }
+                if let m = r.memory { log("  mem \(Fmt.bytes(m.used))/\(Fmt.bytes(m.total)) \(m.extras.map { "\($0.label)=\(Fmt.bytes($0.bytes))" }.joined(separator: " ")) swap=\(Fmt.bytes(m.swapUsed)) p=\(m.pressure)") }
+                if let g = r.gpu { log("  gpu \(Fmt.percent(g.utilization)) mem=\(g.memoryInUse.map(Fmt.bytes) ?? "-")") }
+                if let n = r.network { log("  net in=\(Fmt.rate(n.a)) out=\(Fmt.rate(n.b))") }
+                if let k = r.disk { log("  disk r=\(k.rate.map { Fmt.rate($0.a) } ?? "-") w=\(k.rate.map { Fmt.rate($0.b) } ?? "-") free=\(k.free.map(Fmt.bytes) ?? "-")") }
+                log("  target=\(m.target.host?.name ?? "local") error=\(m.remoteError ?? "-")")
+                if let p = r.processes { log("  procs " + p.map { "\($0.name)=\(Fmt.cpu($0.cpu))" }.joined(separator: " ")) }
+                if let k = r.docker {
+                    log("  docker installed=\(k.installed) error=\(k.error ?? "-") \(k.runningCount)/\(k.containers.count)")
+                    for c in k.containers { log("    \(c.name) \(c.state) cpu=\(c.cpu.map(Fmt.cpu) ?? "-") mem=\(c.memory ?? "-")") }
+                }
+                if let s = r.sessions {
+                    log("  procs=\(s.totalProcesses) cpu=\(Fmt.cpu(s.totalCPU)) mem=\(Fmt.bytes(s.totalMemory)) app=\(Fmt.cpu(s.appCPU))/\(Fmt.bytes(s.appMemory))")
+                    for row in s.rows { log("    \(row.name) \(Fmt.cpu(row.cpu)) \(Fmt.bytes(row.memory)) n=\(row.processes)") }
+                }
+                log("  history " + m.history.map { "\($0.key)=\($0.value.values.count)" }.sorted().joined(separator: " "))
+            default: d.set(arg, forKey: MonitorSettings.kindsKey)
+            }
+        case "dockerlogs":
+            // dockerlogs:<container> — same as 查看日志 in the 性能 panel's Docker card.
+            let host = workspace.selected.flatMap(workspace.host(for:))
+            workspace.openCommand(DockerControl.logsCommand(arg), title: "日志 · \(arg)", on: host)
         case "restart":
             workspace.selected.map(workspace.restartAgent)
         case "hosts":
@@ -98,6 +132,7 @@ enum DebugHooks {
             log("aliases \(workspace.sshConfigAliases.count)")
         case "connect":
             if let h = workspace.hosts.first(where: { $0.name == arg }) { workspace.connect(h) }
+            else if workspace.sshConfigAliases.contains(arg) { workspace.connect(alias: arg) }
         case "edithost":
             workspace.editingHost = workspace.hosts.first(where: { $0.name == arg }) ?? RemoteHost(name: "", host: "")
         case "inspect":
