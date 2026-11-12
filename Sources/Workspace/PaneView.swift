@@ -15,6 +15,7 @@ final class PaneView: NSView {
     private let scroller = ScrollIndicator()
     private let dim = PassthroughView()
     private var scrollState: (total: UInt64, offset: UInt64, length: UInt64) = (0, 0, 0)
+    private var appearanceObserver: NSObjectProtocol?
 
     var isDimmed = false {
         didSet { dim.isHidden = !isDimmed }
@@ -36,6 +37,12 @@ final class PaneView: NSView {
         dim.autoresizingMask = [.width, .height]
         dim.isHidden = true
         addSubview(dim)
+        // A theme change in 设置 → 终端 changes the unfocused-split fill.
+        appearanceObserver = NotificationCenter.default.addObserver(
+            forName: AppearanceSettings.changed, object: nil, queue: .main
+        ) { [weak self] _ in
+            self?.dim.layer?.backgroundColor = GhosttyRuntime.shared.unfocusedSplitOverlay.cgColor
+        }
 
         scroller.onScrollToRow = { [weak self] row in
             self?.terminal.performBindingAction("scroll_to_row:\(row)")
@@ -60,6 +67,8 @@ final class PaneView: NSView {
 
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("not supported") }
+
+    deinit { appearanceObserver.map(NotificationCenter.default.removeObserver) }
 
     override func layout() {
         super.layout()

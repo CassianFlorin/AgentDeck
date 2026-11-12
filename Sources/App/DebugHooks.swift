@@ -1,5 +1,6 @@
 #if DEBUG
 import AppKit
+import SwiftUI
 
 /// Debug-only remote control, so UI can be exercised without synthetic
 /// keystrokes (which land in whatever app is frontmost). Post a distributed
@@ -77,9 +78,15 @@ enum DebugHooks {
                 log("agent \(a.id) installed=\(String(describing: workspace.catalog.isInstalled(a))) path=\(workspace.catalog.path(of: a) ?? "-")")
             }
         case "ui":
-            // ui:agents | ui:resume[:<agentID>:<dir>]
+            // ui:agents | ui:terminal-settings | ui:resume[:<agentID>:<dir>]
             let parts = arg.split(separator: ":", maxSplits: 2).map(String.init)
             if parts.first == "agents" { workspace.managingAgents = true }
+            if parts.first == "terminal-settings" {
+                // The Settings scene can't be opened from here; host the page directly.
+                let w = NSWindow(contentViewController: NSHostingController(rootView: TerminalSettingsView()))
+                w.title = "终端设置 (debug)"
+                w.makeKeyAndOrderFront(nil)
+            }
             if parts.first == "close" { workspace.managingAgents = false; workspace.resumeRequest = nil }
             if parts.first == "resume" {
                 workspace.showResume(directory: parts.count > 2 ? parts[2] : nil, agentID: parts.count > 1 ? parts[1] : nil)
