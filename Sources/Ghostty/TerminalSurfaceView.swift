@@ -51,15 +51,12 @@ final class TerminalSurfaceView: NSView {
         createSurface(workingDirectory: workingDirectory, env: env,
                       fontSize: nil, context: GHOSTTY_SURFACE_CONTEXT_WINDOW)
         commonInit()
-        if let initialInput, !initialInput.isEmpty {
-            pendingInput = initialInput
-            // Shells without shell integration never send OSC 7; don't wait forever.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in self?.flushPendingInput() }
-        }
+        queueInitialInput(initialInput)
     }
 
     /// A new split next to `source`: same cwd and font size (incl. zoom level).
-    init(splittingFrom source: TerminalSurfaceView) {
+    /// `initialInput` is typed once the shell is up, as in the other initializer.
+    init(splittingFrom source: TerminalSurfaceView, initialInput: String? = nil) {
         super.init(frame: source.bounds)
         var dir = source.currentDirectory
         var fontSize: Float?
@@ -72,6 +69,14 @@ final class TerminalSurfaceView: NSView {
         createSurface(workingDirectory: dir, env: [:],
                       fontSize: fontSize, context: GHOSTTY_SURFACE_CONTEXT_SPLIT)
         commonInit()
+        queueInitialInput(initialInput)
+    }
+
+    private func queueInitialInput(_ input: String?) {
+        guard let input, !input.isEmpty else { return }
+        pendingInput = input
+        // Shells without shell integration never send OSC 7; don't wait forever.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in self?.flushPendingInput() }
     }
 
     private func commonInit() {

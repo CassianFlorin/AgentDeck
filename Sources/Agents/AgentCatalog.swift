@@ -22,6 +22,12 @@ final class AgentCatalog: ObservableObject {
 
     func agent(id: String) -> AgentKind? { agents.first { $0.id == id } }
 
+    /// The agent a command line starts, judged by its first word ("codex resume …" → Codex).
+    func agent(runBy commandLine: String) -> AgentKind? {
+        guard let word = commandLine.split(separator: " ").first.map(String.init) else { return nil }
+        return agents.first { $0.isAgent && $0.executable == word }
+    }
+
     /// nil while unknown, true/false once detection finished. Shell is always available.
     func isInstalled(_ agent: AgentKind) -> Bool? {
         guard let exe = agent.executable else { return true }

@@ -10,7 +10,12 @@ struct ContentView: View {
                 .navigationSplitViewColumnWidth(min: 200, ideal: 240, max: 360)
         } detail: {
             Group {
-                if let session = workspace.selected {
+                if workspace.showingDashboard {
+                    AgentDashboard()
+                        .navigationTitle("Agent 总览")
+                        .navigationSubtitle(dashboardSubtitle)
+                        .toolbarBackground(.hidden, for: .windowToolbar)
+                } else if let session = workspace.selected {
                     SessionHost(session: session)
                         .ignoresSafeArea(.container, edges: .bottom)
                         .navigationTitle(session.displayName)
@@ -31,6 +36,12 @@ struct ContentView: View {
             }
         }
         .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { workspace.showingDashboard.toggle() } label: {
+                    Label("Agent 总览", systemImage: "list.bullet.rectangle")
+                }
+                .help(workspace.showingDashboard ? "回到会话（⇧⌘A）" : "Agent 总览：所有 Agent 的状态（⇧⌘A）")
+            }
             ToolbarItem(placement: .primaryAction) { NewSessionMenu() }
             ToolbarItem(placement: .primaryAction) {
                 Button { showMonitor.toggle() } label: {
@@ -61,6 +72,15 @@ struct ContentView: View {
         .sheet(item: $workspace.pickingSessionFor) { host in
             RemoteSessionPicker(host: host) { name in workspace.connect(host, sessionName: name) }
         }
+    }
+}
+
+extension ContentView {
+    /// "3 个 Agent · 1 个等你"
+    fileprivate var dashboardSubtitle: String {
+        let agents = workspace.agentEntries
+        let waiting = agents.filter { $0.state == .waiting }.count
+        return waiting > 0 ? "\(agents.count) 个 Agent · \(waiting) 个等你" : "\(agents.count) 个 Agent"
     }
 }
 

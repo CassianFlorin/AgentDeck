@@ -53,12 +53,7 @@ final class AppUpdater: NSObject, ObservableObject, SPUUpdaterDelegate {
         untilInvokingBlock installHandler: @escaping () -> Void
     ) -> Bool {
         MainActor.assumeIsolated {
-            let busy = (workspace?.sessions ?? []).filter {
-                switch $0.activity {
-                case .working, .waiting: return true
-                default: return false
-                }
-            }
+            let busy = (workspace?.sessions ?? []).flatMap(\.agentPanes).filter { $0.agent?.activity.isBusy == true }
             guard !busy.isEmpty else { return false }
 
             let alert = NSAlert()

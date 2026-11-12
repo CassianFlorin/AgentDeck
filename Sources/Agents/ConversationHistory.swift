@@ -95,11 +95,12 @@ enum ConversationHistory {
 
     /// The Codex session started in `directory` after `since`, if it has been written yet.
     /// Codex can't be told an id up front, so we find it afterwards.
-    static func findNewCodexSession(directory: String, since: Date) -> String? {
+    /// `excluding`: conversations already claimed by other panes.
+    static func findNewCodexSession(directory: String, since: Date, excluding: Set<String> = []) -> String? {
         let dir = (directory as NSString).standardizingPath
         let candidates = codexRollouts(modifiedAfter: since.addingTimeInterval(-5))
             .compactMap { url -> (String, Date)? in
-                guard let meta = codexMeta(url), meta.cwd == dir, !meta.isSubAgent,
+                guard let meta = codexMeta(url), meta.cwd == dir, !meta.isSubAgent, !excluding.contains(meta.id),
                       meta.started >= since.addingTimeInterval(-5) else { return nil }
                 return (meta.id, meta.started)
             }

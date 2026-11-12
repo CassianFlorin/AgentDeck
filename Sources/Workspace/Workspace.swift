@@ -32,6 +32,8 @@ final class Workspace: ObservableObject {
     /// Set to open the "resume a conversation" sheet.
     @Published var resumeRequest: ResumeRequest?
     @Published var managingAgents = false
+    /// The Agent 总览 takes the place of the selected session's terminal.
+    @Published var showingDashboard = false
     private var hookObserver: NSObjectProtocol?
 
     private var cancellables: [AgentSession.ID: AnyCancellable] = [:]
@@ -64,8 +66,11 @@ final class Workspace: ObservableObject {
         ) { [weak self] note in
             guard let event = AgentHook.parse(note.object) else { return }
             MainActor.assumeIsolated {
-                self?.sessions.first { $0.pane(withID: event.paneID) != nil }?
-                    .handleHook(event.name, message: event.message)
+                for session in self?.sessions ?? [] {
+                    guard let pane = session.pane(withID: event.paneID) else { continue }
+                    session.handleHook(event.name, message: event.message, in: pane)
+                    break
+                }
             }
         }
     }
@@ -86,19 +91,23 @@ final class Workspace: ObservableObject {
                 continue
             }
             let kind = catalog.agent(id: s.kindID) ?? .shell
-            // Agents come back *in the same conversation*.
-            let (line, conversationID): (String?, String?)
-            if let id = s.conversationID, let resume = kind.resumeLine(id) {
-                (line, conversationID) = (resume, id)
-            } else if s.conversationID == nil, let cont = kind.continueLine(), s.hadAgent == true {
-                (line, conversationID) = (cont, nil)
+            // Agents come back *in the same conversation*, each in its own pane.
+            // Files from before agents were per pane only know the session's agent.
+            let primary = s.layout.flatMap(PaneNode.primaryLeaf(of:))
+            let first: AgentLaunch?
+            if let id = primary?.agentID {
+                first = relaunch(agentID: id, conversationID: primary?.conversationID, hadAgent: primary?.hadAgent)
             } else {
-                (line, conversationID) = kind.newConversation()
+                first = relaunch(agentID: kind.id, conversationID: s.conversationID, hadAgent: s.hadAgent)
             }
             let session = AgentSession(kind: kind, directory: s.directory, customName: s.customName,
-                                       group: s.group, layout: s.layout,
-                                       startCommand: line.map { withHooks($0, kind) },
-                                       conversationID: conversationID)
+                                       group: s.group, layout: s.layout, agent: first,
+                                       restoreAgent: { [unowned self] leaf in
+                                           leaf.agentID.flatMap {
+                                               self.relaunch(agentID: $0, conversationID: leaf.conversationID,
+                                                             hadAgent: leaf.hadAgent)
+                                           }
+                                       })
             add(session, select: false)
         }
         // Nothing to restore (first launch, or everything was closed): start in a shell at ~.
@@ -113,15 +122,8 @@ final class Workspace: ObservableObject {
     @discardableResult
     func open(kind: AgentKind, directory: String, group: String? = nil, select: Bool = true,
               resume: Conversation? = nil) -> AgentSession {
-        let (line, conversationID): (String?, String?)
-        if let resume, let r = kind.resumeLine(resume.id) {
-            (line, conversationID) = (r, resume.id)
-        } else {
-            (line, conversationID) = kind.newConversation()
-        }
         let session = AgentSession(kind: kind, directory: directory, group: group,
-                                   startCommand: line.map { withHooks($0, kind) },
-                                   conversationID: conversationID)
+                                   agent: launch(kind, resume: resume?.id))
         if let resume { session.customName = resume.title }
         add(session, select: select)
         remember(directory)
@@ -132,6 +134,7 @@ final class Workspace: ObservableObject {
     private func add(_ session: AgentSession, select: Bool) {
         session.isFrontmost = { [weak self, weak session] in self?.selectedID == session?.id }
         session.onWorkspaceEvent = { [weak self] session, event in self?.handle(event, from: session) }
+        session.detectAgent = { [weak self] title in self?.catalog.agent(runBy: title) }
         // Re-publish child changes so sidebar and Dock badge update.
         cancellables[session.id] = session.objectWillChange.sink { [weak self] _ in
             DispatchQueue.main.async {
@@ -142,7 +145,7 @@ final class Workspace: ObservableObject {
         }
         if let g = session.group, !groups.contains(g) { groups.append(g) }
         sessions.append(session)
-        if select { selectedID = session.id }
+        if select { self.select(session) }
     }
 
     /// Sessions opened for a one-off command (container logs / shell from the
@@ -191,16 +194,55 @@ final class Workspace: ObservableObject {
         return extra.isEmpty ? line : "\(line) \(extra)"
     }
 
-    /// After the agent exited: start it again, back in the same conversation if we know it.
-    func restartAgent(_ session: AgentSession) {
-        let kind = session.kind
-        guard kind.isAgent else { return }
-        if let id = session.conversationID, let line = kind.resumeLine(id) {
-            session.runInAgentPane(withHooks(line, kind), conversationID: id)
-        } else {
-            let (line, id) = kind.newConversation()
-            if let line { session.runInAgentPane(withHooks(line, kind), conversationID: id) }
+    /// How to start `kind`: in the conversation `resume` if it can go back to
+    /// it, else in a new one. nil for a plain shell.
+    private func launch(_ kind: AgentKind, resume id: String? = nil) -> AgentLaunch? {
+        if let id, let line = kind.resumeLine(id) {
+            return AgentLaunch(kind: kind, line: withHooks(line, kind), conversationID: id)
         }
+        let (line, newID) = kind.newConversation()
+        return line.map { AgentLaunch(kind: kind, line: withHooks($0, kind), conversationID: newID) }
+    }
+
+    /// How to bring a saved agent back. `hadAgent` without an id (e.g. Codex
+    /// before its first prompt): continue the latest conversation in the folder.
+    private func relaunch(agentID: String, conversationID: String?, hadAgent: Bool?) -> AgentLaunch? {
+        guard let kind = catalog.agent(id: agentID), kind.isAgent else { return nil }
+        if conversationID == nil, hadAgent == true, let line = kind.continueLine() {
+            return AgentLaunch(kind: kind, line: withHooks(line, kind), conversationID: nil)
+        }
+        return launch(kind, resume: conversationID)
+    }
+
+    /// After an agent exited: start it again in its pane, back in the same
+    /// conversation if we know it. Without `pane`: the focused pane's agent if
+    /// it exited, else the first exited one.
+    func restartAgent(_ session: AgentSession, pane: PaneView? = nil) {
+        let exited = session.agentPanes.filter { $0.agent?.activity == .exited }
+        guard let pane = pane ?? exited.first(where: { $0 === session.focusedPane }) ?? exited.first,
+              let agent = pane.agent, let launch = launch(agent.kind, resume: agent.conversationID) else { return }
+        session.run(launch, in: pane)
+    }
+
+    /// Start another agent in `session`, in a new pane split off the focused one.
+    /// Not in any menu: new agents get a session of their own. Kept for the
+    /// debug hook, which uses it to exercise sessions with several agents.
+    func addAgent(_ kind: AgentKind, to session: AgentSession) {
+        guard session.remote == nil, let launch = launch(kind) else { return }
+        session.split(agent: launch)
+        persist()
+    }
+
+    /// Select the session and bring one of its agents' panes forward.
+    func show(_ pane: PaneView, in session: AgentSession) {
+        select(session)
+        session.focus(pane)
+    }
+
+    /// Go to a session, leaving the Agent 总览 if it is up.
+    func select(_ session: AgentSession) {
+        showingDashboard = false
+        selectedID = session.id
     }
 
     func showResume(directory: String? = nil, agentID: String? = nil) {
@@ -302,7 +344,7 @@ final class Workspace: ObservableObject {
         if let sessionName, let open = sessions.first(where: {
             $0.remote?.hostID == host.id && $0.remote?.sessionName == sessionName
         }) {
-            selectedID = open.id
+            select(open)
             if open.isDisconnected { reconnect(open) }
             return open
         }
@@ -357,7 +399,7 @@ final class Workspace: ObservableObject {
             guard n >= 1 else { return }
             target = min(Int(n) - 1, order.count - 1)
         }
-        selectedID = order[target].id
+        select(order[target])
     }
 
     func selectNext(_ delta: Int) { gotoSession(delta > 0 ? -2 : -1) }
@@ -365,7 +407,11 @@ final class Workspace: ObservableObject {
     /// Jump to the oldest session that is waiting for you.
     func selectNextNeedingAttention() {
         if let s = orderedSessions.first(where: { if case .needsAttention = $0.status { return true }; return false }) {
-            selectedID = s.id
+            select(s)
+            // With several agents in the session, land on the one that is waiting.
+            if let pane = s.agentPanes.first(where: { if case .waiting = $0.agent?.activity { return true }; return false }) {
+                s.focus(pane)
+            }
         }
     }
 
@@ -444,10 +490,13 @@ final class Workspace: ObservableObject {
     func persist() {
         store.save(.init(
             sessions: orderedSessions.filter { !ephemeral.contains($0.id) }.map {
-                .init(kindID: $0.kind.id, directory: $0.directory, customName: $0.customName,
-                      group: $0.group, layout: $0.root.layout, remote: $0.remote,
-                      conversationID: $0.conversationID,
-                      hadAgent: $0.kind.isAgent && $0.activity != .none ? true : nil)
+                // Each pane's agent is in the layout. The first pane's is
+                // repeated here for versions that only knew one agent per session.
+                let first = $0.panes.first { $0.isPrimary }?.agent
+                return .init(kindID: $0.kind.id, directory: $0.directory, customName: $0.customName,
+                             group: $0.group, layout: $0.root.layout, remote: $0.remote,
+                             conversationID: first?.conversationID,
+                             hadAgent: first != nil ? true : nil)
             },
             recentDirectories: recentDirectories,
             groups: groups))
@@ -479,10 +528,9 @@ struct WorkspaceStore {
             var group: String?
             var layout: PaneNode.Layout?
             var remote: RemoteRef?
-            /// The agent's conversation id, to resume it on relaunch.
+            /// The first pane's agent, as older versions expect it. Every
+            /// pane's agent, this one included, is in `layout`.
             var conversationID: String?
-            /// An agent was running but we never learned its conversation id
-            /// (e.g. Codex before the first prompt): continue the latest one.
             var hadAgent: Bool?
         }
         var sessions: [Session] = []
