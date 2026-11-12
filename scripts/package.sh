@@ -3,6 +3,7 @@
 # The same script runs locally and in CI (.github/workflows/release.yml).
 #
 #   scripts/package.sh 0.1.0
+#   scripts/package.sh --check 0.1.0   # only validate the version number
 #
 # Needs a "Developer ID Application" identity (with private key) in the keychain.
 # Notarization runs when these are set (App Store Connect API key — an Apple ID
@@ -20,11 +21,39 @@
 #   GITHUB_REPOSITORY      owner/name used for the download URLs in appcast.xml
 set -euo pipefail
 
-VERSION="${1:?usage: scripts/package.sh <version>}"
+CHECK_ONLY=0
+if [ "${1:-}" = "--check" ]; then CHECK_ONLY=1; shift; fi
+VERSION="${1:?usage: scripts/package.sh [--check] <version>}"
+
 # CFBundleVersion is what Sparkle compares, so it must grow with every
 # release and match between local and CI builds: 1.2.3 -> 10203.
-IFS=. read -r V_MAJ V_MIN V_PAT <<< "${VERSION%%-*}"
-BUILD_NUM=$(( 10#${V_MAJ:-0} * 10000 + 10#${V_MIN:-0} * 100 + 10#${V_PAT:-0} ))
+# See "Version numbers" in docs/DEVELOPMENT.md for the rules enforced here.
+die() { echo "error: $*" >&2; exit 1; }
+if [[ "$VERSION" == *-* ]]; then
+  die "no pre-release suffixes (got '$VERSION'): the suffix is dropped from the" \
+      "build number, so users on the pre-release would never be offered the final release."
+fi
+[[ "$VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]?)\.(0|[1-9][0-9]?)$ ]] \
+  || die "version must be X.Y.Z without a leading v, Y and Z in 0-99 (got '$VERSION')."
+V_MAJ=${BASH_REMATCH[1]} V_MIN=${BASH_REMATCH[2]} V_PAT=${BASH_REMATCH[3]}
+BUILD_NUM=$(( V_MAJ * 10000 + V_MIN * 100 + V_PAT ))
+
+# Must be newer than every other release tag, or installed copies won't update.
+# (The tag being built may already exist; it is skipped.)
+build_num_of() { local a b c; IFS=. read -r a b c <<< "${1%%-*}"; echo $(( 10#${a:-0} * 10000 + 10#${b:-0} * 100 + 10#${c:-0} )); }
+HIGHEST="" HIGHEST_NUM=0
+while read -r tag; do
+  [ -n "$tag" ] && [ "$tag" != "v$VERSION" ] || continue
+  n=$(build_num_of "${tag#v}")
+  if [ "$n" -ge "$HIGHEST_NUM" ]; then HIGHEST="$tag" HIGHEST_NUM=$n; fi
+done < <(git -C "$(dirname "$0")/.." tag -l 'v[0-9]*' 2>/dev/null)
+if [ -n "$HIGHEST" ] && [ "$BUILD_NUM" -le "$HIGHEST_NUM" ]; then
+  die "$VERSION (build $BUILD_NUM) is not newer than $HIGHEST (build $HIGHEST_NUM)."
+fi
+if [ "$CHECK_ONLY" = 1 ]; then
+  echo "ok: $VERSION -> build $BUILD_NUM${HIGHEST:+ (latest tag $HIGHEST)}"
+  exit 0
+fi
 TEAM_ID=HU729D6ML5
 APP=AgentDeck
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
