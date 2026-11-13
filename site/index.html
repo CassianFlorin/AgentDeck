@@ -84,6 +84,7 @@
     :focus-visible { outline: 2px solid var(--mint); outline-offset: 3px; }
     ::selection { background: rgba(62, 236, 200, 0.28); color: white; }
     [id] { scroll-margin-top: 80px; }
+    .m-only { display: none; }
     html[lang="en"] .zh { display: none !important; }
     html:not([lang="en"]) .en { display: none !important; }
 
@@ -163,6 +164,7 @@
     }
     html[lang="en"] h1 { letter-spacing: -0.045em; }
     .lead { margin-top: 20px; max-width: 30em; font-size: clamp(17px, 1.1vw, 20px); line-height: 1.65; color: #d5deec; }
+    .lead, .intro, .states li > p, .steps-3 p, .cta-copy p { text-wrap: pretty; }
     .lead strong { display: block; color: var(--ink); font-weight: 600; }
     .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
     .btn {
@@ -362,6 +364,7 @@
     .main.show-dash .term { display: none; }
     .dash-head { display: flex; align-items: center; gap: 8px; padding: 12px 14px 0; font-size: 12px; }
     .chip { flex: none; padding: 3px 10px; border-radius: 6px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.05); color: var(--ink); white-space: nowrap; }
+    .filter-row { display: contents; }
     .filter { flex: 1; min-width: 0; padding: 3px 10px; border-radius: 6px; background: rgba(255, 255, 255, 0.06); font-size: 12px; }
     .seg { flex: none; display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; color: var(--muted); white-space: nowrap; }
     .seg button { padding: 3px 9px; }
@@ -420,6 +423,10 @@
     .peek-body .ask { margin-top: 6px; padding: 6px 10px; }
     .peek-body .ask .choices { margin-top: 2px; }
     .peek-body .gap { margin-top: 4px !important; }
+    .peek-note { display: none; margin-top: 8px; font-size: 12.5px; line-height: 1.5; }
+    .peek-note.hint { display: block; color: var(--amber); }
+    .peek-note.ok { display: block; color: var(--green); }
+    .peek-note.ok::before { content: "✓ "; }
     .reply-row { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
     .reply { flex: 1; min-width: 0; display: flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: 7px; background: rgba(255, 255, 255, 0.06); font-size: 12px; }
     .reply::before { content: "›"; color: var(--mint); }
@@ -476,9 +483,9 @@
     .states li > p kbd { margin: 0 2px; }
 
     /* Folds: hairlines, no boxes. */
-    .folds { margin-top: 36px; border-bottom: 1px solid var(--line); }
+    .folds { margin-top: 28px; border-bottom: 1px solid var(--line); }
     .fold { border-top: 1px solid var(--line); }
-    .fold > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 15px 2px; cursor: pointer; color: var(--ink); font-size: 16px; font-weight: 600; list-style: none; }
+    .fold > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 2px; cursor: pointer; color: var(--text); font-size: 15px; font-weight: 500; list-style: none; }
     .fold > summary::-webkit-details-marker { display: none; }
     .fold > summary::after { content: "+"; flex: none; color: var(--mint); font-size: 20px; font-weight: 400; line-height: 1; }
     .fold[open] > summary::after { content: "−"; }
@@ -523,6 +530,9 @@
     .steps-3 li:first-child::before { border-color: var(--amber); color: var(--amber); }
     .steps-3 p { margin-top: 6px; font-size: 15px; line-height: 1.65; }
     .steps-3 .try { color: var(--muted); font-size: 13.5px; }
+    .steps-3 .did { display: none; color: var(--green); }
+    .tried-allow [data-try="allow"] .todo, .tried-task [data-try="task"] .todo { display: none; }
+    .tried-allow [data-try="allow"] .did, .tried-task [data-try="task"] .did { display: inline; }
     .steps-3 .try::before { content: "↳ "; color: var(--mint); }
     .showcase aside .folds { margin-top: 0; }
 
@@ -569,17 +579,24 @@
 
     /* Keys */
     .keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 40px; }
-    .keyrow { display: grid; grid-template-columns: 124px minmax(0, 1fr); gap: 12px; align-items: center; padding: 14px 0; border-top: 1px solid var(--line); font-size: 15px; }
+    #keys { padding-bottom: calc(var(--pad) * 0.7); }
+    #keys .section-head { margin-bottom: 20px; }
+    .keyrow { display: grid; grid-template-columns: 124px minmax(0, 1fr); gap: 12px; align-items: center; padding: 11px 0; border-top: 1px solid var(--line); font-size: 15px; }
     .keys.all { grid-template-columns: 1fr 1fr; }
     .keys.all .keyrow:nth-child(-n+2) { border-top: 0; }
     .combo { display: flex; flex-wrap: wrap; gap: 6px; }
     .keys:not(.all) kbd { font-size: 13px; padding: 3px 8px; }
 
     /* Download */
-    .specs { display: flex; flex-wrap: wrap; gap: 6px 36px; margin-top: 24px; font-size: 14px; color: var(--muted); }
-    .specs div { display: flex; gap: 8px; }
-    .specs dt { color: var(--ink); font-weight: 600; }
-    .cta > p { margin-top: 12px; max-width: 38em; font-size: 17px; }
+    #get { background: linear-gradient(180deg, rgba(62, 236, 200, 0.05), transparent 72%); }
+    .cta-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 460px); gap: clamp(32px, 5vw, 96px); align-items: center; }
+    .cta-copy p { margin-top: 12px; max-width: 34em; font-size: 17px; }
+    .get-box { padding: 24px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.12); background: rgba(255, 255, 255, 0.03); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1); }
+    .get-box .actions { margin-top: 0; }
+    .get-box .btn { flex: 1; white-space: nowrap; }
+    .specs { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 16px; margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 14px; color: var(--muted); }
+    .specs div { display: contents; }
+    .specs dt { color: var(--ink); font-weight: 600; white-space: nowrap; }
     .inline a, .fold-body a { color: var(--ink); text-underline-offset: 3px; }
     .code {
       margin: 12px 0 0;
@@ -636,7 +653,7 @@
     }
     @media (max-width: 980px) {
       .hero { grid-template-columns: 1fr; padding: 40px 0 56px; }
-      .showcase { grid-template-columns: 1fr; }
+      .showcase, .cta-grid { grid-template-columns: 1fr; }
       .footer-inner { flex-direction: column; align-items: start; }
       :root { --pad: 72px; }
     }
@@ -644,7 +661,9 @@
       .wrap { width: calc(100% - 32px); }
       [id] { scroll-margin-top: 68px; }
       :root { --nav: 52px; --pad: 56px; }
-      .perf .long { display: none; }
+      .d-only { display: none; }
+      .m-only { display: revert; }
+      .switch { display: none; }
       .nav-links { gap: 14px; }
       .nav-links .sec { display: none; }
       .lang { margin-left: 0; }
@@ -682,35 +701,41 @@
       .perf { min-height: 32px; }
 
       .window input { font-size: 16px; }
-      .dash-head { padding: 10px 10px 0; gap: 6px; }
-      .dash-head .chip { padding: 5px 8px; }
+      .dash-head { padding: 10px 10px 0; gap: 6px; flex-wrap: wrap; }
+      .dash-head .chip { padding: 5px 10px; }
+      .dash-head button.chip[aria-expanded="true"] { border-color: rgba(62, 236, 200, 0.5); color: var(--mint); }
+      .filter-row { display: none; flex: 1 0 100%; gap: 6px; }
+      .dash.show-filter .filter-row { display: flex; }
+      .dash:not(.show-send) .send { display: none; }
       .filter { padding: 2px 8px; }
       .seg button { padding: 5px 7px; }
       .send { margin: 8px 10px 0; flex-wrap: wrap; }
       .send input { flex: 1 0 100%; padding: 4px; }
       .dash-list { padding: 0 4px 8px; min-height: 0; }
-      .dash-group { margin-top: 8px; }
-      .dash-row { grid-template-columns: 8px auto minmax(0, 1fr) auto; padding: 9px 8px; }
+      .dash-group { margin: 6px 8px 0; }
+      .dash-row { grid-template-columns: 8px auto minmax(0, 1fr) auto; padding: 7px 8px; }
       .dash-row .kind, .dash-row .who small { display: none; }
       .peek { padding: 10px 10px 12px; }
       .peek-btn { padding: 5px 10px; }
-      .peek-body { height: 118px; }
-      .reply-row { flex-wrap: wrap; }
-      .reply { flex: 1 0 100%; }
-      .quick { flex: 1; }
+      .peek-body { height: 84px; }
+      .peek-note { font-size: 13.5px; }
+      .reply-row { flex-wrap: wrap; margin-top: 8px; }
+      .reply { flex: 1 0 100%; padding: 7px 10px; }
+      .quick { flex: 1 0 100%; order: -1; }
       .quick button { flex: 1; min-height: 36px; font-size: 13px; }
 
       .states { grid-template-columns: 1fr; }
-      .states li, .states li + li, .states li:nth-child(even) { display: grid; grid-template-columns: 1fr; padding: 20px 0 22px; border-left: 0; }
-      .snip { min-height: 0; margin: 12px 0 10px; }
+      .states li, .states li + li, .states li:nth-child(even) { display: grid; grid-template-columns: 1fr; padding: 14px 0 16px; border-left: 0; }
+      .mark { font-size: 18px; }
+      .snip { min-height: 0; margin: 9px 0 8px; padding: 8px 12px; }
       .pair { grid-template-columns: 1fr; gap: 56px; }
       .ghostty { grid-template-columns: 1fr; margin-top: 44px; }
       .keys, .keys.all, .notes.cols, .detail-grid { grid-template-columns: 1fr; }
       .keys.all .keyrow:nth-child(2) { border-top: 1px solid var(--line); }
       .keyrow { grid-template-columns: 112px minmax(0, 1fr); padding: 12px 0; }
-      .fold > summary { padding: 16px 2px; }
+      .fold > summary { padding: 14px 2px; }
+      .get-box { padding: 18px; }
       .fold > summary small { display: none; }
-      .specs { flex-direction: column; }
     }
     @media (max-width: 400px) {
       .switch { display: none; }
@@ -743,8 +768,8 @@
       <div class="copy">
         <p class="kicker"><span class="zh">给编程 Agent 的原生 macOS 工作台</span><span class="en">A native macOS workbench for coding agents</span></p>
         <h1><span class="zh">一个窗口，<br>看住所有 Agent。</span><span class="en">One window<br>for every agent.</span></h1>
-        <p class="lead zh"><strong>谁在运行，谁在等你，一眼看清。</strong>把多个编程 Agent、本地目录和 SSH 会话放进同一个原生 macOS 窗口。</p>
-        <p class="lead en"><strong>See who is working and who is waiting on you.</strong>Several coding agents, local folders, and SSH sessions, in one native macOS window.</p>
+        <p class="lead zh"><strong>谁在运行，谁在等你，一眼看清。</strong>多个编程 Agent、本地目录和 SSH 会话，都在同一个窗口。</p>
+        <p class="lead en"><strong>See who is working and who is waiting on you.</strong>Coding agents, local folders, and SSH sessions, all in one window.</p>
         <div class="actions">
           <a class="btn primary" href="https://github.com/CassianFlorin/AgentDeck/releases/latest">
             <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.5v7.2l2.6-2.6 1.1 1.1L8 11.9 4.3 7.2l1.1-1.1L8 8.7V1.5H8zM3 13h10v1.5H3z"/></svg>
@@ -768,7 +793,7 @@
               </span>
               <a class="perf jump" href="#overview">
                 <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.8" y="2.6" width="12.4" height="10.8" rx="2" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M4.6 6h.1M4.6 8h.1M4.6 10h.1M7 6h4.6M7 8h4.6M7 10h4.6" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-                <span class="zh"><span class="long">查看</span>总览<span class="long">演示</span></span><span class="en"><span class="long">See the </span>overview<span class="long"> demo</span></span>
+                <span class="zh"><span class="d-only">查看总览演示</span><span class="m-only">总览</span></span><span class="en"><span class="d-only">See the overview demo</span><span class="m-only">Overview</span></span>
                 <svg class="down" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v9M4.2 8.4 8 12.2l3.8-3.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
               </a>
               <button type="button" class="perf" id="perf" aria-expanded="false" aria-controls="monitor">
@@ -901,7 +926,7 @@
             </aside>
           </div>
         </div>
-        <p class="caption"><span class="zh">可点的界面示意：点会话换终端，「‹ ›」在 Agent 之间切换，右上角可以打开性能面板。「查看总览演示」会跳到下面可以操作的 Agent 总览。</span><span class="en">A clickable sketch: choose a session to change the terminal, step through agents with ‹ ›, and open the performance panel at the top right. “See the overview demo” jumps down to a working agent overview.</span></p>
+        <p class="caption"><span class="zh"><span class="d-only">可点的界面示意：点会话换终端，「‹ ›」在 Agent 之间切换，右上角可以打开性能面板。「查看总览演示」会跳到下面可以操作的 Agent 总览。</span><span class="m-only">点上方会话切换内容，点「总览」体验多 Agent 管理。</span></span><span class="en"><span class="d-only">A clickable sketch: choose a session to change the terminal, step through agents with ‹ ›, and open the performance panel at the top right. “See the overview demo” jumps down to a working agent overview.</span><span class="m-only">Tap a session above to switch, and tap Overview to try managing several agents.</span></span></p>
       </div>
     </div>
   </div>
@@ -954,8 +979,8 @@
               <p class="dim"><span class="zh">进程已退出</span><span class="en">Process exited</span></p>
               <p><span class="ps">%</span> <span class="caret"></span></p>
             </div>
-            <p class="zh">Agent 进程结束，回到了 shell。可以重新启动，回到哪段对话见下面「对话」一节。</p>
-            <p class="en">The agent process ended and you are back at the shell. You can start it again; Conversations below says which conversation it returns to.</p>
+            <p class="zh">Agent 已退出，回到 shell。支持的 Agent 可恢复之前的对话。</p>
+            <p class="en">The agent exited and you are back at the shell. Supported agents can resume the earlier conversation.</p>
           </li>
         </ol>
         <div class="folds">
@@ -983,7 +1008,7 @@
           <h2><span class="zh">所有 Agent，列在一屏里。</span><span class="en">Every agent, on one screen.</span></h2>
           <p class="intro"><span class="zh"><kbd>⇧⌘A</kbd> 把终端换成一张列表，每个 Agent 一行。会话都还在后台跑着。</span><span class="en"><kbd>⇧⌘A</kbd> swaps the terminal for a list, one row per agent. Every session keeps running behind it.</span></p>
         </div>
-        <div class="showcase">
+        <div class="showcase" id="showcase">
           <div>
             <div class="window" id="ov">
               <div class="titlebar">
@@ -1003,10 +1028,14 @@
                   <div class="dash" id="dash-view">
                     <div class="dash-head">
                       <span class="chip">+ <span class="zh">新建 Agent</span><span class="en">New agent</span></span>
-                      <input class="filter" id="filter" type="search" autocomplete="off" placeholder="筛选" aria-label="Filter agents">
-                      <span class="seg" id="seg">
-                        <button type="button" data-group="state" aria-pressed="true"><span class="zh">按状态</span><span class="en">By state</span></button>
-                        <button type="button" data-group="folder" aria-pressed="false"><span class="zh">按文件夹</span><span class="en">By folder</span></button>
+                      <button type="button" class="chip m-only" id="t-filter" aria-expanded="false" aria-controls="filter-row"><span class="zh">筛选</span><span class="en">Filter</span></button>
+                      <button type="button" class="chip m-only" id="t-send" aria-expanded="false" aria-controls="send"><span class="zh">派任务</span><span class="en">New task</span></button>
+                      <span class="filter-row" id="filter-row">
+                        <input class="filter" id="filter" type="search" autocomplete="off" placeholder="筛选" aria-label="Filter agents">
+                        <span class="seg" id="seg">
+                          <button type="button" data-group="state" aria-pressed="true"><span class="zh">按状态</span><span class="en">By state</span></button>
+                          <button type="button" data-group="folder" aria-pressed="false"><span class="zh">按文件夹</span><span class="en">By folder</span></button>
+                        </span>
                       </span>
                     </div>
                     <form class="send" id="send" autocomplete="off">
@@ -1053,7 +1082,8 @@
                         <button type="button" class="peek-btn" id="peek-restart"><span class="zh">重新启动</span><span class="en">Restart</span></button>
                         <button type="button" class="peek-btn" id="peek-open"><span class="zh">打开</span><span class="en">Open</span></button>
                       </p>
-                      <div class="peek-body" id="peek-body" aria-live="polite"></div>
+                      <div class="peek-body" id="peek-body"></div>
+                      <p class="peek-note" id="note" role="status" aria-live="polite"></p>
                       <div class="reply-row">
                         <form class="reply" id="reply-form" autocomplete="off"><input id="reply" type="text" enterkeyhint="send" placeholder="回复 Codex，回车发送" aria-label="Reply"></form>
                         <span class="quick" role="group" aria-label="Quick keys">
@@ -1066,7 +1096,7 @@
                 </div>
               </div>
             </div>
-            <p class="caption"><span class="zh">这是可以操作的示意：试着按 <kbd>1</kbd> 允许 codex 的修改，回一句话，或者派一个新任务。</span><span class="en">This sketch works: press <kbd>1</kbd> to allow codex's edit, send a reply, or hand out a new task.</span> <button type="button" id="reset"><span class="zh">重置演示</span><span class="en">Reset the demo</span></button></p>
+            <p class="caption"><span class="zh">这是可以操作的示意：回应等待、回一句话、派一个新任务，列表都会跟着变。</span><span class="en">This sketch works: answer a prompt, send a reply, or hand out a task, and the list follows.</span> <button type="button" id="reset"><span class="zh">重置演示</span><span class="en">Reset the demo</span></button></p>
           </div>
           <aside>
             <ol class="steps-3">
@@ -1077,12 +1107,12 @@
               <li>
                 <h3><span class="zh">留在总览里直接回复</span><span class="en">Answer without leaving</span></h3>
                 <p><span class="zh">选中一行，下面是它终端的最后几行。打字回车，或按它提示里的选项键，回复就发过去了。</span><span class="en">Select a row to see the last lines of its terminal. Type and press Return, or press one of its option keys, and the answer is sent.</span></p>
-                <p class="try"><span class="zh">在示意里按 <kbd>1</kbd>：codex 回到「运行中」。</span><span class="en">Press <kbd>1</kbd> in the sketch: codex goes back to Working.</span></p>
+                <p class="try" data-try="allow"><span class="todo"><span class="zh">在示意里按 <kbd>1</kbd> 允许这次修改，看 codex 的状态怎么变。</span><span class="en">Press <kbd>1</kbd> in the sketch to allow the edit and watch codex change state.</span></span><span class="did"><span class="zh">试过了：codex 已经不在「等你」里。</span><span class="en">Done: codex is no longer under Needs you.</span></span></p>
               </li>
               <li>
                 <h3><span class="zh">在列表里继续派任务</span><span class="en">Hand out the next task</span></h3>
                 <p><span class="zh">在派发栏选 Agent 和文件夹，写下任务，回车。新的 Agent 在后台开工，你还留在列表里。</span><span class="en">Pick the agent and the folder in the bar, write the task, press Return. A new agent starts in the background and you stay on the list.</span></p>
-                <p class="try"><span class="zh">在派发栏里写点什么，回车。</span><span class="en">Type something in the bar and press Return.</span></p>
+                <p class="try" data-try="task"><span class="todo"><span class="zh"><span class="d-only">在派发栏里写点什么，回车。</span><span class="m-only">点「派任务」，写点什么，回车。</span></span><span class="en"><span class="d-only">Type something in the bar and press Return.</span><span class="m-only">Tap New task, type something, and press Return.</span></span></span><span class="did"><span class="zh">派出去了：新的 Agent 已经在「运行中」里。</span><span class="en">Sent: the new agent is already under Working.</span></span></p>
               </li>
             </ol>
             <div class="folds">
@@ -1299,23 +1329,29 @@
 
     <section class="block" id="get">
       <div class="wrap cta reveal">
-        <p class="eyebrow"><span class="zh">下载</span><span class="en">Download</span></p>
-        <h2><span class="zh">合用就拿去。</span><span class="en">Take it if it fits.</span></h2>
-        <p class="zh">这是照着一个人自己的工作流做的，开源出来。可以从 Releases 下载签过名的包，也可以自己构建。</p>
-        <p class="en">Built for one person's workflow, and open-sourced in case it fits yours. Download a signed build from Releases, or build it yourself.</p>
-        <div class="actions">
-          <a class="btn primary" href="https://github.com/CassianFlorin/AgentDeck/releases/latest">
-            <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.5v7.2l2.6-2.6 1.1 1.1L8 11.9 4.3 7.2l1.1-1.1L8 8.7V1.5H8zM3 13h10v1.5H3z"/></svg>
-            <span class="zh">下载 macOS 版</span><span class="en">Download for Mac</span>
-          </a>
-          <a class="btn ghost" href="#build"><span class="zh">从源码构建</span><span class="en">Build from source</span></a>
+        <div class="cta-grid">
+          <div class="cta-copy">
+            <p class="eyebrow"><span class="zh">下载</span><span class="en">Download</span></p>
+            <h2><span class="zh">合用就拿去。</span><span class="en">Take it if it fits.</span></h2>
+            <p class="zh">这是照着一个人自己的工作流做的，开源出来。可以从 Releases 下载签过名的包，也可以自己构建。</p>
+            <p class="en">Built for one person's workflow, and open-sourced in case it fits yours. Download a signed build from Releases, or build it yourself.</p>
+          </div>
+          <div class="get-box">
+            <div class="actions">
+              <a class="btn primary" href="https://github.com/CassianFlorin/AgentDeck/releases/latest">
+                <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.5v7.2l2.6-2.6 1.1 1.1L8 11.9 4.3 7.2l1.1-1.1L8 8.7V1.5H8zM3 13h10v1.5H3z"/></svg>
+                <span class="zh">下载 macOS 版</span><span class="en">Download for Mac</span>
+              </a>
+              <a class="btn ghost" href="#build"><span class="zh">从源码构建</span><span class="en">Build from source</span></a>
+            </div>
+            <dl class="specs">
+              <div><dt><span class="zh">系统</span><span class="en">System</span></dt><dd><span class="zh">macOS 14 或更高</span><span class="en">macOS 14 or later</span></dd></div>
+              <div><dt><span class="zh">芯片</span><span class="en">Chip</span></dt><dd><span class="zh">目前只有 Apple 芯片</span><span class="en">Apple silicon only, for now</span></dd></div>
+              <div><dt><span class="zh">远程采样</span><span class="en">Remote stats</span></dt><dd><span class="zh">目前只支持 Linux</span><span class="en">Linux only, for now</span></dd></div>
+              <div><dt><span class="zh">许可</span><span class="en">License</span></dt><dd><span class="zh">MIT。终端引擎是 Ghostty</span><span class="en">MIT. The terminal engine is Ghostty</span></dd></div>
+            </dl>
+          </div>
         </div>
-        <dl class="specs">
-          <div><dt><span class="zh">系统</span><span class="en">System</span></dt><dd><span class="zh">macOS 14 或更高</span><span class="en">macOS 14 or later</span></dd></div>
-          <div><dt><span class="zh">芯片</span><span class="en">Chip</span></dt><dd><span class="zh">目前只有 Apple 芯片</span><span class="en">Apple silicon only, for now</span></dd></div>
-          <div><dt><span class="zh">远程采样</span><span class="en">Remote stats</span></dt><dd><span class="zh">目前只支持 Linux</span><span class="en">Linux only, for now</span></dd></div>
-          <div><dt><span class="zh">许可</span><span class="en">License</span></dt><dd><span class="zh">MIT。终端引擎是 Ghostty</span><span class="en">MIT. The terminal engine is Ghostty</span></dd></div>
-        </dl>
         <div class="folds">
           <details class="fold build" id="build">
             <summary><span class="zh">从源码构建</span><span class="en">Build from source</span></summary>
@@ -1451,7 +1487,8 @@ Parts of Sources/Ghostty/ are adapted from Ghostty&#x27;s macOS app under that l
       };
       var GROUPS = { wait: ["等你", "Needs you"], work: ["运行中", "Working"], idle: ["空闲", "Idle"], exit: ["已退出", "Exited"] };
       var ORDER = ["wait", "work", "idle", "exit"];
-      var state, age, current, picked, opened, byFolder, sent, run = 0;
+      var showcase = $("#showcase"), dash = $("#dash-view"), noteEl = $("#note");
+      var state, age, current, picked, opened, byFolder, sent, tried, result, resultTimer, run = 0;
 
       function bi(zh, en) { return '<span class="zh">' + zh + '</span><span class="en">' + en + "</span>"; }
       function esc(text) { var d = document.createElement("div"); d.textContent = text; return d.innerHTML; }
@@ -1473,6 +1510,8 @@ Parts of Sources/Ghostty/ are adapted from Ghostty&#x27;s macOS app under that l
           age[id] = [b.getAttribute("data-age-zh"), b.getAttribute("data-age-en")];
         });
         current = "codex"; picked = "codex"; opened = null; byFolder = false; sent = 0;
+        tried = {}; result = null; clearTimeout(resultTimer);
+        fold("filter", false); fold("send", false);
         filter.value = ""; task.value = ""; reply.value = ""; task.disabled = false;
         render();
       }
@@ -1517,6 +1556,8 @@ Parts of Sources/Ghostty/ are adapted from Ghostty&#x27;s macOS app under that l
           ovTab.innerHTML = bi("Agent 总览 · " + all.length + " 个 Agent · " + n + " 个等你",
             "Agents · " + all.length + " agents · " + n + (n === 1 ? " needs you" : " need you"));
         }
+        showcase.classList.toggle("tried-allow", !!tried.allow);
+        showcase.classList.toggle("tried-task", !!tried.task);
         layout();
         showPeek();
       }
@@ -1574,6 +1615,39 @@ Parts of Sources/Ghostty/ are adapted from Ghostty&#x27;s macOS app under that l
         reply.disabled = state[picked] === "exit";
         mark();
         hints();
+        note();
+      }
+
+      // One line next to the controls: what to try, then what just happened.
+      function note() {
+        if (result) {
+          noteEl.className = "peek-note ok";
+          noteEl.innerHTML = result;
+        } else if (state[picked] === "wait" && !tried.allow) {
+          noteEl.className = "peek-note hint";
+          noteEl.innerHTML = bi("试着允许这次修改，看看状态怎么变。", "Try allowing this edit and watch the status change.");
+        } else {
+          noteEl.className = "peek-note";
+          noteEl.innerHTML = "";
+        }
+      }
+      function say(zh, en) {
+        var mine = run;
+        result = bi(zh, en);
+        clearTimeout(resultTimer);
+        resultTimer = setTimeout(function () {
+          if (mine !== run) return;
+          result = null;
+          note();
+        }, 6000);
+      }
+      function who() { return esc(ses(picked).getAttribute("data-name")); }
+
+      // On a phone the filter and the task bar open on demand.
+      function fold(name, open) {
+        var btn = $("#t-" + name);
+        dash.classList.toggle("show-" + name, open);
+        btn.setAttribute("aria-expanded", open ? "true" : "false");
       }
 
       function hints() {
@@ -1604,12 +1678,17 @@ Parts of Sources/Ghostty/ are adapted from Ghostty&#x27;s macOS app under that l
           add(picked, "t-deny");
           add(picked, "t-done");
           state[picked] = "done"; age[picked] = NOW;
+          tried.allow = true;
+          say("已拒绝 · " + who() + " 没有改动文件", "Declined · " + who() + " left the file alone");
           render();
         } else {
           add(picked, "t-allow");
+          tried.allow = true;
+          say("已允许 · " + who() + " 继续运行", "Allowed · " + who() + " is working again");
           work(picked);
         }
-        reply.focus({ preventScroll: true });
+        // The key that was pressed is gone now; on a phone, focusing the field would raise the keyboard.
+        if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) reply.focus({ preventScroll: true });
       }
 
       function dispatch(text) {
@@ -1634,6 +1713,8 @@ Parts of Sources/Ghostty/ are adapted from Ghostty&#x27;s macOS app under that l
         picked = id;
         task.value = "";
         task.disabled = sent >= MAX_TASKS;
+        tried.task = true;
+        say("已派出 · Claude Code 在 shop 开工", "Sent · Claude Code started in shop");
         render();
       }
 
@@ -1646,6 +1727,8 @@ Parts of Sources/Ghostty/ are adapted from Ghostty&#x27;s macOS app under that l
         pane(picked).appendChild(p);
         add(picked, "t-work");
         reply.value = "";
+        if (state[picked] === "wait") tried.allow = true;
+        say("已发送 · " + who() + " 开始这一轮", "Sent · " + who() + " is on it");
         work(picked);
       }
 
@@ -1659,7 +1742,7 @@ Parts of Sources/Ghostty/ are adapted from Ghostty&#x27;s macOS app under that l
           return;
         }
         var r = e.target.closest(".dash-row");
-        if (r) { picked = r.getAttribute("data-pick"); showPeek(); return; }
+        if (r) { picked = r.getAttribute("data-pick"); result = null; showPeek(); return; }
         var k = e.target.closest("[data-key]");
         if (k) { quick(k.getAttribute("data-key")); return; }
         var g = e.target.closest("#seg button");
@@ -1688,10 +1771,18 @@ Parts of Sources/Ghostty/ are adapted from Ghostty&#x27;s macOS app under that l
         clear(picked);
         add(picked, "t-ready");
         state[picked] = "ready"; age[picked] = NOW;
+        say("已重新启动 · " + who() + " 回到同一段对话", "Restarted · " + who() + " is back in the same conversation");
         render();
       });
       ovToggle.addEventListener("click", function () { opened = opened ? null : picked; render(); });
       filter.addEventListener("input", layout);
+      ["filter", "send"].forEach(function (name) {
+        $("#t-" + name).addEventListener("click", function () {
+          var open = !dash.classList.contains("show-" + name);
+          fold(name, open);
+          if (open) (name === "filter" ? filter : task).focus({ preventScroll: true });
+        });
+      });
       $("#send").addEventListener("submit", function (e) { e.preventDefault(); dispatch(task.value.trim()); });
       $("#reply-form").addEventListener("submit", function (e) { e.preventDefault(); send(reply.value.trim()); });
       $("#reset").addEventListener("click", reset);
