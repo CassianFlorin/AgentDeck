@@ -374,8 +374,8 @@
     .send input, .reply input { flex: 1; min-width: 0; padding: 2px 4px; }
     .send:focus-within, .reply:focus-within, .filter:focus-visible { outline: 1px solid rgba(62, 236, 200, 0.6); outline-offset: 0; }
     .send input:focus-visible, .reply input:focus-visible { outline: none; }
-    .dash-list { flex: 1; padding: 2px 8px 10px; min-height: 200px; }
-    .dash-group { margin: 12px 8px 3px; font-size: 11px; color: var(--muted); }
+    .dash-list { flex: 1; padding: 2px 8px 6px; min-height: 200px; }
+    .dash-group { margin: 9px 8px 3px; font-size: 11px; color: var(--muted); }
     .dash-empty { margin: 28px 8px; text-align: center; font-size: 13px; color: var(--muted); }
     .dash-row {
       display: grid;
@@ -409,7 +409,7 @@
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
-      height: 112px;
+      height: 84px;
       margin-top: 6px;
       overflow: hidden;
       font-family: var(--mono);
@@ -701,7 +701,7 @@
       .perf { min-height: 32px; }
 
       .window input { font-size: 16px; }
-      .dash-head { padding: 10px 10px 0; gap: 6px; flex-wrap: wrap; }
+      .dash-head { padding: 10px 10px 0; gap: 12px 6px; flex-wrap: wrap; }
       .dash-head .chip { padding: 5px 10px; }
       .dash-head button.chip[aria-expanded="true"] { border-color: rgba(62, 236, 200, 0.5); color: var(--mint); }
       .filter-row { display: none; flex: 1 0 100%; gap: 6px; }
@@ -713,8 +713,19 @@
       .send input { flex: 1 0 100%; padding: 4px; }
       .dash-list { padding: 0 4px 8px; min-height: 0; }
       .dash-group { margin: 6px 8px 0; }
-      .dash-row { grid-template-columns: 8px auto minmax(0, 1fr) auto; padding: 7px 8px; }
-      .dash-row .kind, .dash-row .who small { display: none; }
+      /* Name and folder first, then the state; the folder is what gives way. */
+      .dash-row { grid-template-columns: 8px minmax(0, 1fr) auto auto; padding: 7px 8px; }
+      .dash-row .kind { display: none; }
+      .dash-row .who { display: flex; align-items: baseline; min-width: 0; }
+      .dash-row .who small { min-width: 0; margin-left: 5px; overflow: hidden; text-overflow: ellipsis; }
+      .dash-row .who small::before { content: "· "; }
+      .dash-row .what { max-width: 56vw; }
+      .dash-row .age { color: #7f8ba3; }
+      /* Same look, larger touch target: the hit area grows without moving anything. */
+      .dash-head button.chip, .peek-btn, #reset { position: relative; }
+      .dash-head button.chip::after, .peek-btn::after { content: ""; position: absolute; inset: -7px -3px; }
+      #reset { display: inline-block; }
+      #reset::after { content: ""; position: absolute; inset: -12px -10px; }
       .peek { padding: 10px 10px 12px; }
       .peek-btn { padding: 5px 10px; }
       .peek-body { height: 84px; }
@@ -736,6 +747,9 @@
       .fold > summary { padding: 14px 2px; }
       .get-box { padding: 18px; }
       .fold > summary small { display: none; }
+    }
+    @media (max-width: 380px) {
+      .dash-row .age { display: none; }
     }
     @media (max-width: 400px) {
       .switch { display: none; }
