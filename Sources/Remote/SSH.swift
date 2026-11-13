@@ -44,7 +44,7 @@ enum SSH {
         case .tmux:
             let name = quote(sessionName ?? "agentdeck")
             // Fall back to a plain shell if tmux isn't installed, and say so.
-            return cd + "if command -v tmux >/dev/null 2>&1; then exec tmux new-session -A -s \(name); "
+            return cd + "if command -v tmux >/dev/null 2>&1; then exec \(tmuxAttach(name)); "
                 + "else echo '[AgentDeck] 服务器上没有 tmux，断线后无法恢复。'; exec \"$SHELL\" -l; fi"
         case .zellij:
             let name = quote(sessionName ?? "agentdeck")
@@ -53,12 +53,20 @@ enum SSH {
         case .auto:
             // Whatever the server has; silently a plain shell if neither.
             let name = quote(sessionName ?? "agentdeck")
-            return cd + "if command -v tmux >/dev/null 2>&1; then exec tmux new-session -A -s \(name); "
+            return cd + "if command -v tmux >/dev/null 2>&1; then exec \(tmuxAttach(name)); "
                 + "elif command -v zellij >/dev/null 2>&1; then exec zellij attach -c \(name); "
                 + "else exec \"$SHELL\" -l; fi"
         case .none:
             return cd.isEmpty ? nil : cd + "exec \"$SHELL\" -l"
         }
+    }
+
+    /// Attach (or create) a tmux session with mouse mode on for that session.
+    /// With tmux's default `mouse off` it sits on the alternate screen and the
+    /// terminal turns the scroll wheel into ↑/↓, so scrolling walks the shell
+    /// history instead of the output. `-q` keeps very old tmux quiet.
+    private static func tmuxAttach(_ name: String) -> String {
+        "tmux new-session -A -s \(name) \\; set-option -q mouse on"
     }
 
     /// The full line typed into the local shell to connect.
