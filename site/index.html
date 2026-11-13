@@ -106,8 +106,9 @@
       position: sticky;
       top: 0;
       z-index: 10;
-      backdrop-filter: blur(22px) saturate(1.45);
-      background: rgba(8, 16, 28, 0.72);
+      /* Solid, not a frosted backdrop-filter: the blur re-sampled the
+         animated, fading-in content scrolling under it and flickered. */
+      background: rgba(8, 16, 28, 0.96);
       border-bottom: 1px solid var(--line);
     }
     .nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: var(--nav); }
