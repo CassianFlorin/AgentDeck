@@ -42,28 +42,28 @@
   <style>
     :root {
       --bg: #08101c;
+      --panel: #0d1626;
       --ink: #f4f7fb;
       --text: #c5d0e2;
-      --muted: #93a0b8;
+      --muted: #97a4bc;
       --line: rgba(232, 238, 248, 0.1);
       --mint: #3eecc8;
       --mint-ink: #06241c;
       --amber: #ff9f43;
       --blue: #6aabff;
       --green: #3ddc84;
+      --grey: #8b98b0;
       --sans: -apple-system, BlinkMacSystemFont, system-ui, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
       --mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
       --shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+      --nav: 60px;
+      --pad: 96px;
     }
     *, *::before, *::after { box-sizing: border-box; }
-    html { color-scheme: dark; scroll-behavior: smooth; overflow-x: clip; }
-    @property --beam { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+    html { color-scheme: dark; scroll-behavior: smooth; overflow-x: clip; -webkit-text-size-adjust: 100%; }
     body {
       margin: 0;
-      background:
-        radial-gradient(900px 420px at 8% -10%, rgba(62, 236, 200, 0.08), transparent 60%),
-        radial-gradient(700px 380px at 100% 0%, rgba(246, 193, 91, 0.07), transparent 55%),
-        var(--bg);
+      background: var(--bg);
       color: var(--text);
       font-family: var(--sans);
       font-size: 16px;
@@ -71,25 +71,16 @@
       text-rendering: optimizeLegibility;
       -webkit-font-smoothing: antialiased;
     }
-    h1, h2, h3, p, ul, ol { margin: 0; }
+    h1, h2, h3, h4, p, ul, ol, dl, dd { margin: 0; }
+    h1, h2, h3 { text-wrap: balance; }
     ul, ol { padding: 0; list-style: none; }
     a { color: inherit; }
-    button, input { font: inherit; color: inherit; background: none; border: 0; padding: 0; }
+    button, input { font: inherit; color: inherit; background: none; border: 0; padding: 0; border-radius: 0; }
     button { cursor: pointer; }
+    input { min-width: 0; }
+    input::placeholder { color: var(--muted); opacity: 1; }
+    input[type="search"]::-webkit-search-cancel-button { display: none; }
     img { display: block; max-width: 100%; }
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      z-index: 0;
-      pointer-events: none;
-      background-image:
-        linear-gradient(rgba(232, 238, 248, 0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(232, 238, 248, 0.04) 1px, transparent 1px);
-      background-size: 72px 72px;
-      mask-image: radial-gradient(ellipse at 50% 0%, #000 12%, transparent 68%);
-    }
-    body > * { position: relative; z-index: 1; }
     :focus-visible { outline: 2px solid var(--mint); outline-offset: 3px; }
     ::selection { background: rgba(62, 236, 200, 0.28); color: white; }
     [id] { scroll-margin-top: 80px; }
@@ -115,169 +106,94 @@
       top: 0;
       z-index: 10;
       backdrop-filter: blur(22px) saturate(1.45);
-      background: rgba(8, 16, 28, 0.58);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+      background: rgba(8, 16, 28, 0.72);
+      border-bottom: 1px solid var(--line);
     }
-    .nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 64px; }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: var(--nav); }
     .brand { display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font-weight: 600; letter-spacing: -0.02em; }
     .brand img { width: 28px; height: 28px; }
-    .nav-links { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; justify-content: flex-end; }
+    .nav-links { display: flex; align-items: center; gap: 20px; }
     .nav-links a { color: var(--text); text-decoration: none; font-size: 14px; }
     .nav-links a:hover { color: white; }
-    .lang {
-      border: 1px solid rgba(255, 255, 255, 0.16);
+    .nav-links .nav-get, .lang {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 34px;
+      padding: 0 14px;
       border-radius: 999px;
-      min-width: 44px;
-      min-height: 32px;
-      padding: 0 12px;
-      font-size: 12px;
-      letter-spacing: 0.04em;
-      background: rgba(255, 255, 255, 0.04);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
-      backdrop-filter: blur(12px);
+      font-size: 13px;
+      font-weight: 600;
     }
-    .lang:hover { border-color: rgba(255, 255, 255, 0.36); background: rgba(255, 255, 255, 0.08); }
+    .nav-links .nav-get { color: var(--mint); border: 1px solid rgba(62, 236, 200, 0.4); }
+    .nav-links .nav-get:hover { color: var(--mint); background: rgba(62, 236, 200, 0.1); }
+    .lang { min-width: 46px; margin-left: -8px; border: 1px solid rgba(255, 255, 255, 0.16); color: var(--text); letter-spacing: 0.04em; font-weight: 500; }
+    .lang:hover { border-color: rgba(255, 255, 255, 0.36); color: white; }
 
+    /* Hero: the one place with a grid and a glow, behind the headline. */
     .hero-wrap { position: relative; overflow: hidden; }
+    .hero-wrap::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(760px 420px at 12% 0%, rgba(62, 236, 200, 0.1), transparent 62%),
+        linear-gradient(rgba(232, 238, 248, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(232, 238, 248, 0.035) 1px, transparent 1px);
+      background-size: auto, 72px 72px, 72px 72px;
+      mask-image: linear-gradient(#000 30%, transparent 92%);
+    }
     .hero {
       position: relative;
-      z-index: 1;
       display: grid;
-      grid-template-columns: minmax(0, 0.8fr) minmax(320px, 1fr);
+      grid-template-columns: minmax(0, 0.72fr) minmax(0, 1fr);
       gap: clamp(32px, 4vw, 72px);
       align-items: center;
-      padding: 48px 0 28px;
+      padding: 64px 0 56px;
     }
-    .wash, .beams, .pointer-light { position: absolute; pointer-events: none; }
-    .wash { width: 560px; height: 560px; border-radius: 50%; filter: blur(16px); }
-    .wash.mint { top: -200px; left: -120px; background: radial-gradient(circle, rgba(62, 236, 200, 0.22), transparent 68%); animation: drift 16s ease-in-out infinite; }
-    .wash.amber { top: -140px; right: -80px; background: radial-gradient(circle, rgba(246, 193, 91, 0.16), transparent 68%); animation: drift 20s ease-in-out infinite reverse; }
-    .beams { inset: 0; overflow: hidden; }
-    .beams i {
-      position: absolute;
-      top: 18%;
-      left: -24%;
-      width: 22%;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(62, 236, 200, 0.15), rgba(246, 193, 91, 0.9), transparent);
-      transform: rotate(16deg);
-      animation: travel 8.5s linear infinite;
-      opacity: 0.7;
-    }
-    .beams i:nth-child(2) { top: 46%; animation-delay: -3s; opacity: 0.45; }
-    .beams i:nth-child(3) { top: 70%; width: 16%; animation-delay: -5.5s; opacity: 0.35; }
-    .pointer-light {
-      z-index: 0;
-      width: 460px;
-      height: 460px;
-      margin: -230px 0 0 -230px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(62, 236, 200, 0.16), transparent 64%);
-      opacity: 0;
-      transition: opacity 0.35s ease;
-    }
-    h1 em {
-      font-style: normal;
-      background-image: linear-gradient(100deg, #f4f7fb 20%, #f4f7fb 42%, #d9fff4 50%, #f4f7fb 58%, #f4f7fb 80%);
-      background-size: 220% 100%;
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-      -webkit-text-fill-color: transparent;
-      animation: sweep 5.2s linear infinite;
-    }
-    .kicker { color: var(--mint); font-size: 13px; font-weight: 600; }
+    .kicker { color: var(--mint); font-size: 13px; font-weight: 600; letter-spacing: 0.02em; }
     h1 {
-      margin-top: 10px;
+      margin-top: 14px;
       color: var(--ink);
-      font-size: clamp(40px, 4.6vw, 80px);
+      font-size: clamp(38px, 4.6vw, 76px);
       line-height: 1.08;
       letter-spacing: -0.035em;
-      font-weight: 600;
-      max-width: 8.2em;
+      font-weight: 650;
     }
-    html[lang="en"] h1 { max-width: 10em; letter-spacing: -0.045em; }
-    .lead { margin-top: 18px; max-width: 38em; font-size: clamp(17px, 1.05vw, 20px); color: #d5deec; }
-    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+    html[lang="en"] h1 { letter-spacing: -0.045em; }
+    .lead { margin-top: 20px; max-width: 30em; font-size: clamp(17px, 1.1vw, 20px); line-height: 1.65; color: #d5deec; }
+    .lead strong { display: block; color: var(--ink); font-weight: 600; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
     .btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      min-height: 44px;
-      padding: 0 18px;
+      min-height: 46px;
+      padding: 0 20px;
       border-radius: 999px;
       text-decoration: none;
       font-size: 15px;
       font-weight: 600;
     }
-    .btn.primary {
-      position: relative;
-      overflow: hidden;
-      background: var(--mint);
-      color: var(--mint-ink);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), 0 8px 24px rgba(62, 236, 200, 0.18);
-    }
-    .btn.primary::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(110deg, transparent 32%, rgba(255, 255, 255, 0.55) 48%, transparent 64%);
-      transform: translateX(-130%);
-    }
+    .btn.primary { background: var(--mint); color: var(--mint-ink); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5); }
     .btn.primary:hover { background: #6af5d6; }
-    .btn.primary:hover::after { animation: sheen 0.7s ease; }
-    .btn.ghost {
-      color: var(--ink);
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      background: rgba(255, 255, 255, 0.03);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
-      backdrop-filter: blur(12px) saturate(1.2);
-    }
-    .btn.ghost:hover { background: rgba(255, 255, 255, 0.07); border-color: rgba(255, 255, 255, 0.34); }
+    .btn.ghost { color: var(--text); border: 1px solid rgba(255, 255, 255, 0.16); font-weight: 500; }
+    .btn.ghost:hover { color: var(--ink); border-color: rgba(255, 255, 255, 0.36); }
     .facts { margin-top: 14px; color: var(--muted); font-size: 13px; }
-    .caption { margin-top: 12px; color: var(--muted); font-size: 13px; }
+    .caption { margin-top: 12px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+    .caption button { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+    .caption button:hover { color: var(--ink); }
 
-    .stage { position: relative; }
-    .backplate {
-      position: absolute;
-      z-index: 0;
-      inset: 22px -8px auto auto;
-      width: 88%;
-      height: 86%;
-      border-radius: 16px;
-      background: linear-gradient(180deg, rgba(70, 98, 158, 0.28), rgba(12, 18, 32, 0.2));
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      transform: rotate(3deg) translate(16px, -12px);
-    }
-    .spark { position: absolute; z-index: 3; top: -34px; right: 18px; width: 36px; height: 36px; pointer-events: none; filter: drop-shadow(0 0 10px rgba(246, 193, 91, 0.55)); }
+    /* The window: the same chrome for the hero and the overview. */
     .window {
       position: relative;
-      z-index: 1;
-      border-radius: 14px;
+      border-radius: 12px;
       overflow: hidden;
       border: 1px solid rgba(255, 255, 255, 0.14);
-      background: linear-gradient(180deg, rgba(18, 28, 48, 0.78), rgba(8, 14, 26, 0.86));
-      backdrop-filter: blur(22px) saturate(1.35);
-      box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.28);
-    }
-    @supports ((mask-composite: exclude) or (-webkit-mask-composite: xor)) {
-      .window::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        z-index: 4;
-        border-radius: inherit;
-        padding: 1.5px;
-        pointer-events: none;
-        background: conic-gradient(from var(--beam), transparent 0 72%, rgba(62, 236, 200, 0.95) 84%, rgba(246, 193, 91, 0.9) 92%, transparent 100%);
-        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-        -webkit-mask-composite: xor;
-        mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-        mask-composite: exclude;
-        animation: beam 8s linear infinite;
-      }
+      background: linear-gradient(180deg, #111b2f, #0a1220);
+      box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.18);
     }
     .titlebar {
       display: grid;
@@ -293,7 +209,7 @@
     .traffic .y { background: #febc2e; }
     .traffic .g { background: #28c840; }
     .wt { text-align: center; color: var(--ink); font-size: 13px; font-weight: 600; }
-    .tools { justify-self: end; }
+    .tools { justify-self: end; display: flex; align-items: center; gap: 2px; }
     .perf {
       display: inline-flex;
       align-items: center;
@@ -303,85 +219,18 @@
       border-radius: 7px;
       color: var(--text);
       font-size: 12px;
+      text-decoration: none;
+      white-space: nowrap;
     }
     .perf svg { width: 14px; height: 14px; }
-    .perf:hover, .perf[aria-expanded="true"] { background: rgba(62, 236, 200, 0.12); color: var(--mint); }
-    .tools { display: flex; gap: 2px; }
-
-    .main { display: flex; flex-direction: column; min-width: 0; container-type: inline-size; }
-    .tabbar { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    @container (max-width: 330px) {
-      .seg, .dash-row .what, .send .hint, .quick kbd:nth-child(-n+3) { display: none; }
-      .dash-row { grid-template-columns: 8px 14px minmax(0, 1fr) auto; }
-      .dash-row .who { overflow: hidden; text-overflow: ellipsis; }
-    }
-    .dash { display: none; flex: 1; flex-direction: column; min-height: 0; }
-    .main.show-dash .dash { display: flex; }
-    .main.show-dash .term { display: none; }
-    .dash-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 12px 4px; font-size: 11px; }
-    .chip { padding: 2px 9px; border-radius: 6px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.05); color: var(--ink); white-space: nowrap; }
-    .seg { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; color: var(--muted); white-space: nowrap; }
-    .seg span { padding: 2px 8px; }
-    .seg .cur { background: rgba(255, 255, 255, 0.1); color: var(--ink); }
-    .send { display: flex; align-items: center; gap: 6px; margin: 6px 12px 0; padding: 5px 8px; border-radius: 7px; background: rgba(255, 255, 255, 0.06); font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; }
-    .send .chip { padding: 1px 7px; }
-    .send .hint { overflow: hidden; text-overflow: ellipsis; }
-    .dash-list { flex: 1; padding: 0 6px 6px; }
-    .dash-group { margin: 8px 6px 2px; font-size: 10.5px; color: var(--muted); }
-    .dash-row {
-      display: grid;
-      grid-template-columns: 8px 14px minmax(0, auto) minmax(0, 1fr) auto;
-      gap: 7px;
-      align-items: center;
-      width: 100%;
-      padding: 6px 6px;
-      border-radius: 7px;
-      text-align: left;
-      font-size: 12px;
-    }
-    .dash-row:hover { background: rgba(255, 255, 255, 0.05); }
-    .dash-row.on { background: rgba(255, 255, 255, 0.1); }
-    .dash-row .kind { width: 13px; height: 13px; color: #8b98b0; }
-    .dash-row .who { color: var(--ink); white-space: nowrap; }
-    .dash-row .who small { margin-left: 5px; font-size: 11px; color: var(--muted); }
-    .dash-row .what { justify-self: end; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
-    .dash-row .age { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
-    .dot.idle { background: none; border: 1px solid #8b98b0; }
-    .peek { border-top: 1px solid var(--line); padding: 9px 12px 12px; background: rgba(0, 0, 0, 0.16); }
-    .peek-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 11.5px; color: var(--muted); }
-    .peek-head > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .peek-open { flex: none; white-space: nowrap; }
-    .peek-head b { color: var(--ink); font-weight: 600; margin-right: 6px; }
-    .peek-open { padding: 2px 10px; border-radius: 6px; background: rgba(62, 236, 200, 0.14); color: var(--mint); font-size: 11.5px; font-weight: 600; }
-    .peek-open:hover { background: rgba(62, 236, 200, 0.24); }
-    .peek-body {
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      height: 74px;
-      margin-top: 6px;
-      overflow: hidden;
-      font-family: var(--mono);
-      font-size: 11px;
-      line-height: 1.55;
-      color: #aab6ca;
-      mask-image: linear-gradient(transparent, #000 34%);
-    }
-    .peek-body .ask { margin-top: 6px; padding: 6px 10px; }
-    .peek-body .gap { margin-top: 4px !important; }
-    .reply { margin-top: 8px; padding: 5px 10px; border-radius: 7px; background: rgba(255, 255, 255, 0.06); color: var(--muted); font-size: 11.5px; }
-    .reply::before { content: "›"; margin-right: 8px; color: var(--mint); }
-    .reply-row { display: flex; align-items: center; gap: 5px; margin-top: 8px; }
-    .reply-row .reply { flex: 1; margin-top: 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .quick { display: none; gap: 4px; }
-    .peek.waiting .quick { display: flex; }
-    .quick kbd { font-size: 10.5px; padding: 0 5px; }
+    .perf.jump { border: 1px solid rgba(62, 236, 200, 0.32); color: var(--mint); }
+    .perf .down { width: 12px; height: 12px; margin-left: -2px; }
+    .perf:hover, .perf[aria-expanded="true"], .perf[aria-pressed="true"] { background: rgba(62, 236, 200, 0.12); color: var(--mint); }
     .switch { display: inline-flex; align-items: center; gap: 1px; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
-    .switch button { min-width: 20px; min-height: 28px; border-radius: 6px; color: var(--text); }
+    .switch button { min-width: 22px; min-height: 28px; border-radius: 6px; color: var(--text); }
     .switch button:hover { background: rgba(255, 255, 255, 0.08); color: var(--ink); }
-    .switch[hidden] { display: none; }
 
-    .workspace { display: grid; grid-template-columns: 196px minmax(0, 1fr); min-height: clamp(430px, 28vw, 540px); }
+    .workspace { display: grid; grid-template-columns: 196px minmax(0, 1fr); min-height: 400px; }
     .window.show-monitor .workspace { grid-template-columns: 188px minmax(0, 1fr) 148px; }
     .sidebar { padding: 8px; border-right: 1px solid var(--line); background: rgba(0, 0, 0, 0.18); }
     .side-label { margin: 10px 8px 4px; font-size: 11px; color: var(--muted); }
@@ -397,16 +246,17 @@
       border-radius: 8px;
       color: inherit;
     }
-    .session .kind { grid-column: 1; grid-row: 1 / span 2; align-self: center; width: 15px; height: 15px; color: #8b98b0; }
+    .session .kind { grid-column: 1; grid-row: 1 / span 2; align-self: center; width: 15px; height: 15px; color: var(--grey); }
     .session.wait .kind { color: var(--amber); }
-    .session .name { grid-column: 2; grid-row: 1; font-size: 13px; color: #d5deec; line-height: 1.3; }
+    .session .name { grid-column: 2; grid-row: 1; font-size: 13px; color: #d5deec; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .session.on .name { color: white; }
     .session .meta { grid-column: 2; grid-row: 2; display: flex; gap: 6px; align-items: center; min-width: 0; font-size: 11px; color: var(--muted); line-height: 1.3; }
     .session .meta .folder { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .session.on { background: rgba(255, 255, 255, 0.08); }
-    .session:hover { background: rgba(255, 255, 255, 0.05); }
-    .session.on:hover { background: rgba(255, 255, 255, 0.11); }
-    .play { grid-column: 3; grid-row: 1 / span 2; align-self: center; width: 14px; height: 14px; color: #8b98b0; }
+    button.session:hover { background: rgba(255, 255, 255, 0.05); }
+    button.session.on:hover { background: rgba(255, 255, 255, 0.11); }
+    .play { display: none; grid-column: 3; grid-row: 1 / span 2; align-self: center; width: 14px; height: 14px; color: var(--grey); }
+    .session[data-state="exit"] .play { display: block; }
 
     .badge { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; font-weight: 600; }
     .badge b { font-weight: 600; }
@@ -426,7 +276,8 @@
       animation: ring 1.4s ease-out infinite;
     }
     .dot.done { background: var(--green); }
-    .dot.exit { background: #8b98b0; }
+    .dot.exit { background: var(--grey); }
+    .dot.idle { background: none; border: 1px solid var(--grey); }
     .badge.working b,
     .badge.working b span {
       background-image: linear-gradient(100deg, #6aabff 30%, #f7fbff 50%, #6aabff 70%);
@@ -436,21 +287,23 @@
       -webkit-text-fill-color: transparent;
       animation: sweep 1.6s linear infinite;
     }
-    .mark { font-size: 22px; }
-    .mark .dot { width: 9px; height: 9px; }
 
+    .main { display: flex; flex-direction: column; min-width: 0; }
     .tabbar {
       padding: 8px 14px;
       border-bottom: 1px solid var(--line);
       color: var(--muted);
       font-family: var(--mono);
       font-size: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
-    .term { display: none; padding: 16px 16px 20px; font-family: var(--mono); font-size: 12.5px; line-height: 1.65; color: #e7eef8; }
+    .term { display: none; padding: 16px 16px 20px; font-family: var(--mono); font-size: 12.5px; line-height: 1.65; color: #e7eef8; overflow-wrap: anywhere; }
     .term.on { display: block; }
     .term p + p { margin-top: 2px; }
     .gap { margin-top: 12px !important; }
-    .dim { color: #8b98b0; }
+    .dim { color: var(--grey); }
     .ps { color: var(--mint); }
     .info { color: var(--blue); }
     .add { color: var(--green); }
@@ -463,7 +316,7 @@
       background: rgba(255, 159, 67, 0.08);
       border: 1px solid rgba(255, 159, 67, 0.38);
     }
-    .ask .choices { margin-top: 8px; }
+    .ask .choices { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
     .caret {
       display: inline-block;
       width: 7px;
@@ -472,10 +325,7 @@
       vertical-align: text-bottom;
       animation: blink 1.1s steps(1) infinite;
     }
-    kbd, .path {
-      font-family: var(--mono);
-      font-size: 12px;
-    }
+    kbd, .path { font-family: var(--mono); font-size: 12px; }
     kbd {
       display: inline-block;
       padding: 1px 6px;
@@ -485,7 +335,9 @@
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
       color: var(--ink);
       line-height: 1.6;
+      white-space: nowrap;
     }
+    .path { color: var(--mint); }
 
     .monitor { display: none; border-left: 1px solid var(--line); padding: 12px; background: rgba(0, 0, 0, 0.16); }
     .window.show-monitor .monitor { display: block; }
@@ -493,17 +345,10 @@
     .monitor.is-remote .is-local { display: none; }
     .monitor.is-remote .is-remote { display: block; }
     .mh { display: flex; justify-content: space-between; align-items: baseline; color: var(--ink); font-size: 12px; font-weight: 600; }
-    .sample {
-      font-weight: 500;
-      color: var(--muted);
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      padding: 0 6px;
-      font-size: 10px;
-    }
+    .sample { font-weight: 500; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0 6px; font-size: 10px; }
     .where { margin-top: 4px; color: var(--muted); font-size: 11px; }
     .metric { margin-top: 12px; }
-    .ml { display: flex; justify-content: space-between; font-size: 11px; color: var(--text); font-variant-numeric: tabular-nums; }
+    .ml { display: flex; justify-content: space-between; gap: 6px; font-size: 11px; color: var(--text); font-variant-numeric: tabular-nums; }
     .bar { margin-top: 5px; height: 4px; border-radius: 99px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
     .bar i { display: block; height: 100%; background: var(--blue); border-radius: inherit; }
     .bar.mem i { background: var(--mint); }
@@ -511,118 +356,231 @@
     .cores i { display: block; flex: 1; background: rgba(106, 171, 255, 0.85); border-radius: 2px 2px 0 0; }
     .note { margin-top: 12px; color: var(--muted); font-size: 11px; line-height: 1.45; }
 
-    .block { padding: 76px 0; border-top: 1px solid var(--line); }
-    .section-head { margin-bottom: 28px; }
-    h2 { color: var(--ink); font-size: clamp(28px, 3vw, 40px); line-height: 1.2; letter-spacing: -0.02em; font-weight: 600; max-width: 16em; }
-    .intro { margin-top: 12px; max-width: 42em; }
-    .eyebrow { color: var(--mint); font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 8px; }
-    html:not([lang="en"]) .eyebrow { letter-spacing: 0.22em; text-transform: none; }
-
-    .status-list {
+    /* Agent overview, inside the second window. */
+    .dash { display: none; flex: 1; flex-direction: column; min-height: 0; }
+    .main.show-dash .dash { display: flex; }
+    .main.show-dash .term { display: none; }
+    .dash-head { display: flex; align-items: center; gap: 8px; padding: 12px 14px 0; font-size: 12px; }
+    .chip { flex: none; padding: 3px 10px; border-radius: 6px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.05); color: var(--ink); white-space: nowrap; }
+    .filter { flex: 1; min-width: 0; padding: 3px 10px; border-radius: 6px; background: rgba(255, 255, 255, 0.06); font-size: 12px; }
+    .seg { flex: none; display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; color: var(--muted); white-space: nowrap; }
+    .seg button { padding: 3px 9px; }
+    .seg button[aria-pressed="true"] { background: rgba(255, 255, 255, 0.1); color: var(--ink); }
+    .send { display: flex; align-items: center; gap: 6px; margin: 10px 14px 0; padding: 6px 8px; border-radius: 8px; background: rgba(255, 255, 255, 0.06); font-size: 12px; }
+    .send .chip { padding: 1px 8px; }
+    .send input, .reply input { flex: 1; min-width: 0; padding: 2px 4px; }
+    .send:focus-within, .reply:focus-within, .filter:focus-visible { outline: 1px solid rgba(62, 236, 200, 0.6); outline-offset: 0; }
+    .send input:focus-visible, .reply input:focus-visible { outline: none; }
+    .dash-list { flex: 1; padding: 2px 8px 10px; min-height: 200px; }
+    .dash-group { margin: 12px 8px 3px; font-size: 11px; color: var(--muted); }
+    .dash-empty { margin: 28px 8px; text-align: center; font-size: 13px; color: var(--muted); }
+    .dash-row {
       display: grid;
-      gap: 1px;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid var(--line);
-      border-radius: 16px;
+      grid-template-columns: 8px 14px auto minmax(0, 1fr) 34px;
+      gap: 8px;
+      align-items: center;
+      width: 100%;
+      padding: 7px 8px;
+      border-radius: 7px;
+      text-align: left;
+      font-size: 13px;
+    }
+    .dash-row:hover { background: rgba(255, 255, 255, 0.05); }
+    .dash-row.on { background: rgba(255, 255, 255, 0.1); }
+    .dash-row.fresh { animation: arrive 0.5s ease; }
+    .dash-row .kind { width: 13px; height: 13px; color: var(--grey); }
+    .dash-row .who { color: var(--ink); white-space: nowrap; }
+    .dash-row .who small { margin-left: 6px; font-size: 12px; color: var(--muted); }
+    .by-folder .who small { display: none; }
+    .dash-row .what { justify-self: end; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+    .dash-row .age { text-align: right; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .peek { border-top: 1px solid var(--line); padding: 10px 14px 14px; background: rgba(0, 0, 0, 0.18); }
+    .peek-head { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+    .peek-head .who { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .peek-head b { color: var(--ink); font-weight: 600; margin-right: 6px; }
+    .peek-btn { flex: none; padding: 2px 10px; border-radius: 6px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.05); color: var(--ink); font-size: 12px; white-space: nowrap; }
+    .peek-btn:hover { background: rgba(255, 255, 255, 0.1); }
+    #peek-restart { display: none; }
+    .peek.exited #peek-restart { display: block; }
+    .peek-body {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      height: 112px;
+      margin-top: 6px;
+      overflow: hidden;
+      font-family: var(--mono);
+      font-size: 11.5px;
+      line-height: 1.55;
+      color: #b4bfd2;
+      overflow-wrap: anywhere;
+      mask-image: linear-gradient(transparent, #000 30%);
+    }
+    .peek-body > * { flex: none; }
+    .peek-body .ask { margin-top: 6px; padding: 6px 10px; }
+    .peek-body .ask .choices { margin-top: 2px; }
+    .peek-body .gap { margin-top: 4px !important; }
+    .reply-row { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
+    .reply { flex: 1; min-width: 0; display: flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: 7px; background: rgba(255, 255, 255, 0.06); font-size: 12px; }
+    .reply::before { content: "›"; color: var(--mint); }
+    .reply input:disabled { cursor: not-allowed; }
+    .quick { display: none; gap: 4px; }
+    .peek.waiting .quick { display: flex; }
+    .quick button {
+      min-width: 26px;
+      min-height: 26px;
+      padding: 0 6px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 159, 67, 0.45);
+      background: rgba(255, 159, 67, 0.1);
+      color: var(--ink);
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+    .quick button:hover { background: rgba(255, 159, 67, 0.24); }
+
+    /* Sections */
+    .block { padding: var(--pad) 0; border-top: 1px solid var(--line); }
+    /* A link to a section lands on its heading, just under the nav, not on its padding. */
+    main .block[id] { scroll-margin-top: calc(var(--nav) + 24px - var(--pad)); }
+    .section-head { margin-bottom: 28px; }
+    h2 { color: var(--ink); font-size: clamp(28px, 3vw, 42px); line-height: 1.2; letter-spacing: -0.02em; font-weight: 600; max-width: 18em; }
+    h3 { color: var(--ink); font-size: 18px; line-height: 1.4; font-weight: 600; }
+    .intro { margin-top: 12px; max-width: 40em; font-size: 17px; }
+    .eyebrow { color: var(--mint); font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 10px; }
+    html:not([lang="en"]) .eyebrow { letter-spacing: 0.22em; }
+    .small { font-size: 14px; color: var(--muted); }
+
+    /* Status: four lights, each with a line of terminal. */
+    .states { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .states li { padding: 26px 28px 28px 0; }
+    .states li + li { padding-left: 28px; border-left: 1px solid var(--line); }
+    .mark { font-size: 20px; gap: 9px; }
+    .mark .dot { width: 9px; height: 9px; }
+    .snip {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 68px;
+      margin: 16px 0 14px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.3);
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.6;
+      color: #e7eef8;
+    }
+    .s-wait .snip { background: rgba(255, 159, 67, 0.08); box-shadow: inset 0 0 0 1px rgba(255, 159, 67, 0.34); }
+    .states li > p { font-size: 15px; line-height: 1.65; }
+    .states li > p kbd { margin: 0 2px; }
+
+    /* Folds: hairlines, no boxes. */
+    .folds { margin-top: 36px; border-bottom: 1px solid var(--line); }
+    .fold { border-top: 1px solid var(--line); }
+    .fold > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 15px 2px; cursor: pointer; color: var(--ink); font-size: 16px; font-weight: 600; list-style: none; }
+    .fold > summary::-webkit-details-marker { display: none; }
+    .fold > summary::after { content: "+"; flex: none; color: var(--mint); font-size: 20px; font-weight: 400; line-height: 1; }
+    .fold[open] > summary::after { content: "−"; }
+    .fold > summary:hover { color: white; }
+    .fold > summary small { margin-left: 10px; color: var(--muted); font-size: 13px; font-weight: 400; }
+    .fold-body { padding: 2px 2px 24px; }
+    .fold.sub > summary { font-size: 14px; padding: 11px 2px; font-weight: 500; color: var(--text); }
+    .fold.sub .fold-body { padding-bottom: 16px; }
+    .notes { display: grid; gap: 8px; max-width: 62em; font-size: 15px; line-height: 1.65; }
+    .notes li { padding-left: 14px; position: relative; }
+    .notes li::before { content: ""; position: absolute; left: 0; top: 0.72em; width: 5px; height: 5px; border-radius: 50%; background: rgba(62, 236, 200, 0.7); }
+    .notes.cols { grid-template-columns: 1fr 1fr; gap: 10px 48px; max-width: none; }
+    .fold.sub .notes { font-size: 14px; }
+    .detail-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px 40px; }
+    .detail-grid h4 { margin: 0 0 6px; color: var(--mint); font-size: 13px; font-weight: 600; }
+    .detail-grid li { padding: 5px 0; font-size: 14.5px; line-height: 1.6; }
+    .detail-grid li + li { border-top: 1px solid rgba(232, 238, 248, 0.06); }
+
+    /* Overview showcase */
+    .showcase { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(280px, 0.8fr); gap: clamp(32px, 4vw, 72px); align-items: start; }
+    #ov .workspace { min-height: 0; }
+    html:not(.js) #ov .workspace { grid-template-columns: 1fr; }
+    html:not(.js) #ov-side { display: none; }
+    #ov-term { flex: 1; }
+    .steps-3 { counter-reset: n; }
+    .steps-3 li { counter-increment: n; position: relative; padding: 0 0 26px 44px; }
+    .steps-3 li + li { padding-top: 26px; border-top: 1px solid var(--line); }
+    .steps-3 li::before {
+      content: counter(n);
+      position: absolute;
+      left: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--ink);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .steps-3 li:first-child::before { border-color: var(--amber); color: var(--amber); }
+    .steps-3 p { margin-top: 6px; font-size: 15px; line-height: 1.65; }
+    .steps-3 .try { color: var(--muted); font-size: 13.5px; }
+    .steps-3 .try::before { content: "↳ "; color: var(--mint); }
+    .showcase aside .folds { margin-top: 0; }
+
+    /* Remote and conversations */
+    .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 56px clamp(40px, 5vw, 88px); }
+    .pair h2 { font-size: clamp(26px, 2.5vw, 34px); }
+    .pair article > p { margin-top: 12px; max-width: 34em; }
+    .frag {
+      margin: 24px 0 8px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: linear-gradient(180deg, #111b2f, #0b1322);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
       overflow: hidden;
     }
-    .status-list li {
-      display: grid;
-      grid-template-columns: 210px minmax(0, 1fr);
-      gap: 8px 28px;
-      align-items: center;
-      padding: 26px 28px;
-      background: rgba(13, 22, 38, 0.72);
-      backdrop-filter: blur(16px) saturate(1.2);
-      transition: background 0.2s ease;
-    }
-    .status-list li:hover { background: rgba(22, 36, 58, 0.88); }
-    .status-list li.s-work { box-shadow: inset 3px 0 0 var(--blue), inset 0 1px 0 rgba(255, 255, 255, 0.12); }
-    .status-list li.s-wait { box-shadow: inset 3px 0 0 var(--amber), inset 0 1px 0 rgba(255, 255, 255, 0.12); }
-    .status-list li.s-done { box-shadow: inset 3px 0 0 var(--green), inset 0 1px 0 rgba(255, 255, 255, 0.12); }
-    .status-list li.s-exit { box-shadow: inset 3px 0 0 #8b98b0, inset 0 1px 0 rgba(255, 255, 255, 0.12); }
-    .textlink { margin-top: 8px; color: var(--mint); font-size: 14px; font-weight: 600; }
-    .textlink:hover { text-decoration: underline; }
-    .footnote { margin-top: 16px; color: var(--muted); font-size: 14px; max-width: 46em; }
-
-    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; }
-    .split h2 { font-size: clamp(26px, 2.6vw, 34px); }
-    .split p + p { margin-top: 12px; }
-    .config {
-      margin-top: 36px;
+    .frag-side { display: grid; grid-template-columns: 1fr 1fr; }
+    .frag-side > div { padding: 10px; }
+    .frag-side > div + div { border-left: 1px solid var(--line); }
+    .frag .session { cursor: default; }
+    .state-off { color: var(--muted); }
+    .redo { grid-column: 3; grid-row: 1 / span 2; align-self: center; padding: 1px 8px; border-radius: 6px; border: 1px solid var(--line); font-size: 11px; color: var(--ink); white-space: nowrap; }
+    .attached { grid-column: 3; grid-row: 1 / span 2; align-self: center; font-size: 11px; color: var(--green); white-space: nowrap; }
+    .frag-head { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+    .frag-head b { margin-right: auto; color: var(--ink); font-size: 13px; font-weight: 600; white-space: nowrap; }
+    .frag-head .path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+    .conv { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; align-items: center; padding: 9px 14px; font-size: 13px; }
+    .conv + .conv { border-top: 1px solid rgba(232, 238, 248, 0.06); }
+    .conv b { color: var(--ink); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .conv small { grid-column: 1; color: var(--muted); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .conv .redo { grid-column: 2; grid-row: 1 / span 2; }
+    .conv:first-of-type .redo { border-color: rgba(62, 236, 200, 0.5); color: var(--mint); }
+    .ghostty {
+      margin-top: 56px;
       display: grid;
       grid-template-columns: auto minmax(0, 1fr);
-      gap: 8px 28px;
+      gap: 6px 36px;
       align-items: center;
-      padding: 22px 24px;
-      border-radius: 14px;
-      background: linear-gradient(180deg, rgba(62, 236, 200, 0.1), rgba(14, 24, 40, 0.45));
-      border: 1px solid rgba(62, 236, 200, 0.28);
-      backdrop-filter: blur(18px) saturate(1.3);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
-      transition: border-color 0.2s ease, transform 0.2s ease;
-    }
-    .config:hover { border-color: rgba(62, 236, 200, 0.5); transform: translateY(-2px); }
-    .path { color: var(--mint); font-size: 14px; }
-    .config .label { color: var(--muted); font-size: 12px; }
-
-    .points { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-    .points li {
-      padding: 20px;
-      border-radius: 14px;
-      background: rgba(14, 24, 40, 0.5);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(14px) saturate(1.2);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
-      transition: border-color 0.2s ease, transform 0.2s ease;
-    }
-    .points li:hover { border-color: rgba(62, 236, 200, 0.4); transform: translateY(-2px); }
-    .points h3 { margin-bottom: 8px; color: var(--ink); font-size: 17px; font-weight: 600; }
-    .points p { font-size: 15px; }
-
-    .keys { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(7, auto); grid-auto-flow: column; gap: 0 40px; }
-    .keyrow {
-      display: grid;
-      grid-template-columns: 168px minmax(0, 1fr);
-      gap: 12px;
-      align-items: center;
-      padding: 12px 8px;
+      padding: 22px 0 0;
       border-top: 1px solid var(--line);
-      border-radius: 8px;
-      transition: background 0.2s ease;
     }
-    .keyrow:hover { background: rgba(255, 255, 255, 0.035); }
+    .ghostty h3 { font-size: 17px; }
+    .ghostty .path { font-size: 13px; }
+    .ghostty p { max-width: 52em; font-size: 15px; }
+
+    /* Keys */
+    .keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 40px; }
+    .keyrow { display: grid; grid-template-columns: 124px minmax(0, 1fr); gap: 12px; align-items: center; padding: 14px 0; border-top: 1px solid var(--line); font-size: 15px; }
+    .keys.all { grid-template-columns: 1fr 1fr; }
+    .keys.all .keyrow:nth-child(-n+2) { border-top: 0; }
     .combo { display: flex; flex-wrap: wrap; gap: 6px; }
-    .more { display: grid; gap: 14px; margin-top: 28px; }
-    .more li { padding-left: 14px; border-left: 2px solid rgba(62, 236, 200, 0.55); }
-    .subhead { margin: 36px 0 8px; color: var(--ink); font-size: 22px; font-weight: 600; }
-    .inline a { color: var(--ink); text-underline-offset: 3px; }
+    .keys:not(.all) kbd { font-size: 13px; padding: 3px 8px; }
 
-    .limits { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 22px; }
-    .limits li {
-      padding: 16px;
-      border-radius: 12px;
-      background: rgba(14, 24, 40, 0.5);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(14px) saturate(1.2);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
-      transition: border-color 0.2s ease, transform 0.2s ease;
-    }
-    .limits li:hover { border-color: rgba(62, 236, 200, 0.4); transform: translateY(-2px); }
-    .limits strong { display: block; margin-bottom: 6px; color: var(--ink); font-size: 14px; }
-    .limits span { color: var(--muted); font-size: 13px; line-height: 1.5; }
-
-    .fold { margin-top: 28px; border: 1px solid var(--line); border-radius: 14px; background: rgba(14, 24, 40, 0.5); backdrop-filter: blur(14px) saturate(1.2); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14); }
-    .fold > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; cursor: pointer; color: var(--ink); font-size: 17px; font-weight: 600; list-style: none; border-radius: 14px; }
-    .fold > summary::-webkit-details-marker { display: none; }
-    .fold > summary::after { content: "+"; color: var(--mint); font-size: 20px; font-weight: 400; line-height: 1; }
-    .fold[open] > summary::after { content: "−"; }
-    .fold > summary:hover { background: rgba(255, 255, 255, 0.035); }
-    .fold-body { padding: 0 20px 20px; }
-    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px 40px; }
-    .detail-grid h4 { margin: 0 0 6px; color: var(--mint); font-size: 13px; font-weight: 600; }
-    .detail-grid li { padding: 5px 0; font-size: 15px; line-height: 1.6; }
-    .detail-grid li + li { border-top: 1px solid rgba(232, 238, 248, 0.06); }
+    /* Download */
+    .specs { display: flex; flex-wrap: wrap; gap: 6px 36px; margin-top: 24px; font-size: 14px; color: var(--muted); }
+    .specs div { display: flex; gap: 8px; }
+    .specs dt { color: var(--ink); font-weight: 600; }
+    .cta > p { margin-top: 12px; max-width: 38em; font-size: 17px; }
+    .inline a, .fold-body a { color: var(--ink); text-underline-offset: 3px; }
     .code {
       margin: 12px 0 0;
       padding: 14px 16px;
@@ -636,16 +594,8 @@
       overflow-x: auto;
       white-space: pre;
     }
-    .code .dim { color: #8b98b0; }
-    .steps p { margin-top: 12px; max-width: 46em; }
+    .build p { margin-top: 12px; max-width: 46em; font-size: 15px; }
     .legal { margin: 0; color: var(--muted); font-family: var(--mono); font-size: 12px; line-height: 1.65; white-space: pre-wrap; }
-    .footer .fold { margin-top: 24px; }
-    .footer .fold > summary { font-size: 14px; padding: 12px 16px; }
-    .footer .fold-body { padding: 0 16px 16px; }
-
-    .cta { text-align: left; }
-    .cta .actions { margin-top: 22px; }
-    .cta p { margin-top: 12px; max-width: 38em; }
 
     .footer { border-top: 1px solid var(--line); padding: 28px 0 40px; }
     .footer-inner { display: flex; justify-content: space-between; gap: 24px; align-items: end; }
@@ -653,69 +603,119 @@
     .fine { color: var(--muted); font-size: 13px; max-width: 40em; }
     .foot-links { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 10px; }
     .foot-links a { color: var(--ink); font-size: 14px; text-underline-offset: 3px; }
+    .footer .folds { margin-top: 24px; border-bottom: 0; }
+    .footer .fold > summary { font-size: 14px; font-weight: 500; color: var(--text); }
 
-    .js .reveal { opacity: 0; transform: translateY(16px); transition: opacity 0.6s ease, transform 0.6s ease; }
+    .js .reveal { opacity: 0; transform: translateY(14px); transition: opacity 0.5s ease, transform 0.5s ease; }
     .js .reveal.in { opacity: 1; transform: none; }
 
     @keyframes pulse { 50% { opacity: 0.35; } }
     @keyframes ring { from { transform: scale(0.7); opacity: 0.85; } to { transform: scale(2.5); opacity: 0; } }
     @keyframes sweep { from { background-position: 100% 0; } to { background-position: -80% 0; } }
     @keyframes blink { 50% { opacity: 0; } }
-    @keyframes twinkle { 50% { opacity: 0.55; } }
-    @keyframes drift { 50% { transform: translate(28px, 16px); } }
-    @keyframes travel { to { transform: translateX(150vw) rotate(16deg); } }
-    @keyframes sheen { to { transform: translateX(130%); } }
-    @keyframes beam { to { --beam: 360deg; } }
-    .spark { animation: twinkle 3.6s ease-in-out infinite; }
+    @keyframes arrive { from { background: rgba(62, 236, 200, 0.22); } }
 
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
-      *, *::before, *::after { animation: none !important; }
+      *, *::before, *::after { animation: none !important; transition: none !important; }
       .badge.working b,
-      .badge.working b span {
-        background: none;
-        -webkit-text-fill-color: var(--blue);
-        color: var(--blue);
-      }
-      h1 em { background: none; color: var(--ink); -webkit-text-fill-color: var(--ink); }
-      .beams, .pointer-light { display: none; }
+      .badge.working b span { background: none; -webkit-text-fill-color: var(--blue); color: var(--blue); }
       .js .reveal { opacity: 1; transform: none; }
     }
 
-    .config p { max-width: 64em; }
     /* The mock is drawn at one size; on a wide screen, enlarge it with the column it sits in. */
     @media (min-width: 1600px) {
       .window { zoom: 1.25; }
     }
-    @media (min-width: 1280px) {
-      .status-list { grid-template-columns: 1fr 1fr; }
-      .status-list li { grid-template-columns: 150px minmax(0, 1fr); }
-      .more { grid-template-columns: 1fr 1fr; gap: 14px 48px; }
-      .detail-grid { grid-template-columns: repeat(3, 1fr); }
+    @media (max-width: 1180px) {
+      .states { grid-template-columns: 1fr 1fr; border-bottom: 0; }
+      .states li, .states li + li { padding: 24px 24px 26px 0; border-left: 0; border-bottom: 1px solid var(--line); }
+      .states li:nth-child(even) { padding-left: 24px; padding-right: 0; border-left: 1px solid var(--line); }
+      .keys { grid-template-columns: 1fr 1fr; }
+      .detail-grid { grid-template-columns: 1fr 1fr; }
     }
-
     @media (max-width: 980px) {
-      .hero { grid-template-columns: 1fr; padding-top: 32px; }
-      h1 { max-width: none; }
-      .split, .keys, .limits { grid-template-columns: 1fr 1fr; }
+      .hero { grid-template-columns: 1fr; padding: 40px 0 56px; }
+      .showcase { grid-template-columns: 1fr; }
       .footer-inner { flex-direction: column; align-items: start; }
+      :root { --pad: 72px; }
     }
     @media (max-width: 760px) {
-      .wrap { width: calc(100% - 28px); }
-      .status-list li, .config, .keyrow { grid-template-columns: 1fr; }
-      .split, .keys, .limits, .points, .detail-grid { grid-template-columns: 1fr; }
-      .keys { grid-template-rows: none; grid-auto-flow: row; }
-      .workspace, .window.show-monitor .workspace { grid-template-columns: 1fr; }
-      .sidebar { border-right: 0; border-bottom: 1px solid var(--line); }
+      .wrap { width: calc(100% - 32px); }
+      [id] { scroll-margin-top: 68px; }
+      :root { --nav: 52px; --pad: 56px; }
+      .perf .long { display: none; }
+      .nav-links { gap: 14px; }
+      .nav-links .sec { display: none; }
+      .lang { margin-left: 0; }
+      .nav-links .nav-get, .lang { min-height: 36px; }
+
+      .hero { padding: 28px 0 44px; gap: 28px; }
+      h1 { margin-top: 10px; }
+      .lead { margin-top: 14px; font-size: 16px; }
+      .actions { margin-top: 20px; }
+      .btn { flex: 1; padding: 0 14px; white-space: nowrap; }
+      .section-head { margin-bottom: 26px; }
+      .intro { font-size: 16px; }
+
+      /* Phone demo: sessions become a compact picker right above the terminal. */
+      .workspace, .window.show-monitor .workspace { grid-template-columns: 1fr; min-height: 0; }
+      .sidebar { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 6px; border-right: 0; border-bottom: 1px solid var(--line); }
+      .sidebar .side-label { display: none; }
+      .sidebar .session { grid-template-columns: 14px minmax(0, 1fr); column-gap: 6px; padding: 6px 7px; min-height: 44px; align-content: center; }
+      .sidebar .session .kind { width: 13px; height: 13px; }
+      .sidebar .session .name { font-size: 12.5px; }
+      .sidebar .session .meta { font-size: 10.5px; }
+      .sidebar .session .badge + .folder, .sidebar .session .play { display: none; }
+      #ov-side { display: none; }
+      #panes { min-height: 268px; }
+      .term { padding: 12px 12px 16px; font-size: 12px; }
+      .ask { margin-top: 10px; padding: 10px 12px; }
       .monitor { border-left: 0; border-top: 1px solid var(--line); }
-      .nav-links { gap: 10px 12px; }
-      .backplate { display: none; }
+      .monitor > div { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+      .monitor > div .note { grid-column: 1 / -1; margin-top: 0; }
+      .monitor .metric { margin-top: 10px; }
+      .monitor .ml { flex-direction: column; gap: 0; }
+      .monitor .cores { display: none; }
+      .titlebar { grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; padding: 0 8px 0 12px; }
+      .wt { text-align: left; }
+      .perf { min-height: 32px; }
+
+      .window input { font-size: 16px; }
+      .dash-head { padding: 10px 10px 0; gap: 6px; }
+      .dash-head .chip { padding: 5px 8px; }
+      .filter { padding: 2px 8px; }
+      .seg button { padding: 5px 7px; }
+      .send { margin: 8px 10px 0; flex-wrap: wrap; }
+      .send input { flex: 1 0 100%; padding: 4px; }
+      .dash-list { padding: 0 4px 8px; min-height: 0; }
+      .dash-group { margin-top: 8px; }
+      .dash-row { grid-template-columns: 8px auto minmax(0, 1fr) auto; padding: 9px 8px; }
+      .dash-row .kind, .dash-row .who small { display: none; }
+      .peek { padding: 10px 10px 12px; }
+      .peek-btn { padding: 5px 10px; }
+      .peek-body { height: 118px; }
+      .reply-row { flex-wrap: wrap; }
+      .reply { flex: 1 0 100%; }
+      .quick { flex: 1; }
+      .quick button { flex: 1; min-height: 36px; font-size: 13px; }
+
+      .states { grid-template-columns: 1fr; }
+      .states li, .states li + li, .states li:nth-child(even) { display: grid; grid-template-columns: 1fr; padding: 20px 0 22px; border-left: 0; }
+      .snip { min-height: 0; margin: 12px 0 10px; }
+      .pair { grid-template-columns: 1fr; gap: 56px; }
+      .ghostty { grid-template-columns: 1fr; margin-top: 44px; }
+      .keys, .keys.all, .notes.cols, .detail-grid { grid-template-columns: 1fr; }
+      .keys.all .keyrow:nth-child(2) { border-top: 1px solid var(--line); }
+      .keyrow { grid-template-columns: 112px minmax(0, 1fr); padding: 12px 0; }
+      .fold > summary { padding: 16px 2px; }
+      .fold > summary small { display: none; }
+      .specs { flex-direction: column; }
     }
-    @media (max-width: 480px) {
-      [id] { scroll-margin-top: 112px; }
+    @media (max-width: 400px) {
       .switch { display: none; }
-      .nav-inner { flex-wrap: wrap; row-gap: 2px; padding: 8px 0 10px; }
-      .nav-links { flex: 1 0 100%; justify-content: flex-start; gap: 6px 14px; }
+      .frag-side { grid-template-columns: 1fr; }
+      .frag-side > div + div { border-left: 0; border-top: 1px solid var(--line); }
     }
   </style>
 </head>
@@ -728,43 +728,34 @@
         AgentDeck
       </a>
       <nav class="nav-links" aria-label="AgentDeck">
-        <a href="#status"><span class="zh">状态</span><span class="en">Status</span></a>
-        <a href="#overview"><span class="zh">总览</span><span class="en">Overview</span></a>
-        <a href="#remote"><span class="zh">远程</span><span class="en">Remote</span></a>
-        <a href="#keys"><span class="zh">快捷键</span><span class="en">Keys</span></a>
-        <a href="#get"><span class="zh">下载</span><span class="en">Download</span></a>
+        <a class="sec" href="#status"><span class="zh">状态</span><span class="en">Status</span></a>
+        <a class="sec" href="#overview"><span class="zh">总览</span><span class="en">Overview</span></a>
+        <a class="sec" href="#remote"><span class="zh">远程</span><span class="en">Remote</span></a>
+        <a class="sec" href="#keys"><span class="zh">快捷键</span><span class="en">Keys</span></a>
+        <a class="nav-get" href="#get"><span class="zh">下载</span><span class="en">Download</span></a>
         <button type="button" id="lang" class="lang"><span class="zh">EN</span><span class="en">中文</span></button>
       </nav>
     </div>
   </header>
 
   <div class="hero-wrap">
-    <div class="wash mint" aria-hidden="true"></div>
-    <div class="wash amber" aria-hidden="true"></div>
-    <div class="beams" aria-hidden="true"><i></i><i></i><i></i></div>
-    <div class="pointer-light" id="pointer-light" aria-hidden="true"></div>
     <div class="wrap hero" id="content">
       <div class="copy">
-        <p class="kicker"><span class="zh">原生 macOS · 基于 Ghostty</span><span class="en">Native macOS · Built on Ghostty</span></p>
-        <h1><span class="zh">一个窗口，<br><em>看住所有 Agent。</em></span><span class="en">One window<br><em>for every agent.</em></span></h1>
-        <p class="lead zh">几个编程 Agent 一起跑的时候，麻烦的不是再开一个终端，而是你得不停去看：谁还在干活，谁停下来等你，关掉窗口之后那段对话去了哪。AgentDeck 把这些会话放在同一条侧边栏里。每一格都是真正的 Ghostty 终端，本地目录和 SSH 服务器排在一起。</p>
-        <p class="lead en">The hard part of running several coding agents is not opening another terminal. It is seeing which one is still working, which one stopped to wait for you, and where a conversation went after the window closed. AgentDeck keeps those sessions in one sidebar. Each row is a real Ghostty terminal, local folders and SSH servers together.</p>
+        <p class="kicker"><span class="zh">给编程 Agent 的原生 macOS 工作台</span><span class="en">A native macOS workbench for coding agents</span></p>
+        <h1><span class="zh">一个窗口，<br>看住所有 Agent。</span><span class="en">One window<br>for every agent.</span></h1>
+        <p class="lead zh"><strong>谁在运行，谁在等你，一眼看清。</strong>把多个编程 Agent、本地目录和 SSH 会话放进同一个原生 macOS 窗口。</p>
+        <p class="lead en"><strong>See who is working and who is waiting on you.</strong>Several coding agents, local folders, and SSH sessions, in one native macOS window.</p>
         <div class="actions">
           <a class="btn primary" href="https://github.com/CassianFlorin/AgentDeck/releases/latest">
             <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.5v7.2l2.6-2.6 1.1 1.1L8 11.9 4.3 7.2l1.1-1.1L8 8.7V1.5H8zM3 13h10v1.5H3z"/></svg>
             <span class="zh">下载 macOS 版</span><span class="en">Download for Mac</span>
           </a>
-          <a class="btn ghost" href="https://github.com/CassianFlorin/AgentDeck"><span class="zh">查看源码</span><span class="en">Source</span></a>
+          <a class="btn ghost" href="https://github.com/CassianFlorin/AgentDeck"><span class="zh">查看源码</span><span class="en">View source</span></a>
         </div>
         <p class="facts"><span class="zh">macOS 14 及以上 · Apple 芯片 · 免费，MIT</span><span class="en">macOS 14 or later · Apple silicon · Free, MIT</span></p>
       </div>
 
       <div class="stage" id="product">
-        <div class="backplate" aria-hidden="true"></div>
-        <svg class="spark" viewBox="0 0 80 80" aria-hidden="true">
-          <path d="M46 6 50.2 28.4 72 33 50.2 37.6 46 60 41.8 37.6 20 33 41.8 28.4Z" fill="#f6c15b"/>
-          <path d="M66 48 67.6 56.2 76 58 67.6 59.8 66 68 64.4 59.8 56 58 64.4 56.2Z" fill="#ffe3a8"/>
-        </svg>
         <div class="window">
           <div class="titlebar">
             <div class="traffic" aria-hidden="true"><i class="r"></i><i class="y"></i><i class="g"></i></div>
@@ -775,10 +766,11 @@
                 <span id="agent-pos">2/4</span>
                 <button type="button" id="agent-next" aria-label="Next agent">›</button>
               </span>
-              <button type="button" class="perf" id="dash" aria-expanded="false" aria-controls="dash-view">
+              <a class="perf jump" href="#overview">
                 <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.8" y="2.6" width="12.4" height="10.8" rx="2" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M4.6 6h.1M4.6 8h.1M4.6 10h.1M7 6h4.6M7 8h4.6M7 10h4.6" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-                <span class="zh">总览</span><span class="en">Agents</span>
-              </button>
+                <span class="zh"><span class="long">查看</span>总览<span class="long">演示</span></span><span class="en"><span class="long">See the </span>overview<span class="long"> demo</span></span>
+                <svg class="down" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v9M4.2 8.4 8 12.2l3.8-3.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </a>
               <button type="button" class="perf" id="perf" aria-expanded="false" aria-controls="monitor">
                 <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 8 11 5.2" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
                 <span class="zh">性能</span><span class="en">Stats</span>
@@ -786,27 +778,30 @@
             </div>
           </div>
           <div class="workspace">
-            <div class="sidebar">
+            <div class="sidebar" id="side">
               <p class="side-label"><span class="zh">会话</span><span class="en">Sessions</span></p>
-              <button type="button" class="session" data-id="claude" data-tab="claude · agentdeck" aria-pressed="false">
+              <button type="button" class="session" data-id="claude" data-state="work" data-tab="claude · agentdeck" data-name="Claude Code" data-dir="~/src/agentdeck" data-age-zh="刚刚" data-age-en="now" aria-pressed="false">
                 <svg class="kind" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.2 9.15 6.2 14.2 8 9.15 9.8 8 14.8 6.85 9.8 1.8 8l5.05-1.8z"/></svg>
                 <span class="name">claude</span>
                 <span class="meta"><span class="badge working"><i class="dot work"></i><b><span class="zh">运行中</span><span class="en">Working</span></b></span><span class="folder">agentdeck</span></span>
+                <svg class="play" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.3"/><path fill="currentColor" d="M6.6 5.4v5.2L11 8z"/></svg>
               </button>
-              <button type="button" class="session wait on" data-id="codex" data-tab="codex · shop" aria-pressed="true">
+              <button type="button" class="session wait on" data-id="codex" data-state="wait" data-tab="codex · shop" data-name="Codex" data-dir="~/src/shop" data-age-zh="2 分" data-age-en="2m" data-ask-zh="允许修改 CheckoutTax.swift？" data-ask-en="Allow edit to CheckoutTax.swift?" aria-pressed="true">
                 <svg class="kind" viewBox="0 0 16 16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" d="M6.2 3.5 2.6 8l3.6 4.5M9.8 3.5 13.4 8 9.8 12.5"/></svg>
                 <span class="name">codex</span>
                 <span class="meta"><span class="badge waiting"><i class="dot wait"></i><b><span class="zh">等你</span><span class="en">Needs you</span></b></span><span class="folder">shop</span></span>
+                <svg class="play" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.3"/><path fill="currentColor" d="M6.6 5.4v5.2L11 8z"/></svg>
               </button>
-              <button type="button" class="session" data-id="grok" data-tab="grok · api" aria-pressed="false">
+              <button type="button" class="session" data-id="grok" data-state="exit" data-tab="grok · api" data-name="Grok" data-dir="~/src/api" data-age-zh="1 时" data-age-en="1h" aria-pressed="false">
                 <svg class="kind" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M9.1 1 3.2 9h3.4L5.6 15 13 6.6H9.2L9.1 1z"/></svg>
                 <span class="name">grok</span>
-                <span class="meta"><span class="badge done"><i class="dot done"></i><b><span class="zh">本轮完成</span><span class="en">Turn done</span></b></span><span class="folder">api</span></span>
+                <span class="meta"><span class="badge exited"><i class="dot exit"></i><b><span class="zh">已退出</span><span class="en">Exited</span></b></span><span class="folder">api</span></span>
+                <svg class="play" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.3"/><path fill="currentColor" d="M6.6 5.4v5.2L11 8z"/></svg>
               </button>
-              <button type="button" class="session" data-id="gemini" data-tab="gemini · notes" aria-pressed="false">
+              <button type="button" class="session" data-id="gemini" data-state="done" data-tab="gemini · notes" data-name="Gemini" data-dir="~/notes" data-age-zh="12 分" data-age-en="12m" aria-pressed="false">
                 <svg class="kind" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.6 9.7 6.3 14.4 8 9.7 9.7 8 14.4 6.3 9.7 1.6 8 6.3 6.3z"/></svg>
                 <span class="name">gemini</span>
-                <span class="meta"><span class="badge exited"><i class="dot exit"></i><b><span class="zh">已退出</span><span class="en">Exited</span></b></span><span class="folder">notes</span></span>
+                <span class="meta"><span class="badge done"><i class="dot done"></i><b><span class="zh">本轮完成</span><span class="en">Turn done</span></b></span><span class="folder">notes</span></span>
                 <svg class="play" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.3"/><path fill="currentColor" d="M6.6 5.4v5.2L11 8z"/></svg>
               </button>
               <button type="button" class="session" data-id="shell" data-tab="shell · ~" aria-pressed="false">
@@ -815,103 +810,60 @@
                 <span class="meta"><span class="folder">~</span></span>
               </button>
               <p class="side-label"><span class="zh">服务器</span><span class="en">Servers</span></p>
-              <button type="button" class="session" data-id="ecs" data-tab="ecs-prod · ubuntu" data-remote="true" aria-pressed="false">
+              <button type="button" class="session" data-id="ecs" data-tab="ecs-prod · ubuntu" data-remote aria-pressed="false">
                 <svg class="kind" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2" width="12" height="4.2" rx="1" fill="none" stroke="currentColor" stroke-width="1.3"/><rect x="2" y="9.4" width="12" height="4.2" rx="1" fill="none" stroke="currentColor" stroke-width="1.3"/><circle cx="4.3" cy="4.1" r=".7" fill="currentColor"/><circle cx="4.3" cy="11.5" r=".7" fill="currentColor"/></svg>
                 <span class="name">ecs-prod</span>
-                <span class="meta"><span class="folder">ubuntu</span></span>
+                <span class="meta"><span class="folder">ubuntu · tmux</span></span>
               </button>
             </div>
             <div class="main">
               <p class="tabbar" id="tab-label" aria-live="polite">codex · shop</p>
-              <div class="dash" id="dash-view">
-                <div class="dash-head">
-                  <span class="chip">+ <span class="zh">新建 Agent</span><span class="en">New agent</span></span>
-                  <span class="seg" aria-hidden="true"><span class="cur"><span class="zh">按状态</span><span class="en">By state</span></span><span><span class="zh">按文件夹</span><span class="en">By folder</span></span></span>
+              <div id="panes">
+                <div class="term" data-id="claude">
+                  <p><span class="dim">~/src/agentdeck</span> <span class="info">main</span></p>
+                  <p><span class="ps">❯</span> claude</p>
+                  <p class="gap"><span class="info">●</span> Reading Sources/UI/SidebarView.swift</p>
+                  <p><span class="info">●</span> Editing Sources/UI/ActivityBadge.swift</p>
+                  <p><span class="add">+ 18</span> <span class="del">− 2</span> <span class="dim">ActivityBadge.swift</span></p>
+                  <p class="gap"><span class="info">●</span> <span class="zh">跑一遍测试…</span><span class="en">Running the tests…</span></p>
                 </div>
-                <p class="send" aria-hidden="true"><span class="chip">Claude Code</span><span class="chip">shop</span><span class="hint"><span class="zh">派一个新任务，回车开始</span><span class="en">Hand out a task, Return to start</span></span></p>
-                <div class="dash-list">
-                  <p class="dash-group"><span class="zh">等你</span><span class="en">Needs you</span> 1</p>
-                  <button type="button" class="dash-row on" data-pick="codex" data-name="Codex" data-dir="~/src/shop">
-                    <i class="dot wait"></i>
-                    <svg class="kind" viewBox="0 0 16 16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" d="M6.2 3.5 2.6 8l3.6 4.5M9.8 3.5 13.4 8 9.8 12.5"/></svg>
-                    <span class="who">codex<small>shop</small></span>
-                    <span class="what warn"><span class="zh">允许这次修改？</span><span class="en">Allow this edit?</span></span>
-                    <span class="age"><span class="zh">2 分</span><span class="en">2m</span></span>
-                  </button>
-                  <p class="dash-group"><span class="zh">运行中</span><span class="en">Working</span> 1</p>
-                  <button type="button" class="dash-row" data-pick="claude" data-name="Claude Code" data-dir="~/src/agentdeck">
-                    <i class="dot work"></i>
-                    <svg class="kind" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.2 9.15 6.2 14.2 8 9.15 9.8 8 14.8 6.85 9.8 1.8 8l5.05-1.8z"/></svg>
-                    <span class="who">claude<small>agentdeck</small></span>
-                    <span class="what badge working"><b><span class="zh">运行中</span><span class="en">Working</span></b></span>
-                    <span class="age"><span class="zh">刚刚</span><span class="en">now</span></span>
-                  </button>
-                  <p class="dash-group"><span class="zh">空闲</span><span class="en">Idle</span> 1</p>
-                  <button type="button" class="dash-row" data-pick="grok" data-name="Grok" data-dir="~/src/api">
-                    <i class="dot done"></i>
-                    <svg class="kind" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M9.1 1 3.2 9h3.4L5.6 15 13 6.6H9.2L9.1 1z"/></svg>
-                    <span class="who">grok<small>api</small></span>
-                    <span class="what dim"><span class="zh">本轮完成</span><span class="en">Turn done</span></span>
-                    <span class="age"><span class="zh">12 分</span><span class="en">12m</span></span>
-                  </button>
-                  <p class="dash-group"><span class="zh">已退出</span><span class="en">Exited</span> 1</p>
-                  <button type="button" class="dash-row" data-pick="gemini" data-name="Gemini" data-dir="~/notes">
-                    <i class="dot idle"></i>
-                    <svg class="kind" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.6 9.7 6.3 14.4 8 9.7 9.7 8 14.4 6.3 9.7 1.6 8 6.3 6.3z"/></svg>
-                    <span class="who">gemini<small>notes</small></span>
-                    <span class="what dim"><span class="zh">已退出</span><span class="en">Exited</span></span>
-                    <span class="age"><span class="zh">1 时</span><span class="en">1h</span></span>
-                  </button>
-                </div>
-                <div class="peek">
-                  <p class="peek-head"><span><b id="peek-name">Codex</b><span id="peek-dir">~/src/shop</span></span><button type="button" class="peek-open" id="peek-open"><span class="zh">打开</span><span class="en">Open</span></button></p>
-                  <div class="peek-body" id="peek-body"></div>
-                  <div class="reply-row" aria-hidden="true">
-                    <p class="reply"><span class="zh">回复它，回车发送</span><span class="en">Reply, Return to send</span></p>
-                    <span class="quick"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>↩</kbd><kbd>esc</kbd></span>
+                <div class="term on" data-id="codex">
+                  <p><span class="dim">~/src/shop</span> <span class="info">main</span></p>
+                  <p><span class="ps">❯</span> codex</p>
+                  <p class="gap"><span class="info">●</span> <span class="zh">跨州订单的税额算错了，改这一处：</span><span class="en">Tax is wrong on cross-state orders. One change:</span></p>
+                  <p class="dim">Sources/Checkout/CheckoutTax.swift</p>
+                  <p><span class="del">− let rate = store.taxRate</span></p>
+                  <p><span class="add">+ let rate = taxRate(for: order.address)</span></p>
+                  <div class="ask">
+                    <p class="warn"><span class="zh">允许修改 CheckoutTax.swift？</span><span class="en">Allow edit to CheckoutTax.swift?</span></p>
+                    <p class="choices"><span><kbd>1</kbd> Yes</span><span><kbd>2</kbd> Yes, don't ask again</span><span><kbd>3</kbd> No</span></p>
                   </div>
                 </div>
-              </div>
-              <div class="term" data-id="claude">
-                <p><span class="dim">~/src/agentdeck</span> <span class="info">main</span></p>
-                <p><span class="ps">❯</span> claude</p>
-                <p class="gap"><span class="info">●</span> Reading Sources/UI/SidebarView.swift</p>
-                <p><span class="add">+ 18</span> <span class="del">− 2</span> <span class="dim">ActivityBadge</span></p>
-                <p class="gap dim"><span class="zh">这一轮还没结束。你的 Ghostty 配置文件不会被改。</span><span class="en">Still on this turn. Your Ghostty config file is left alone.</span></p>
-              </div>
-              <div class="term on" data-id="codex">
-                <p><span class="dim">~/src/shop</span></p>
-                <p><span class="ps">❯</span> codex</p>
-                <div class="ask">
-                  <p class="warn"><span class="zh">等你确认</span><span class="en">Waiting for you</span></p>
-                  <p class="gap">Sources/Remote/SSH.swift</p>
-                  <p class="dim"><span class="zh">允许这次修改？</span><span class="en">Allow this edit?</span></p>
-                  <p class="choices"><kbd>y</kbd> yes <span style="display:inline-block;width:10px"></span><kbd>n</kbd> no</p>
+                <div class="term" data-id="grok">
+                  <p><span class="dim">~/src/api</span> <span class="info">main</span></p>
+                  <p><span class="ps">%</span> grok</p>
+                  <p class="gap"><span class="add">✓</span> <span class="zh">订单接口加了分页，测试通过。</span><span class="en">Orders endpoint paginated, tests pass.</span></p>
+                  <p class="gap dim"><span class="zh">进程已退出，回到了 shell。</span><span class="en">The process exited. You are back at the shell.</span></p>
+                  <p class="gap prompt"><span class="ps">%</span> <span class="caret" aria-hidden="true"></span></p>
                 </div>
-              </div>
-              <div class="term" data-id="grok">
-                <p><span class="dim">~/src/api</span></p>
-                <p><span class="ps">❯</span> grok</p>
-                <p class="gap"><span class="add">✓</span> <span class="zh">本轮完成</span><span class="en">Turn complete</span></p>
-                <p class="dim"><span class="zh">对话 id 还在。退出后再开，会回到这里。</span><span class="en">The conversation id is kept. Starting it again resumes here.</span></p>
-                <p class="gap"><span class="ps">❯</span> <span class="caret" aria-hidden="true"></span></p>
-              </div>
-              <div class="term" data-id="gemini">
-                <p><span class="dim">~/notes</span></p>
-                <p><span class="ps">❯</span> gemini</p>
-                <p class="gap dim"><span class="zh">进程已退出，回到了 shell。</span><span class="en">The process exited. You are back at the shell.</span></p>
-                <p><span class="zh">再启动会接着上次的对话。</span><span class="en">Starting it again continues the last conversation.</span></p>
-                <p class="gap"><span class="ps">❯</span> <span class="caret" aria-hidden="true"></span></p>
-              </div>
-              <div class="term" data-id="shell">
-                <p><span class="dim">~</span></p>
-                <p class="gap"><span class="ps">%</span> <span class="caret" aria-hidden="true"></span></p>
-              </div>
-              <div class="term" data-id="ecs">
-                <p class="dim">ecs-prod · ubuntu · tmux</p>
-                <p class="gap"><span class="zh">已重新挂上。原来的会话还在，里面的 Agent 也在。</span><span class="en">Reattached. The session is still there, agent included.</span></p>
-                <p class="dim"><span class="zh">这台机器上没有为 AgentDeck 安装任何东西。</span><span class="en">Nothing was installed on this machine for AgentDeck.</span></p>
-                <p class="gap"><span class="ps">ubuntu@ecs-prod:~/app$</span> <span class="caret" aria-hidden="true"></span></p>
+                <div class="term" data-id="gemini">
+                  <p><span class="dim">~/notes</span></p>
+                  <p><span class="ps">❯</span> gemini</p>
+                  <p class="gap"><span class="info">●</span> Editing weekly.md</p>
+                  <p><span class="add">+ 23</span> <span class="del">− 4</span> <span class="dim">weekly.md</span></p>
+                  <p class="gap"><span class="add">✓</span> <span class="zh">本轮完成：周报草稿整理好了。</span><span class="en">Turn complete: the weekly draft is tidied up.</span></p>
+                  <p class="gap prompt"><span class="ps">❯</span> <span class="caret" aria-hidden="true"></span></p>
+                </div>
+                <div class="term" data-id="shell">
+                  <p><span class="dim">~</span></p>
+                  <p class="gap"><span class="ps">%</span> <span class="caret" aria-hidden="true"></span></p>
+                </div>
+                <div class="term" data-id="ecs">
+                  <p class="dim">ecs-prod · ubuntu · tmux</p>
+                  <p class="gap"><span class="zh">已重新挂上。原来的 tmux 会话还在，里面的 Agent 也在。</span><span class="en">Reattached. The tmux session is still there, agent included.</span></p>
+                  <p class="dim"><span class="zh">这台机器上没有为 AgentDeck 安装任何东西。</span><span class="en">Nothing was installed on this machine for AgentDeck.</span></p>
+                  <p class="gap"><span class="ps">ubuntu@ecs-prod:~/app$</span> <span class="caret" aria-hidden="true"></span></p>
+                </div>
               </div>
             </div>
             <aside class="monitor" id="monitor" aria-hidden="true">
@@ -949,272 +901,445 @@
             </aside>
           </div>
         </div>
-        <p class="caption"><span class="zh">可点的界面示意。点左侧会话会换掉终端内容；右上角的「‹ ›」在 Agent 之间前后切，「总览」把所有 Agent 列在一起，旁边可以打开性能面板。颜色和 App 里的状态一致。</span><span class="en">A clickable sketch. Choose a session to change the terminal. At the top right, ‹ › steps through the agents, Agents lists them all together, and the performance panel sits next to it. Status colors match the app.</span></p>
+        <p class="caption"><span class="zh">可点的界面示意：点会话换终端，「‹ ›」在 Agent 之间切换，右上角可以打开性能面板。「查看总览演示」会跳到下面可以操作的 Agent 总览。</span><span class="en">A clickable sketch: choose a session to change the terminal, step through agents with ‹ ›, and open the performance panel at the top right. “See the overview demo” jumps down to a working agent overview.</span></p>
       </div>
     </div>
   </div>
 
+  <template id="t-allow"><p class="gap"><span class="add">✓</span> <span class="zh">已允许</span><span class="en">Allowed</span></p><p><span class="info">●</span> Editing Sources/Checkout/CheckoutTax.swift</p></template>
+  <template id="t-deny"><p class="gap"><span class="del">✗</span> <span class="zh">已拒绝，文件没有改动。</span><span class="en">Declined. The file was not changed.</span></p></template>
+  <template id="t-work"><p class="gap"><span class="info">●</span> <span class="zh">收到，继续这一轮…</span><span class="en">Got it, working on this turn…</span></p></template>
+  <template id="t-done"><p class="gap"><span class="add">✓</span> <span class="zh">本轮完成</span><span class="en">Turn complete</span></p><p class="gap prompt"><span class="ps">❯</span> <span class="caret" aria-hidden="true"></span></p></template>
+  <template id="t-ready"><p><span class="ps">%</span> grok --resume 5d0c41e2-…</p><p class="gap dim"><span class="zh">带着原来的对话 id 启动，回到同一段对话。</span><span class="en">Started with the same conversation id, back in the same conversation.</span></p><p class="gap prompt"><span class="ps">❯</span> <span class="caret" aria-hidden="true"></span></p></template>
+
   <main>
-    <section class="block reveal" id="status">
-      <div class="wrap">
+    <section class="block" id="status">
+      <div class="wrap reveal">
         <div class="section-head">
           <p class="eyebrow"><span class="zh">状态</span><span class="en">Status</span></p>
           <h2><span class="zh">不用切过去，也知道该看谁。</span><span class="en">See who needs you without switching over.</span></h2>
-          <p class="intro zh">每个 Agent 会话旁边有自己的状态。动效也有含义：还在干活，文字上会有一道光扫过；等你的时候，圆点外面的圈会扩出去。系统打开「减弱动态效果」后，这些动画会停。</p>
-          <p class="intro en">Every agent session carries its own status, and the motion means something. While it is working, a light sweeps across the label. While it is waiting on you, a ring expands from the dot. With Reduce Motion on, the animation stops.</p>
+          <p class="intro"><span class="zh">每个 Agent 旁边都有一盏状态灯。四种颜色，四个意思。</span><span class="en">Every agent carries a status light. Four colors, four meanings.</span></p>
         </div>
-        <ol class="status-list">
+        <ol class="states">
           <li class="s-work">
             <h3 class="badge working mark"><i class="dot work"></i><b><span class="zh">运行中</span><span class="en">Working</span></b></h3>
-            <div>
-              <p class="zh">这一轮还没结束。Claude Code 用它自己的 hooks 报告状态：AgentDeck 只在启动时加上参数，不改你的设置文件。Grok 和 Codex 也能这样报告，在「管理 Agent」里打开就行：它们只从自己的配置目录读 hooks，所以会各新建一个 AgentDeck 自己的文件，你已有的配置不动。没有 hooks 的 Agent 靠回车、响铃、通知和进度来判断。</p>
-              <p class="en">This turn is still going. Claude Code reports through its own hooks: AgentDeck passes flags at launch and never edits your settings files. Grok and Codex can report the same way once you turn it on in Manage Agents. They only read hooks from their own config folder, so each gets one new file of AgentDeck's own, and your existing config is left as it is. Agents without hooks are read from generic signals: Return, the bell, notifications, and progress.</p>
-              <button type="button" class="textlink" data-jump="claude"><span class="zh">在上面的窗口里看</span><span class="en">Show in the window</span></button>
+            <div class="snip" aria-hidden="true">
+              <p><span class="info">●</span> Editing ActivityBadge.swift</p>
+              <p><span class="add">+ 18</span> <span class="del">− 2</span></p>
             </div>
+            <p class="zh">这一轮还没结束。你可以先去忙别的。</p>
+            <p class="en">This turn is still going. You can leave it to it.</p>
           </li>
           <li class="s-wait">
             <h3 class="badge waiting mark"><i class="dot wait"></i><b><span class="zh">等你</span><span class="en">Needs you</span></b></h3>
-            <div>
-              <p class="zh">权限确认、一个问题，或一条通知。⌘⇧J 跳到下一个这样的会话。响铃和通知也会在 Dock 上标出来。</p>
-              <p class="en">A permission prompt, a question, or a notification. ⌘⇧J jumps to the next session that needs you. Bells and notifications also badge the Dock.</p>
-              <button type="button" class="textlink" data-jump="codex"><span class="zh">在上面的窗口里看</span><span class="en">Show in the window</span></button>
+            <div class="snip" aria-hidden="true">
+              <p class="warn"><span class="zh">允许这次修改？</span><span class="en">Allow this edit?</span></p>
+              <p><kbd>1</kbd> Yes &nbsp;<kbd>3</kbd> No</p>
             </div>
+            <p class="zh">它停下来等一次确认或回答。<kbd>⌘⇧J</kbd> 跳到下一个。</p>
+            <p class="en">It stopped for a confirmation or an answer. <kbd>⌘⇧J</kbd> jumps to the next.</p>
           </li>
           <li class="s-done">
             <h3 class="badge done mark"><i class="dot done"></i><b><span class="zh">本轮完成</span><span class="en">Turn done</span></b></h3>
-            <div>
-              <p class="zh">这一轮结束了，会话还在。点进去可以接着看。退出之后再开，也会回到同一段对话。</p>
-              <p class="en">This turn is finished, and the session is still there. Open it to read the result. After it exits, starting it again returns to the same conversation.</p>
-              <button type="button" class="textlink" data-jump="grok"><span class="zh">在上面的窗口里看</span><span class="en">Show in the window</span></button>
+            <div class="snip" aria-hidden="true">
+              <p><span class="add">✓</span> <span class="zh">本轮完成</span><span class="en">Turn complete</span></p>
+              <p><span class="ps">❯</span> <span class="caret"></span></p>
             </div>
+            <p class="zh">这一轮结束了，会话还在。点进去看结果，或接着说。</p>
+            <p class="en">The turn is finished and the session is still there. Read the result, or carry on.</p>
           </li>
           <li class="s-exit">
             <h3 class="badge exited mark"><i class="dot exit"></i><b><span class="zh">已退出</span><span class="en">Exited</span></b></h3>
-            <div>
-              <p class="zh">Agent 进程结束了，你回到 shell。再启动会接着上次的对话。</p>
-              <p class="en">The agent process has ended and you are back at the shell. Starting it again continues the last conversation.</p>
-              <button type="button" class="textlink" data-jump="gemini"><span class="zh">在上面的窗口里看</span><span class="en">Show in the window</span></button>
+            <div class="snip" aria-hidden="true">
+              <p class="dim"><span class="zh">进程已退出</span><span class="en">Process exited</span></p>
+              <p><span class="ps">%</span> <span class="caret"></span></p>
             </div>
+            <p class="zh">Agent 进程结束，回到了 shell。可以重新启动，回到哪段对话见下面「对话」一节。</p>
+            <p class="en">The agent process ended and you are back at the shell. You can start it again; Conversations below says which conversation it returns to.</p>
           </li>
         </ol>
-        <p class="footnote zh">刚启动、还在等第一次输入时，显示「就绪」。普通 Shell 没有这些状态。SSH 断了以后会出现重连按钮，提示为「已断开」，⌘⇧R 也会重连。</p>
-        <p class="footnote en">Right after launch, before the first prompt, the label is 就绪. A plain shell has none of these states. A dropped SSH session gets a reconnect button, described as 已断开. ⌘⇧R reconnects too.</p>
+        <div class="folds">
+          <details class="fold" id="how">
+            <summary><span><span class="zh">状态如何识别</span><span class="en">How status is detected</span><small><span class="zh">hooks、通用信号和几个例外</span><span class="en">hooks, generic signals, and a few exceptions</span></small></span></summary>
+            <div class="fold-body">
+              <ul class="notes cols">
+                <li><span class="zh">Claude Code 用它自己的 hooks 报告状态。AgentDeck 只在启动时加上参数，不改你的设置文件。</span><span class="en">Claude Code reports through its own hooks. AgentDeck passes flags at launch and never edits your settings files.</span></li>
+                <li><span class="zh">Grok 和 Codex 也能这样报告，在「管理 Agent」里打开就行。它们只从自己的配置目录读 hooks，所以会各新建一个 AgentDeck 自己的文件：<span class="path">~/.grok/hooks/agentdeck.json</span> 和 <span class="path">~/.codex/agentdeck.config.toml</span>。你已有的配置不动，关掉开关就删除，在 AgentDeck 之外它们什么也不做。两个 Agent 都会先让你信任新 hook。</span><span class="en">Grok and Codex can report the same way once you turn it on in Manage Agents. They only read hooks from their own config folder, so each gets one new file of AgentDeck's own: <span class="path">~/.grok/hooks/agentdeck.json</span> and <span class="path">~/.codex/agentdeck.config.toml</span>. Your existing config is left as it is, turning the switch off deletes the file, and the hook does nothing outside AgentDeck. Both agents ask you to trust a new hook first.</span></li>
+                <li><span class="zh">没有 hooks 的 Agent 靠通用信号判断：回车、响铃、通知和进度。</span><span class="en">Agents without hooks are read from generic signals: Return, the bell, notifications, and progress.</span></li>
+                <li><span class="zh">刚启动、还在等第一次输入时，显示「就绪」。普通 Shell 没有这些状态。</span><span class="en">Right after launch, before the first prompt, the label is 就绪 (ready). A plain shell has none of these states.</span></li>
+                <li><span class="zh">响铃和通知也会在 Dock 上标出来。SSH 断了以后提示为「已断开」，旁边有重连按钮，<kbd>⌘⇧R</kbd> 也会重连。</span><span class="en">Bells and notifications also badge the Dock. A dropped SSH session is marked 已断开 (disconnected) with a reconnect button; <kbd>⌘⇧R</kbd> reconnects too.</span></li>
+                <li><span class="zh">动效也有含义：运行中，文字上有一道光扫过；等你，圆点外面的圈会扩出去。系统打开「减弱动态效果」后，这些动画会停。</span><span class="en">The motion means something: while working, a light sweeps across the label; while waiting, a ring expands from the dot. With Reduce Motion on, the animation stops.</span></li>
+              </ul>
+            </div>
+          </details>
+        </div>
       </div>
     </section>
 
-    <section class="block reveal" id="overview">
-      <div class="wrap">
+    <section class="block" id="overview">
+      <div class="wrap reveal">
         <div class="section-head">
           <p class="eyebrow"><span class="zh">总览</span><span class="en">Overview</span></p>
           <h2><span class="zh">所有 Agent，列在一屏里。</span><span class="en">Every agent, on one screen.</span></h2>
-          <p class="intro zh">侧边栏按会话排。Agent 多了以后，你想问的其实是另一件事：现在谁在等我。<kbd>⇧⌘A</kbd> 把终端换成一张列表，每个 Agent 一行，不管它在哪个会话、哪个文件夹。会话都还在后台跑着。</p>
-          <p class="intro en">The sidebar is ordered by session. With enough agents, the question changes: who is waiting on me right now. <kbd>⇧⌘A</kbd> swaps the terminal for a list with one row per agent, whichever session or folder it lives in. Every session keeps running behind it.</p>
+          <p class="intro"><span class="zh"><kbd>⇧⌘A</kbd> 把终端换成一张列表，每个 Agent 一行。会话都还在后台跑着。</span><span class="en"><kbd>⇧⌘A</kbd> swaps the terminal for a list, one row per agent. Every session keeps running behind it.</span></p>
         </div>
-        <ul class="points">
-          <li>
-            <h3><span class="zh">等你的排在最前</span><span class="en">Waiting comes first</span></h3>
-            <p class="zh">按状态分组：等你、运行中、空闲、已退出。等你的那一行直接写着它在等什么，每行还有它在这个状态里停了多久。也可以改成按文件夹分组。</p>
-            <p class="en">Grouped by state: needs you, working, idle, exited. A waiting row says what it is waiting for, and every row shows how long it has been in that state. You can group by folder instead.</p>
-          </li>
-          <li>
-            <h3><span class="zh">不进去也能回</span><span class="en">Answer without going in</span></h3>
-            <p class="zh">选中一行，下面是它终端的最后几行。在输入框里打字、回车，回复就发给这个 Agent，你还留在列表里。</p>
-            <p class="en">Select a row and the last lines of its terminal appear below. Type in the field and press Return: the reply goes to that agent, and you stay on the list.</p>
-          </li>
-          <li>
-            <h3><span class="zh">回车进到它的会话</span><span class="en">Return opens its session</span></h3>
-            <p class="zh"><kbd>↩</kbd> 或双击，切到它所在的会话，光标落在它的窗格里。<kbd>esc</kbd> 或点侧边栏里任何一个会话，回到终端。</p>
-            <p class="en"><kbd>↩</kbd> or a double-click goes to its session, with the cursor in its pane. <kbd>esc</kbd>, or any session in the sidebar, returns to the terminal.</p>
-          </li>
-          <li>
-            <h3><span class="zh">在列表里派任务</span><span class="en">Hand out tasks from the list</span></h3>
-            <p class="zh">列表上方有一条派发栏：选 Agent、选文件夹、写下任务、回车。新的 Agent 带着这个任务在后台开工，你留在列表里，可以接着派下一个。</p>
-            <p class="en">A bar above the list starts new work: pick the agent and the folder, write the task, press Return. A new agent starts on it in the background, and you stay on the list to hand out the next one.</p>
-          </li>
-          <li>
-            <h3><span class="zh">停下它，或者替它选</span><span class="en">Stop it, or pick for it</span></h3>
-            <p class="zh">运行中的 Agent 可以直接「停止」这一轮。它停下来等你选的时候，回复框旁边有 <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>↩</kbd><kbd>esc</kbd>，对应它提示里的选项，不用进终端。</p>
-            <p class="en">A working agent can be stopped for this turn. When it stops to ask you to choose, <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>↩</kbd><kbd>esc</kbd> sit next to the reply field and answer its prompt, without going to the terminal.</p>
-          </li>
-          <li>
-            <h3><span class="zh">筛选和置顶</span><span class="en">Filter and pin</span></h3>
-            <p class="zh">顶部的输入框按名称、Agent 或文件夹筛选。右键可以把一个 Agent 置顶，它不管在干什么都排在最上面，重启 App 后还在。</p>
-            <p class="en">The field at the top filters by name, agent, or folder. Right-click to pin an agent: it stays at the top whatever it is doing, and stays pinned after a relaunch.</p>
-          </li>
-        </ul>
-        <p class="footnote"><button type="button" class="textlink" data-dash><span class="zh">在上面的窗口里看</span><span class="en">Show in the window</span></button></p>
+        <div class="showcase">
+          <div>
+            <div class="window" id="ov">
+              <div class="titlebar">
+                <div class="traffic" aria-hidden="true"><i class="r"></i><i class="y"></i><i class="g"></i></div>
+                <p class="wt">AgentDeck</p>
+                <div class="tools">
+                  <button type="button" class="perf" id="ov-toggle" aria-pressed="true">
+                    <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.8" y="2.6" width="12.4" height="10.8" rx="2" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M4.6 6h.1M4.6 8h.1M4.6 10h.1M7 6h4.6M7 8h4.6M7 10h4.6" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                    <span class="zh">总览</span><span class="en">Agents</span>
+                  </button>
+                </div>
+              </div>
+              <div class="workspace">
+                <div class="sidebar" id="ov-side"></div>
+                <div class="main show-dash" id="ov-main">
+                  <p class="tabbar" id="ov-tab" aria-live="polite"><span class="zh">Agent 总览 · 4 个 Agent · 1 个等你</span><span class="en">Agents · 4 agents · 1 needs you</span></p>
+                  <div class="dash" id="dash-view">
+                    <div class="dash-head">
+                      <span class="chip">+ <span class="zh">新建 Agent</span><span class="en">New agent</span></span>
+                      <input class="filter" id="filter" type="search" autocomplete="off" placeholder="筛选" aria-label="Filter agents">
+                      <span class="seg" id="seg">
+                        <button type="button" data-group="state" aria-pressed="true"><span class="zh">按状态</span><span class="en">By state</span></button>
+                        <button type="button" data-group="folder" aria-pressed="false"><span class="zh">按文件夹</span><span class="en">By folder</span></button>
+                      </span>
+                    </div>
+                    <form class="send" id="send" autocomplete="off">
+                      <span class="chip">Claude Code</span><span class="chip">shop</span>
+                      <input id="task" type="text" enterkeyhint="send" placeholder="派一个新任务，回车开始" aria-label="New task">
+                    </form>
+                    <div class="dash-list" id="dash-list">
+                      <p class="dash-group"><span class="zh">等你</span><span class="en">Needs you</span> 1</p>
+                      <button type="button" class="dash-row on" data-pick="codex">
+                        <i class="dot wait"></i>
+                        <svg class="kind" viewBox="0 0 16 16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" d="M6.2 3.5 2.6 8l3.6 4.5M9.8 3.5 13.4 8 9.8 12.5"/></svg>
+                        <span class="who">codex<small>shop</small></span>
+                        <span class="what warn"><span class="zh">允许修改 CheckoutTax.swift？</span><span class="en">Allow edit to CheckoutTax.swift?</span></span>
+                        <span class="age"><span class="zh">2 分</span><span class="en">2m</span></span>
+                      </button>
+                      <p class="dash-group"><span class="zh">运行中</span><span class="en">Working</span> 1</p>
+                      <button type="button" class="dash-row" data-pick="claude">
+                        <i class="dot work"></i>
+                        <svg class="kind" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.2 9.15 6.2 14.2 8 9.15 9.8 8 14.8 6.85 9.8 1.8 8l5.05-1.8z"/></svg>
+                        <span class="who">claude<small>agentdeck</small></span>
+                        <span class="what badge working"><b><span class="zh">运行中</span><span class="en">Working</span></b></span>
+                        <span class="age"><span class="zh">刚刚</span><span class="en">now</span></span>
+                      </button>
+                      <p class="dash-group"><span class="zh">空闲</span><span class="en">Idle</span> 1</p>
+                      <button type="button" class="dash-row" data-pick="gemini">
+                        <i class="dot done"></i>
+                        <svg class="kind" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.6 9.7 6.3 14.4 8 9.7 9.7 8 14.4 6.3 9.7 1.6 8 6.3 6.3z"/></svg>
+                        <span class="who">gemini<small>notes</small></span>
+                        <span class="what dim"><span class="zh">本轮完成</span><span class="en">Turn done</span></span>
+                        <span class="age"><span class="zh">12 分</span><span class="en">12m</span></span>
+                      </button>
+                      <p class="dash-group"><span class="zh">已退出</span><span class="en">Exited</span> 1</p>
+                      <button type="button" class="dash-row" data-pick="grok">
+                        <i class="dot idle"></i>
+                        <svg class="kind" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M9.1 1 3.2 9h3.4L5.6 15 13 6.6H9.2L9.1 1z"/></svg>
+                        <span class="who">grok<small>api</small></span>
+                        <span class="what dim"><span class="zh">已退出</span><span class="en">Exited</span></span>
+                        <span class="age"><span class="zh">1 时</span><span class="en">1h</span></span>
+                      </button>
+                    </div>
+                    <div class="peek waiting" id="peek">
+                      <p class="peek-head">
+                        <span class="who"><b id="peek-name">Codex</b><span id="peek-dir">~/src/shop</span></span>
+                        <button type="button" class="peek-btn" id="peek-restart"><span class="zh">重新启动</span><span class="en">Restart</span></button>
+                        <button type="button" class="peek-btn" id="peek-open"><span class="zh">打开</span><span class="en">Open</span></button>
+                      </p>
+                      <div class="peek-body" id="peek-body" aria-live="polite"></div>
+                      <div class="reply-row">
+                        <form class="reply" id="reply-form" autocomplete="off"><input id="reply" type="text" enterkeyhint="send" placeholder="回复 Codex，回车发送" aria-label="Reply"></form>
+                        <span class="quick" role="group" aria-label="Quick keys">
+                          <button type="button" data-key="1">1</button><button type="button" data-key="2">2</button><button type="button" data-key="3">3</button><button type="button" data-key="ok">↩</button><button type="button" data-key="esc">esc</button>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="term on" id="ov-term"></div>
+                </div>
+              </div>
+            </div>
+            <p class="caption"><span class="zh">这是可以操作的示意：试着按 <kbd>1</kbd> 允许 codex 的修改，回一句话，或者派一个新任务。</span><span class="en">This sketch works: press <kbd>1</kbd> to allow codex's edit, send a reply, or hand out a new task.</span> <button type="button" id="reset"><span class="zh">重置演示</span><span class="en">Reset the demo</span></button></p>
+          </div>
+          <aside>
+            <ol class="steps-3">
+              <li>
+                <h3><span class="zh">先处理在等你的</span><span class="en">Waiting comes first</span></h3>
+                <p><span class="zh">等你的 Agent 排在最前面，那一行直接写着它在等什么、等了多久。</span><span class="en">Agents that need you sort to the top, and the row says what each is waiting for and for how long.</span></p>
+              </li>
+              <li>
+                <h3><span class="zh">留在总览里直接回复</span><span class="en">Answer without leaving</span></h3>
+                <p><span class="zh">选中一行，下面是它终端的最后几行。打字回车，或按它提示里的选项键，回复就发过去了。</span><span class="en">Select a row to see the last lines of its terminal. Type and press Return, or press one of its option keys, and the answer is sent.</span></p>
+                <p class="try"><span class="zh">在示意里按 <kbd>1</kbd>：codex 回到「运行中」。</span><span class="en">Press <kbd>1</kbd> in the sketch: codex goes back to Working.</span></p>
+              </li>
+              <li>
+                <h3><span class="zh">在列表里继续派任务</span><span class="en">Hand out the next task</span></h3>
+                <p><span class="zh">在派发栏选 Agent 和文件夹，写下任务，回车。新的 Agent 在后台开工，你还留在列表里。</span><span class="en">Pick the agent and the folder in the bar, write the task, press Return. A new agent starts in the background and you stay on the list.</span></p>
+                <p class="try"><span class="zh">在派发栏里写点什么，回车。</span><span class="en">Type something in the bar and press Return.</span></p>
+              </li>
+            </ol>
+            <div class="folds">
+              <details class="fold sub">
+                <summary><span class="zh">总览里还能做什么</span><span class="en">What else the overview does</span></summary>
+                <div class="fold-body">
+                  <ul class="notes">
+                    <li><span class="zh"><b>筛选</b>：顶部输入框按名称、Agent 或文件夹筛选；也可以改成按文件夹分组。</span><span class="en"><b>Filter</b>: the field at the top matches name, agent, or folder. You can also group by folder.</span></li>
+                    <li><span class="zh"><b>置顶</b>：右键把一个 Agent 置顶，它不管在干什么都排最上面，重启 App 后还在。</span><span class="en"><b>Pin</b>: right-click to pin an agent. It stays at the top whatever it is doing, and stays pinned after a relaunch.</span></li>
+                    <li><span class="zh"><b>停止</b>：运行中的 Agent 可以直接停止这一轮。</span><span class="en"><b>Stop</b>: a working agent can be stopped for this turn.</span></li>
+                    <li><span class="zh"><b>快捷选择</b>：它等你选的时候，回复框旁边有 <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>↩</kbd><kbd>esc</kbd>，对应提示里的选项。</span><span class="en"><b>Quick keys</b>: when it asks you to choose, <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>↩</kbd><kbd>esc</kbd> next to the reply field answer its prompt.</span></li>
+                    <li><span class="zh"><b>进出</b>：<kbd>↩</kbd> 或双击进到它的会话，光标落在它的窗格里；<kbd>esc</kbd> 或点侧边栏任一会话回到终端。</span><span class="en"><b>In and out</b>: <kbd>↩</kbd> or a double-click opens its session with the cursor in its pane. <kbd>esc</kbd>, or any session in the sidebar, returns to the terminal.</span></li>
+                  </ul>
+                </div>
+              </details>
+            </div>
+          </aside>
+        </div>
       </div>
     </section>
 
-    <section class="block reveal" id="remote">
-      <div class="wrap">
-        <div class="split">
+    <section class="block" id="remote">
+      <div class="wrap reveal">
+        <div class="pair">
           <article>
             <p class="eyebrow"><span class="zh">远程</span><span class="en">Remote</span></p>
-            <h2><span class="zh">服务器上什么都不用装。</span><span class="en">Nothing to install on the server.</span></h2>
-            <p class="zh">侧边栏的「服务器」有你添加的主机，也有 <span class="path">~/.ssh/config</span> 里的别名，Include 进来的文件也算。可以填地址、用户、端口、密钥或 ssh-agent，也支持 ProxyJump。密码放在钥匙串里。</p>
-            <p class="en">Servers lists hosts you add and every alias in <span class="path">~/.ssh/config</span>, including files pulled in with Include. You can set the address, user, port, key or ssh-agent, and ProxyJump. Passwords go in the Keychain.</p>
-            <p class="zh">默认是自动。机器上已经有 tmux 或 zellij 就用它，没有就开一个普通登录 shell，不会催你去装。连接断了可以重连。如果当时跑在 tmux 或 zellij 里，会挂回原来的会话，里面的 Agent 还在。没有多路复用器的话，就按你配置的目录重新登录。</p>
-            <p class="en">Auto is the default. If the machine already has tmux or zellij, AgentDeck uses it. If not, you get a normal login shell, with no prompt to install anything. Reconnecting a tmux or zellij session attaches again, so the agent is still there. Without a multiplexer, it logs in again, in the directory you set.</p>
-            <p class="zh">性能面板跟着当前会话。看 SSH 会话时，采样的是那台服务器：只开一条 SSH，用一小段 POSIX shell 去读 /proc。服务器上仍然不用装东西。远程采样目前只支持 Linux。</p>
-            <p class="en">The performance panel follows the selected session. For SSH it samples that server over one connection: a small POSIX shell loop reading /proc. Still nothing to install. Remote sampling currently supports Linux only.</p>
+            <h2><span class="zh">本地和远程，排在同一条侧边栏。</span><span class="en">Local and remote, in the same sidebar.</span></h2>
+            <p><span class="zh"><span class="path">~/.ssh/config</span> 里的主机直接出现在「服务器」里，服务器上什么都不用装。断线重连后，跑在 tmux 或 zellij 里的会话会挂回原处。</span><span class="en">Hosts from <span class="path">~/.ssh/config</span> show up under Servers, with nothing to install on them. After a reconnect, a session running in tmux or zellij attaches right where it was.</span></p>
+            <div class="frag frag-side" aria-hidden="true">
+              <div>
+                <p class="side-label"><span class="zh">会话</span><span class="en">Sessions</span></p>
+                <div class="session">
+                  <svg class="kind" viewBox="0 0 16 16"><path fill="currentColor" d="M8 1.2 9.15 6.2 14.2 8 9.15 9.8 8 14.8 6.85 9.8 1.8 8l5.05-1.8z"/></svg>
+                  <span class="name">claude</span>
+                  <span class="meta"><span class="badge working"><i class="dot work"></i><b><span class="zh">运行中</span><span class="en">Working</span></b></span><span class="folder">agentdeck</span></span>
+                </div>
+                <div class="session wait">
+                  <svg class="kind" viewBox="0 0 16 16"><path fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" d="M6.2 3.5 2.6 8l3.6 4.5M9.8 3.5 13.4 8 9.8 12.5"/></svg>
+                  <span class="name">codex</span>
+                  <span class="meta"><span class="badge waiting"><i class="dot wait"></i><b><span class="zh">等你</span><span class="en">Needs you</span></b></span><span class="folder">shop</span></span>
+                </div>
+              </div>
+              <div>
+                <p class="side-label"><span class="zh">服务器</span><span class="en">Servers</span></p>
+                <div class="session on">
+                  <svg class="kind" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="4.2" rx="1" fill="none" stroke="currentColor" stroke-width="1.3"/><rect x="2" y="9.4" width="12" height="4.2" rx="1" fill="none" stroke="currentColor" stroke-width="1.3"/><circle cx="4.3" cy="4.1" r=".7" fill="currentColor"/><circle cx="4.3" cy="11.5" r=".7" fill="currentColor"/></svg>
+                  <span class="name">ecs-prod</span>
+                  <span class="meta"><span class="folder">ubuntu · tmux</span></span>
+                  <span class="attached"><span class="zh">已挂回</span><span class="en">Reattached</span></span>
+                </div>
+                <div class="session">
+                  <svg class="kind" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="4.2" rx="1" fill="none" stroke="currentColor" stroke-width="1.3"/><rect x="2" y="9.4" width="12" height="4.2" rx="1" fill="none" stroke="currentColor" stroke-width="1.3"/><circle cx="4.3" cy="4.1" r=".7" fill="currentColor"/><circle cx="4.3" cy="11.5" r=".7" fill="currentColor"/></svg>
+                  <span class="name">gpu-box</span>
+                  <span class="meta state-off"><span class="zh">已断开</span><span class="en">Disconnected</span></span>
+                  <span class="redo"><span class="zh">重连</span><span class="en">Reconnect</span></span>
+                </div>
+              </div>
+            </div>
+            <div class="folds">
+              <details class="fold sub">
+                <summary><span class="zh">连接、回连和远程采样的条件</span><span class="en">Connecting, reattaching, and remote stats</span></summary>
+                <div class="fold-body">
+                  <ul class="notes">
+                    <li><span class="zh">「服务器」里有你添加的主机，也有 <span class="path">~/.ssh/config</span> 里的别名，Include 进来的文件也算。可以填地址、用户、端口、密钥或 ssh-agent，也支持 ProxyJump。密码放在钥匙串里。</span><span class="en">Servers lists hosts you add and every alias in <span class="path">~/.ssh/config</span>, including files pulled in with Include. You can set the address, user, port, key or ssh-agent, and ProxyJump. Passwords go in the Keychain.</span></li>
+                    <li><span class="zh">默认是自动：机器上已经有 tmux 或 zellij 就用它，没有就开一个普通登录 shell，不会催你去装。</span><span class="en">Auto is the default: if the machine already has tmux or zellij, AgentDeck uses it. If not, you get a normal login shell, with no prompt to install anything.</span></li>
+                    <li><span class="zh">重连时，如果当时跑在 tmux 或 zellij 里，会挂回原来的会话，里面的 Agent 还在。没有多路复用器的话，就按你配置的目录重新登录，之前的进程不会回来。</span><span class="en">On reconnect, a session that was in tmux or zellij attaches again, so the agent is still there. Without a multiplexer, it logs in again in the directory you set, and the earlier processes are gone.</span></li>
+                    <li><span class="zh">性能面板跟着当前会话。看 SSH 会话时采样的是那台服务器：只开一条 SSH，用一小段 POSIX shell 去读 /proc，仍然不用装东西。远程采样目前只支持 Linux。</span><span class="en">The performance panel follows the selected session. For SSH it samples that server over one connection: a small POSIX shell loop reading /proc, still with nothing to install. Remote sampling currently supports Linux only.</span></li>
+                  </ul>
+                </div>
+              </details>
+            </div>
           </article>
           <article id="memory">
             <p class="eyebrow"><span class="zh">对话</span><span class="en">Conversations</span></p>
-            <h2><span class="zh">关掉窗口，对话还在。</span><span class="en">Close the window. The conversation stays.</span></h2>
-            <p class="zh">Claude Code 和 Grok 在启动时就带上 AgentDeck 分配的对话 id。Codex 会在启动之后，从它自己的 <span class="path">~/.codex/sessions</span> 里对上 id。重启 App，或者一个已经退出的 Agent 再开，都会回到这段对话。⇧⌘O 按文件夹列出这个 Agent 过去的对话。</p>
-            <p class="en">Claude Code and Grok start with a conversation id AgentDeck assigns. Codex is matched, after launch, to an id in its own <span class="path">~/.codex/sessions</span> directory. Relaunching the app, or starting an agent that had exited, resumes that conversation. ⇧⌘O lists past conversations for a folder.</p>
-            <p class="zh">分屏、分组和 SSH 连接也会按退出前的样子回来。第一次打开、没有可恢复的内容时，会在家目录开一个 shell。</p>
-            <p class="en">Splits, groups, and SSH connections come back the way you left them. With nothing to restore, AgentDeck opens a shell in your home directory.</p>
+            <h2><span class="zh">重新打开，接着之前的工作。</span><span class="en">Open it again and pick up where you were.</span></h2>
+            <p><span class="zh">重启 App，或者重新启动一个已经退出的 Agent，Claude Code、Grok 和 Codex 会回到同一段对话。分屏、分组和 SSH 连接也按退出前的样子回来。</span><span class="en">Relaunch the app, or start an agent that had exited, and Claude Code, Grok, and Codex return to the same conversation. Splits, groups, and SSH connections come back the way you left them.</span></p>
+            <div class="frag" aria-hidden="true">
+              <p class="frag-head"><b><span class="zh">恢复之前的对话</span><span class="en">Resume a conversation</span></b><span class="chip">Codex</span><span class="path">~/src/shop</span></p>
+              <div class="conv"><b><span class="zh">修复跨州订单的税额计算</span><span class="en">Fix tax on cross-state orders</span></b><small><span class="zh">2 小时前</span><span class="en">2 hours ago</span> · 0199a3f2-7c41</small><span class="redo"><span class="zh">恢复</span><span class="en">Resume</span></span></div>
+              <div class="conv"><b><span class="zh">给结算页补单元测试</span><span class="en">Add unit tests for checkout</span></b><small><span class="zh">昨天</span><span class="en">yesterday</span> · 0198c7d1-2e9b</small><span class="redo"><span class="zh">恢复</span><span class="en">Resume</span></span></div>
+              <div class="conv"><b><span class="zh">升级支付 SDK</span><span class="en">Upgrade the payments SDK</span></b><small><span class="zh">3 天前</span><span class="en">3 days ago</span> · 01977b20-51aa</small><span class="redo"><span class="zh">恢复</span><span class="en">Resume</span></span></div>
+            </div>
+            <div class="folds">
+              <details class="fold sub">
+                <summary><span class="zh">对话是怎么对上的</span><span class="en">How conversations are matched</span></summary>
+                <div class="fold-body">
+                  <ul class="notes">
+                    <li><span class="zh">回到同一段对话靠的是对话 id。Claude Code 和 Grok 在启动时就带上 AgentDeck 分配的 id。Codex 不能预先指定，要等它收到第一条提问、写出会话文件后，AgentDeck 才从 <span class="path">~/.codex/sessions</span> 里对上。</span><span class="en">Returning to the same conversation depends on a conversation id. Claude Code and Grok start with an id AgentDeck assigns. Codex cannot be given one up front: once it has received its first prompt and written its session file, AgentDeck matches the id from <span class="path">~/.codex/sessions</span>.</span></li>
+                    <li><span class="zh">没有 id 的时候（Gemini，或者还没提过问的 Codex）：重启 App 会接上这个文件夹里最近的一段对话；在 App 里重新启动一个已退出的 Agent，则是开一段新对话。</span><span class="en">Without an id (Gemini, or Codex before its first prompt): relaunching the app continues the most recent conversation in that folder, while restarting an exited agent inside the app starts a new conversation.</span></li>
+                    <li><span class="zh"><kbd>⇧⌘O</kbd> 按文件夹列出过去的对话，选一段恢复。支持 Claude Code、Codex 和 Grok。</span><span class="en"><kbd>⇧⌘O</kbd> lists past conversations for a folder, so you can resume one. It covers Claude Code, Codex, and Grok.</span></li>
+                    <li><span class="zh">自定义 Agent：「新对话参数」和「恢复对话参数」里都写了 <span class="path">{id}</span>，AgentDeck 才会自己生成 id 并回到同一段对话。只填了「继续最近对话参数」的，重启 App 时接最近一段。两样都没填，每次都是新对话。</span><span class="en">Custom agents: AgentDeck generates an id and returns to the same conversation only when both the new-conversation and the resume arguments contain <span class="path">{id}</span>. With only the continue-latest arguments filled in, relaunching the app continues the most recent conversation. With neither, every start is a new conversation.</span></li>
+                    <li><span class="zh">从 Docker 容器打开的会话，下次启动 App 时不会恢复。第一次打开、没有可恢复的内容时，会在家目录开一个 shell。</span><span class="en">Sessions opened from a Docker container are not restored on the next launch. With nothing to restore, AgentDeck opens a shell in your home directory.</span></li>
+                  </ul>
+                </div>
+              </details>
+            </div>
           </article>
         </div>
-        <aside class="config">
+        <aside class="ghostty">
           <div>
-            <p class="label"><span class="zh">你的配置</span><span class="en">Your config</span></p>
+            <h3><span class="zh">每一格都是真正的 Ghostty 终端</span><span class="en">Every pane is a real Ghostty terminal</span></h3>
             <p class="path">~/.config/ghostty/config</p>
           </div>
-          <div>
-            <p class="zh">字体、主题和快捷键直接沿用。设置 → 终端里改过的项叠在这份配置上面，立刻作用到所有终端，但不会写回文件。中文默认统一用苹方显示，粗细和标点位置都一致，也可以换成别的字体。设置 → 外观可以调窗口的不透明度和毛玻璃，文字始终不透明。AgentDeck 本身只有深色。</p>
-            <p class="en">Fonts, themes, and keybinds come straight from this file. Changes in Settings → Terminal are layered on top and applied to every terminal immediately. The file is never modified. Chinese, Japanese, and Korean text uses PingFang SC by default, so weights and punctuation stay consistent; you can pick another font. Settings → Appearance sets opacity and blur. Text stays opaque. AgentDeck is always dark.</p>
-          </div>
+          <p><span class="zh">字体、主题和快捷键直接沿用你的 Ghostty 配置。在 AgentDeck 的设置里改过的项只叠在上面，不会写回这份文件。</span><span class="en">Fonts, themes, and keybinds come straight from your Ghostty config. Changes made in AgentDeck's settings are layered on top and never written back to the file.</span></p>
         </aside>
       </div>
     </section>
 
-    <section class="block reveal" id="keys">
-      <div class="wrap">
+    <section class="block" id="keys">
+      <div class="wrap reveal">
         <div class="section-head">
           <p class="eyebrow"><span class="zh">快捷键</span><span class="en">Keys</span></p>
           <h2><span class="zh">手不用离开键盘。</span><span class="en">Keep your hands on the keyboard.</span></h2>
         </div>
         <div class="keys">
           <div class="keyrow"><div class="combo"><kbd>⌘⇧J</kbd></div><p><span class="zh">跳到下一个等你的会话</span><span class="en">Jump to the next session that needs you</span></p></div>
-          <div class="keyrow"><div class="combo"><kbd>⇧⌘A</kbd></div><p><span class="zh">Agent 总览：所有 Agent 的列表</span><span class="en">Agent overview: the list of every agent</span></p></div>
+          <div class="keyrow"><div class="combo"><kbd>⇧⌘A</kbd></div><p><span class="zh">打开 Agent 总览</span><span class="en">Open the agent overview</span></p></div>
           <div class="keyrow"><div class="combo"><kbd>⌥⌘[</kbd><kbd>⌥⌘]</kbd></div><p><span class="zh">上一个 / 下一个 Agent，跨会话</span><span class="en">Previous / next agent, across sessions</span></p></div>
-          <div class="keyrow"><div class="combo"><kbd>⌘⇧[</kbd><kbd>⌘⇧]</kbd></div><p><span class="zh">上一个 / 下一个会话</span><span class="en">Previous / next session</span></p></div>
-          <div class="keyrow"><div class="combo"><kbd>⌘1</kbd><kbd>⌘9</kbd></div><p><span class="zh">跳到对应的会话</span><span class="en">Jump to a session by number</span></p></div>
           <div class="keyrow"><div class="combo"><kbd>⌘D</kbd><kbd>⌘⇧D</kbd></div><p><span class="zh">向右分屏 / 向下分屏</span><span class="en">Split right / split down</span></p></div>
-          <div class="keyrow"><div class="combo"><kbd>⌘⇧↩</kbd></div><p><span class="zh">放大 / 还原当前窗格</span><span class="en">Zoom / restore the current pane</span></p></div>
-          <div class="keyrow"><div class="combo"><kbd>⌘F</kbd></div><p><span class="zh">在回滚里查找</span><span class="en">Find in the scrollback</span></p></div>
-          <div class="keyrow"><div class="combo"><kbd>⌘V</kbd></div><p><span class="zh">把截图或文件贴成路径</span><span class="en">Paste a screenshot or file as a path</span></p></div>
-          <div class="keyrow"><div class="combo"><kbd>⌘⇧R</kbd></div><p><span class="zh">重新连接 SSH</span><span class="en">Reconnect SSH</span></p></div>
           <div class="keyrow"><div class="combo"><kbd>⇧⌘O</kbd></div><p><span class="zh">恢复这个文件夹里以前的对话</span><span class="en">Resume an earlier conversation for this folder</span></p></div>
-          <div class="keyrow"><div class="combo"><kbd>⌥⌘P</kbd></div><p><span class="zh">打开性能监视器</span><span class="en">Open the performance panel</span></p></div>
-          <div class="keyrow"><div class="combo"><kbd>⌘⇧W</kbd></div><p><span class="zh">关闭当前会话</span><span class="en">Close the current session</span></p></div>
-          <div class="keyrow"><div class="combo"><kbd>⌘,</kbd></div><p><span class="zh">设置</span><span class="en">Settings</span></p></div>
+          <div class="keyrow"><div class="combo"><kbd>⌘⇧R</kbd></div><p><span class="zh">重新连接 SSH</span><span class="en">Reconnect SSH</span></p></div>
         </div>
-        <h3 class="subhead"><span class="zh">还有这些</span><span class="en">Also</span></h3>
-        <ul class="more">
-          <li><span class="zh">内置 Claude Code、Codex、Grok、Gemini 和 Shell。其他命令行工具可以自己加。还没安装的，会给出安装命令。命令是打进登录 shell 的，Agent 退出以后，你还在那个 shell 里。</span><span class="en">Built in: Claude Code, Codex, Grok, Gemini, and a shell. Any other CLI can be added. Ones that are not installed come with an install command. The command is typed into your login shell, so when the agent exits you are still in that shell.</span></li>
-          <li><span class="zh">状态跟着窗格走，不跟着会话。在分屏里自己敲 <span class="path">claude</span> 或 <span class="path">codex</span>，AgentDeck 也认得出来，它会有自己的状态，也会出现在总览里。</span><span class="en">Status belongs to the pane, not the session. Type <span class="path">claude</span> or <span class="path">codex</span> into a split yourself and AgentDeck notices: it gets its own status and its own row in the overview.</span></li>
-          <li><span class="zh">剪贴板里如果是截图，⌘V 会先存成 PNG，再贴上路径，这样就能把图交给 Agent。拷进来或拖进来的文件，会变成 shell 转义后的路径。</span><span class="en">If the clipboard holds a screenshot, ⌘V saves a PNG and pastes the path, which is how you hand an image to an agent. Copied or dragged files paste as shell-escaped paths.</span></li>
-          <li><span class="zh">中文、日文、韩文输入法可以用，候选窗贴着光标。</span><span class="en">Chinese, Japanese, and Korean input methods work, with the candidate window anchored at the cursor.</span></li>
-          <li><span class="zh">会话可以重命名，也可以放进分组。分组是侧边栏里可折叠的一段。</span><span class="en">Sessions can be renamed or moved into a group. A group is a collapsible section in the sidebar.</span></li>
-          <li><span class="zh">性能面板里还有 Docker。可以看容器日志、进容器开一个 shell，也可以启动、停止或重启。从容器打开的会话，下次启动 App 时不会恢复。</span><span class="en">The performance panel also lists Docker containers. You can open logs, a shell inside a container, and start, stop, or restart one. Sessions opened from a container are not restored on the next launch.</span></li>
-          <li><span class="zh">每天会查一次更新，菜单里也可以自己检查。更新来自 GitHub Releases，要有 EdDSA 签名，并且 Developer ID 得和当前这个 App 一致。如果有 Agent 正处在这一轮里，重启前会先问你。</span><span class="en">AgentDeck checks for an update once a day, and you can check from the menu. Updates come from GitHub Releases. Each one is EdDSA-signed and must carry the same Developer ID as the app you have. If an agent is mid-turn, it asks before restarting.</span></li>
-        </ul>
-        <details class="fold" id="details">
-          <summary><span class="zh">全部细节</span><span class="en">All the details</span></summary>
-          <div class="fold-body detail-grid">
-            <div>
-              <h4><span class="zh">窗格</span><span class="en">Panes</span></h4>
-              <ul>
-                <li><span class="zh"><kbd>⌘[</kbd><kbd>⌘]</kbd> 或 <kbd>⌘⌥←↑↓→</kbd> 在窗格之间移动。</span><span class="en"><kbd>⌘[</kbd><kbd>⌘]</kbd> or <kbd>⌘⌥←↑↓→</kbd> move between panes.</span></li>
-                <li><span class="zh"><kbd>⌘⌃←↑↓→</kbd> 调整大小，<kbd>⌃⌘=</kbd> 均分，<kbd>⌘W</kbd> 关闭当前窗格。</span><span class="en"><kbd>⌘⌃←↑↓→</kbd> resize, <kbd>⌃⌘=</kbd> equalizes, <kbd>⌘W</kbd> closes the pane.</span></li>
-                <li><span class="zh">新窗格沿用当前文件夹。布局在重启 App 后恢复。</span><span class="en">A new pane starts in the current folder. Layouts are restored on relaunch.</span></li>
+        <div class="folds">
+          <details class="fold" id="all-keys">
+            <summary><span><span class="zh">更多快捷键</span><span class="en">More shortcuts</span><small><span class="zh">会话、窗格、查找、粘贴</span><span class="en">sessions, panes, find, paste</span></small></span></summary>
+            <div class="fold-body">
+              <div class="keys all">
+                <div class="keyrow"><div class="combo"><kbd>⌘⇧[</kbd><kbd>⌘⇧]</kbd></div><p><span class="zh">上一个 / 下一个会话</span><span class="en">Previous / next session</span></p></div>
+                <div class="keyrow"><div class="combo"><kbd>⌘1</kbd><kbd>⌘9</kbd></div><p><span class="zh">跳到对应的会话</span><span class="en">Jump to a session by number</span></p></div>
+                <div class="keyrow"><div class="combo"><kbd>⌘⇧↩</kbd></div><p><span class="zh">放大 / 还原当前窗格</span><span class="en">Zoom / restore the current pane</span></p></div>
+                <div class="keyrow"><div class="combo"><kbd>⌘F</kbd></div><p><span class="zh">在回滚里查找</span><span class="en">Find in the scrollback</span></p></div>
+                <div class="keyrow"><div class="combo"><kbd>⌘V</kbd></div><p><span class="zh">把截图或文件贴成路径</span><span class="en">Paste a screenshot or file as a path</span></p></div>
+                <div class="keyrow"><div class="combo"><kbd>⌥⌘P</kbd></div><p><span class="zh">打开性能监视器</span><span class="en">Open the performance panel</span></p></div>
+                <div class="keyrow"><div class="combo"><kbd>⌘⇧W</kbd></div><p><span class="zh">关闭当前会话</span><span class="en">Close the current session</span></p></div>
+                <div class="keyrow"><div class="combo"><kbd>⌘,</kbd></div><p><span class="zh">设置</span><span class="en">Settings</span></p></div>
+              </div>
+            </div>
+          </details>
+          <details class="fold" id="more">
+            <summary><span><span class="zh">还有这些</span><span class="en">Also</span><small><span class="zh">内置 Agent、贴图、输入法、分组、Docker、更新</span><span class="en">built-in agents, image paste, input methods, groups, Docker, updates</span></small></span></summary>
+            <div class="fold-body">
+              <ul class="notes cols">
+                <li><span class="zh">内置 Claude Code、Codex、Grok、Gemini 和 Shell。其他命令行工具可以自己加。还没安装的，会给出安装命令。命令是打进登录 shell 的，Agent 退出以后，你还在那个 shell 里。</span><span class="en">Built in: Claude Code, Codex, Grok, Gemini, and a shell. Any other CLI can be added. Ones that are not installed come with an install command. The command is typed into your login shell, so when the agent exits you are still in that shell.</span></li>
+                <li><span class="zh">状态跟着窗格走，不跟着会话。在分屏里自己敲 <span class="path">claude</span> 或 <span class="path">codex</span>，AgentDeck 也认得出来，它会有自己的状态，也会出现在总览里。</span><span class="en">Status belongs to the pane, not the session. Type <span class="path">claude</span> or <span class="path">codex</span> into a split yourself and AgentDeck notices: it gets its own status and its own row in the overview.</span></li>
+                <li><span class="zh">剪贴板里如果是截图，⌘V 会先存成 PNG，再贴上路径，这样就能把图交给 Agent。拷进来或拖进来的文件，会变成 shell 转义后的路径。</span><span class="en">If the clipboard holds a screenshot, ⌘V saves a PNG and pastes the path, which is how you hand an image to an agent. Copied or dragged files paste as shell-escaped paths.</span></li>
+                <li><span class="zh">中文、日文、韩文输入法可以用，候选窗贴着光标。</span><span class="en">Chinese, Japanese, and Korean input methods work, with the candidate window anchored at the cursor.</span></li>
+                <li><span class="zh">会话可以重命名，也可以放进分组。分组是侧边栏里可折叠的一段。</span><span class="en">Sessions can be renamed or moved into a group. A group is a collapsible section in the sidebar.</span></li>
+                <li><span class="zh">性能面板里还有 Docker。可以看容器日志、进容器开一个 shell，也可以启动、停止或重启。从容器打开的会话，下次启动 App 时不会恢复。</span><span class="en">The performance panel also lists Docker containers. You can open logs, a shell inside a container, and start, stop, or restart one. Sessions opened from a container are not restored on the next launch.</span></li>
+                <li><span class="zh">每天会查一次更新，菜单里也可以自己检查。更新来自 GitHub Releases，要有 EdDSA 签名，并且 Developer ID 得和当前这个 App 一致。如果有 Agent 正处在这一轮里，重启前会先问你。</span><span class="en">AgentDeck checks for an update once a day, and you can check from the menu. Updates come from GitHub Releases. Each one is EdDSA-signed and must carry the same Developer ID as the app you have. If an agent is mid-turn, it asks before restarting.</span></li>
               </ul>
             </div>
-            <div>
-              <h4><span class="zh">查找与回滚</span><span class="en">Find and scrollback</span></h4>
-              <ul>
-                <li><span class="zh"><kbd>↩</kbd><kbd>⇧↩</kbd> 或 <kbd>⌘G</kbd><kbd>⇧⌘G</kbd> 在匹配之间前后跳，旁边有匹配计数。</span><span class="en"><kbd>↩</kbd><kbd>⇧↩</kbd> or <kbd>⌘G</kbd><kbd>⇧⌘G</kbd> step through matches, with a match counter.</span></li>
-                <li><span class="zh"><kbd>⌘E</kbd> 用选中的文字查找。</span><span class="en"><kbd>⌘E</kbd> searches for the current selection.</span></li>
-                <li><span class="zh"><kbd>⌘↑</kbd><kbd>⌘↓</kbd> 在提示符之间跳。滚动指示条可以直接拖。</span><span class="en"><kbd>⌘↑</kbd><kbd>⌘↓</kbd> jump between prompts. The scroll indicator can be dragged.</span></li>
-              </ul>
+          </details>
+          <details class="fold" id="details">
+            <summary><span><span class="zh">全部细节</span><span class="en">All the details</span><small><span class="zh">窗格、查找、Agent、服务器、性能面板、设置</span><span class="en">panes, find, agents, servers, performance panel, settings</span></small></span></summary>
+            <div class="fold-body detail-grid">
+              <div>
+                <h4><span class="zh">窗格</span><span class="en">Panes</span></h4>
+                <ul>
+                  <li><span class="zh"><kbd>⌘[</kbd><kbd>⌘]</kbd> 或 <kbd>⌘⌥←↑↓→</kbd> 在窗格之间移动。</span><span class="en"><kbd>⌘[</kbd><kbd>⌘]</kbd> or <kbd>⌘⌥←↑↓→</kbd> move between panes.</span></li>
+                  <li><span class="zh"><kbd>⌘⌃←↑↓→</kbd> 调整大小，<kbd>⌃⌘=</kbd> 均分，<kbd>⌘W</kbd> 关闭当前窗格。</span><span class="en"><kbd>⌘⌃←↑↓→</kbd> resize, <kbd>⌃⌘=</kbd> equalizes, <kbd>⌘W</kbd> closes the pane.</span></li>
+                  <li><span class="zh">新窗格沿用当前文件夹。布局在重启 App 后恢复。</span><span class="en">A new pane starts in the current folder. Layouts are restored on relaunch.</span></li>
+                </ul>
+              </div>
+              <div>
+                <h4><span class="zh">查找与回滚</span><span class="en">Find and scrollback</span></h4>
+                <ul>
+                  <li><span class="zh"><kbd>↩</kbd><kbd>⇧↩</kbd> 或 <kbd>⌘G</kbd><kbd>⇧⌘G</kbd> 在匹配之间前后跳，旁边有匹配计数。</span><span class="en"><kbd>↩</kbd><kbd>⇧↩</kbd> or <kbd>⌘G</kbd><kbd>⇧⌘G</kbd> step through matches, with a match counter.</span></li>
+                  <li><span class="zh"><kbd>⌘E</kbd> 用选中的文字查找。</span><span class="en"><kbd>⌘E</kbd> searches for the current selection.</span></li>
+                  <li><span class="zh"><kbd>⌘↑</kbd><kbd>⌘↓</kbd> 在提示符之间跳。滚动指示条可以直接拖。</span><span class="en"><kbd>⌘↑</kbd><kbd>⌘↓</kbd> jump between prompts. The scroll indicator can be dragged.</span></li>
+                </ul>
+              </div>
+              <div>
+                <h4><span class="zh">Agent</span><span class="en">Agents</span></h4>
+                <ul>
+                  <li><span class="zh">在会话里，工具栏显示当前是第几个 Agent（比如 2/5），两边的箭头去上一个和下一个。</span><span class="en">In a session, the toolbar shows which agent you are on (2/5, say), with arrows to the previous and the next.</span></li>
+                  <li><span class="zh">派发的任务通过「带提示词启动参数」里的 <span class="path">{prompt}</span> 交给 Agent。内置的几个已经配好；自定义 Agent 填了才会出现在派发栏里。</span><span class="en">A task reaches the agent through <span class="path">{prompt}</span> in its prompt arguments. The built-in agents have it set; a custom agent is offered in the bar once you fill it in.</span></li>
+                  <li><span class="zh"><kbd>⌘⇧1</kbd>…<kbd>⌘⇧9</kbd> 按「管理 Agent」里的顺序新建会话。</span><span class="en"><kbd>⌘⇧1</kbd>…<kbd>⌘⇧9</kbd> open a new session, in the order shown in Manage Agents.</span></li>
+                  <li><span class="zh">自定义 Agent 可以分别填新对话、恢复对话、继续最近对话的参数。参数里的 <span class="path">{id}</span> 会换成对话 id。</span><span class="en">A custom agent takes separate arguments for a new conversation, resuming one, and continuing the latest. <span class="path">{id}</span> in them becomes the conversation id.</span></li>
+                  <li><span class="zh">AgentDeck 在你登录 shell 的 PATH 里找这些命令，所以 nvm、<span class="path">~/.local/bin</span> 里装的也能找到。</span><span class="en">AgentDeck looks for the commands on the PATH of your login shell, so ones installed through nvm or in <span class="path">~/.local/bin</span> are found.</span></li>
+                </ul>
+              </div>
+              <div>
+                <h4><span class="zh">服务器</span><span class="en">Servers</span></h4>
+                <ul>
+                  <li><span class="zh">编辑服务器时有命令预览和「测试连接」，会显示系统、有没有 tmux 或 zellij、已有哪些会话。</span><span class="en">The server editor shows a command preview and a Test Connection button, which reports the OS, whether tmux or zellij is installed, and existing sessions.</span></li>
+                  <li><span class="zh">可以按服务器指定用 tmux 或 zellij，也可以附加到一个已有的会话。</span><span class="en">You can force tmux or zellij per server, or attach to an existing session.</span></li>
+                  <li><span class="zh">右键 <span class="path">~/.ssh/config</span> 里的条目可以把它从列表里拿掉。只是在 AgentDeck 里隐藏，文件不会被改，之后可以恢复。</span><span class="en">Right-click an entry from <span class="path">~/.ssh/config</span> to remove it from the list. It is only hidden in AgentDeck; the file is not edited, and hidden entries can be restored.</span></li>
+                  <li><span class="zh">Ghostty 的 ssh 集成照常可用（<span class="path">ssh-terminfo</span>、<span class="path">ssh-env</span>）。</span><span class="en">The ssh integration from Ghostty works as usual (<span class="path">ssh-terminfo</span>, <span class="path">ssh-env</span>).</span></li>
+                </ul>
+              </div>
+              <div>
+                <h4><span class="zh">性能面板</span><span class="en">Performance panel</span></h4>
+                <ul>
+                  <li><span class="zh">CPU（每核，服务器上还有负载）、内存、GPU（Apple GPU，服务器上通过 <span class="path">nvidia-smi</span> 读 NVIDIA）、网络、磁盘。</span><span class="en">CPU (per core, plus load average on servers), memory, GPU (Apple GPU, or NVIDIA through <span class="path">nvidia-smi</span> on servers), network, and disk.</span></li>
+                  <li><span class="zh">「会话占用」：在 Mac 上是每个会话的进程树，在服务器上是最忙的几个进程。</span><span class="en">Session usage: the process tree of each session on the Mac, the busiest processes on a server.</span></li>
+                  <li><span class="zh">显示哪些、多久刷新一次（1、2 或 5 秒）可以在面板菜单里选。</span><span class="en">Choose which monitors to show and how often they refresh (1, 2, or 5 seconds) from the panel menu.</span></li>
+                  <li><span class="zh">面板默认关着。关着或窗口隐藏时不采样，也不保持连接。</span><span class="en">The panel is closed by default. While it is closed or the window is hidden, nothing is sampled and no connection is kept.</span></li>
+                </ul>
+              </div>
+              <div>
+                <h4><span class="zh">设置</span><span class="en">Settings</span></h4>
+                <ul>
+                  <li><span class="zh">终端：配色主题（Ghostty 自带的全部主题加你自己的，带色块和搜索）、字体、字号、行高、光标样式和闪烁、内边距。</span><span class="en">Terminal: color theme (every theme bundled with Ghostty plus your own, with swatches and search), font, size, line height, cursor style and blink, padding.</span></li>
+                  <li><span class="zh">还有 Option 当作 Alt、选中即复制、打字时隐藏鼠标。改动带实时预览，叠在你的 Ghostty 配置上面，立刻作用到所有终端，但不会写回文件。</span><span class="en">Also Option as Alt, copy on select, and hiding the mouse while typing. Changes preview live, are layered on top of your Ghostty config, and apply to every terminal immediately. The file is never modified.</span></li>
+                  <li><span class="zh">中文默认统一用苹方显示，粗细和标点位置都一致，也可以换成别的字体。</span><span class="en">Chinese, Japanese, and Korean text uses PingFang SC by default, so weights and punctuation stay consistent; you can pick another font.</span></li>
+                  <li><span class="zh">外观：背景不透明度 30–100%，以及模糊程度，文字始终不透明。只在 AgentDeck 里生效。AgentDeck 本身只有深色。</span><span class="en">Appearance: background opacity from 30 to 100%, and blur. Text stays opaque. This applies inside AgentDeck only, and AgentDeck is always dark.</span></li>
+                </ul>
+              </div>
             </div>
-            <div>
-              <h4><span class="zh">Agent</span><span class="en">Agents</span></h4>
-              <ul>
-                <li><span class="zh">在会话里，工具栏显示当前是第几个 Agent（比如 2/5），两边的箭头去上一个和下一个。</span><span class="en">In a session, the toolbar shows which agent you are on (2/5, say), with arrows to the previous and the next.</span></li>
-                <li><span class="zh">派发的任务通过「带提示词启动参数」里的 <span class="path">{prompt}</span> 交给 Agent。内置的几个已经配好；自定义 Agent 填了才会出现在派发栏里。</span><span class="en">A task reaches the agent through <span class="path">{prompt}</span> in its prompt arguments. The built-in agents have it set; a custom agent is offered in the bar once you fill it in.</span></li>
-                <li><span class="zh">Grok 和 Codex 的状态 hook 分别是 <span class="path">~/.grok/hooks/agentdeck.json</span> 和 <span class="path">~/.codex/agentdeck.config.toml</span>。关掉开关就删除；它们在 AgentDeck 之外什么也不做。两个 Agent 都会先让你信任新 hook。</span><span class="en">The status hooks for Grok and Codex are <span class="path">~/.grok/hooks/agentdeck.json</span> and <span class="path">~/.codex/agentdeck.config.toml</span>. Turning the switch off deletes the file, and the hook does nothing outside AgentDeck. Both agents ask you to trust a new hook first.</span></li>
-                <li><span class="zh"><kbd>⌘⇧1</kbd>…<kbd>⌘⇧9</kbd> 按「管理 Agent」里的顺序新建会话。</span><span class="en"><kbd>⌘⇧1</kbd>…<kbd>⌘⇧9</kbd> open a new session, in the order shown in Manage Agents.</span></li>
-                <li><span class="zh">自定义 Agent 可以分别填新对话、恢复对话、继续最近对话的参数。参数里的 <span class="path">{id}</span> 会换成对话 id。</span><span class="en">A custom agent takes separate arguments for a new conversation, resuming one, and continuing the latest. <span class="path">{id}</span> in them becomes the conversation id.</span></li>
-                <li><span class="zh">AgentDeck 在你登录 shell 的 PATH 里找这些命令，所以 nvm、<span class="path">~/.local/bin</span> 里装的也能找到。</span><span class="en">AgentDeck looks for the commands on the PATH of your login shell, so ones installed through nvm or in <span class="path">~/.local/bin</span> are found.</span></li>
-              </ul>
-            </div>
-            <div>
-              <h4><span class="zh">服务器</span><span class="en">Servers</span></h4>
-              <ul>
-                <li><span class="zh">编辑服务器时有命令预览和「测试连接」，会显示系统、有没有 tmux 或 zellij、已有哪些会话。</span><span class="en">The server editor shows a command preview and a Test Connection button, which reports the OS, whether tmux or zellij is installed, and existing sessions.</span></li>
-                <li><span class="zh">可以按服务器指定用 tmux 或 zellij，也可以附加到一个已有的会话。</span><span class="en">You can force tmux or zellij per server, or attach to an existing session.</span></li>
-                <li><span class="zh">右键 <span class="path">~/.ssh/config</span> 里的条目可以把它从列表里拿掉。只是在 AgentDeck 里隐藏，文件不会被改，之后可以恢复。</span><span class="en">Right-click an entry from <span class="path">~/.ssh/config</span> to remove it from the list. It is only hidden in AgentDeck; the file is not edited, and hidden entries can be restored.</span></li>
-                <li><span class="zh">Ghostty 的 ssh 集成照常可用（<span class="path">ssh-terminfo</span>、<span class="path">ssh-env</span>）。</span><span class="en">The ssh integration from Ghostty works as usual (<span class="path">ssh-terminfo</span>, <span class="path">ssh-env</span>).</span></li>
-              </ul>
-            </div>
-            <div>
-              <h4><span class="zh">性能面板</span><span class="en">Performance panel</span></h4>
-              <ul>
-                <li><span class="zh">CPU（每核，服务器上还有负载）、内存、GPU（Apple GPU，服务器上通过 <span class="path">nvidia-smi</span> 读 NVIDIA）、网络、磁盘。</span><span class="en">CPU (per core, plus load average on servers), memory, GPU (Apple GPU, or NVIDIA through <span class="path">nvidia-smi</span> on servers), network, and disk.</span></li>
-                <li><span class="zh">「会话占用」：在 Mac 上是每个会话的进程树，在服务器上是最忙的几个进程。</span><span class="en">Session usage: the process tree of each session on the Mac, the busiest processes on a server.</span></li>
-                <li><span class="zh">显示哪些、多久刷新一次（1、2 或 5 秒）可以在面板菜单里选。</span><span class="en">Choose which monitors to show and how often they refresh (1, 2, or 5 seconds) from the panel menu.</span></li>
-                <li><span class="zh">面板默认关着。关着或窗口隐藏时不采样，也不保持连接。</span><span class="en">The panel is closed by default. While it is closed or the window is hidden, nothing is sampled and no connection is kept.</span></li>
-              </ul>
-            </div>
-            <div>
-              <h4><span class="zh">设置</span><span class="en">Settings</span></h4>
-              <ul>
-                <li><span class="zh">终端：配色主题（Ghostty 自带的全部主题加你自己的，带色块和搜索）、字体、字号、行高、光标样式和闪烁、内边距。</span><span class="en">Terminal: color theme (every theme bundled with Ghostty plus your own, with swatches and search), font, size, line height, cursor style and blink, padding.</span></li>
-                <li><span class="zh">还有 Option 当作 Alt、选中即复制、打字时隐藏鼠标。改动带实时预览。</span><span class="en">Also Option as Alt, copy on select, and hiding the mouse while typing. Changes preview live.</span></li>
-                <li><span class="zh">外观：背景不透明度 30–100%，以及模糊程度。只在 AgentDeck 里生效。</span><span class="en">Appearance: background opacity from 30 to 100%, and blur. This applies inside AgentDeck only.</span></li>
-              </ul>
-            </div>
-          </div>
-        </details>
+          </details>
+        </div>
       </div>
     </section>
 
-    <section class="block reveal" id="get">
-      <div class="wrap cta">
+    <section class="block" id="get">
+      <div class="wrap cta reveal">
         <p class="eyebrow"><span class="zh">下载</span><span class="en">Download</span></p>
         <h2><span class="zh">合用就拿去。</span><span class="en">Take it if it fits.</span></h2>
         <p class="zh">这是照着一个人自己的工作流做的，开源出来。可以从 Releases 下载签过名的包，也可以自己构建。</p>
         <p class="en">Built for one person's workflow, and open-sourced in case it fits yours. Download a signed build from Releases, or build it yourself.</p>
-        <ul class="limits">
-          <li><strong><span class="zh">系统</span><span class="en">System</span></strong><span class="zh">macOS 14 或更高</span><span class="en">macOS 14 or later</span></li>
-          <li><strong><span class="zh">芯片</span><span class="en">Chip</span></strong><span class="zh">目前只有 Apple 芯片</span><span class="en">Apple silicon only, for now</span></li>
-          <li><strong><span class="zh">远程采样</span><span class="en">Remote stats</span></strong><span class="zh">目前只支持 Linux</span><span class="en">Linux only, for now</span></li>
-          <li><strong><span class="zh">许可</span><span class="en">License</span></strong><span class="zh">MIT。终端引擎是 Ghostty</span><span class="en">MIT. The terminal engine is Ghostty</span></li>
-        </ul>
         <div class="actions">
           <a class="btn primary" href="https://github.com/CassianFlorin/AgentDeck/releases/latest">
             <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.5v7.2l2.6-2.6 1.1 1.1L8 11.9 4.3 7.2l1.1-1.1L8 8.7V1.5H8zM3 13h10v1.5H3z"/></svg>
-            <span class="zh">打开 Releases</span><span class="en">Open Releases</span>
+            <span class="zh">下载 macOS 版</span><span class="en">Download for Mac</span>
           </a>
           <a class="btn ghost" href="#build"><span class="zh">从源码构建</span><span class="en">Build from source</span></a>
         </div>
-        <details class="fold steps" id="build">
-          <summary><span class="zh">从源码构建</span><span class="en">Build from source</span></summary>
-          <div class="fold-body">
-            <p class="zh">需要 macOS 14 或更高、Xcode 16 或更高、<a href="https://github.com/yonaskolb/XcodeGen">XcodeGen</a>，以及 Zig（版本看 <span class="path">vendor/ghostty/build.zig.zon</span> 里的 <span class="path">minimum_zig_version</span>）。</p>
-            <p class="en">You need macOS 14 or later, Xcode 16 or later, <a href="https://github.com/yonaskolb/XcodeGen">XcodeGen</a>, and Zig (the version named by <span class="path">minimum_zig_version</span> in <span class="path">vendor/ghostty/build.zig.zon</span>).</p>
+        <dl class="specs">
+          <div><dt><span class="zh">系统</span><span class="en">System</span></dt><dd><span class="zh">macOS 14 或更高</span><span class="en">macOS 14 or later</span></dd></div>
+          <div><dt><span class="zh">芯片</span><span class="en">Chip</span></dt><dd><span class="zh">目前只有 Apple 芯片</span><span class="en">Apple silicon only, for now</span></dd></div>
+          <div><dt><span class="zh">远程采样</span><span class="en">Remote stats</span></dt><dd><span class="zh">目前只支持 Linux</span><span class="en">Linux only, for now</span></dd></div>
+          <div><dt><span class="zh">许可</span><span class="en">License</span></dt><dd><span class="zh">MIT。终端引擎是 Ghostty</span><span class="en">MIT. The terminal engine is Ghostty</span></dd></div>
+        </dl>
+        <div class="folds">
+          <details class="fold build" id="build">
+            <summary><span class="zh">从源码构建</span><span class="en">Build from source</span></summary>
+            <div class="fold-body">
+              <p class="zh">需要 macOS 14 或更高、Xcode 16 或更高、<a href="https://github.com/yonaskolb/XcodeGen">XcodeGen</a>，以及 Zig（版本看 <span class="path">vendor/ghostty/build.zig.zon</span> 里的 <span class="path">minimum_zig_version</span>）。</p>
+              <p class="en">You need macOS 14 or later, Xcode 16 or later, <a href="https://github.com/yonaskolb/XcodeGen">XcodeGen</a>, and Zig (the version named by <span class="path">minimum_zig_version</span> in <span class="path">vendor/ghostty/build.zig.zon</span>).</p>
 <pre class="code">git clone --recursive https://github.com/CassianFlorin/AgentDeck.git
 cd AgentDeck
 scripts/build-ghosttykit.sh      <span class="dim"># <span class="zh">构建 GhosttyKit，第一次约 5 分钟</span><span class="en">builds GhosttyKit, about 5 minutes the first time</span></span>
 scripts/fetch-sparkle.sh         <span class="dim"># <span class="zh">下载 Sparkle 更新框架</span><span class="en">downloads the Sparkle updater</span></span>
 xcodegen
 open AgentDeck.xcodeproj</pre>
-            <p class="zh">Debug 配置是 ad-hoc 签名，不需要证书。Xcode 26 及以后，Metal 编译器是单独的组件，装一次就行：</p>
-            <p class="en">The Debug configuration is ad-hoc signed, so no certificate is needed. On Xcode 26 and later the Metal compiler is a separate component; install it once:</p>
+              <p class="zh">Debug 配置是 ad-hoc 签名，不需要证书。Xcode 26 及以后，Metal 编译器是单独的组件，装一次就行：</p>
+              <p class="en">The Debug configuration is ad-hoc signed, so no certificate is needed. On Xcode 26 and later the Metal compiler is a separate component; install it once:</p>
 <pre class="code">xcodebuild -downloadComponent MetalToolchain</pre>
-            <p class="zh">如果 Zig 自己下载依赖失败（走 HTTP 代理时报 400，或者报 <span class="path">hash mismatch</span>、<span class="path">DirNotEmpty</span>），先用 curl 把依赖取下来，再离线构建：</p>
-            <p class="en">If Zig fails to fetch its dependencies (a 400 behind an HTTP proxy, or <span class="path">hash mismatch</span> / <span class="path">DirNotEmpty</span>), fetch them with curl first and build offline:</p>
+              <p class="zh">如果 Zig 自己下载依赖失败（走 HTTP 代理时报 400，或者报 <span class="path">hash mismatch</span>、<span class="path">DirNotEmpty</span>），先用 curl 把依赖取下来，再离线构建：</p>
+              <p class="en">If Zig fails to fetch its dependencies (a 400 behind an HTTP proxy, or <span class="path">hash mismatch</span> / <span class="path">DirNotEmpty</span>), fetch them with curl first and build offline:</p>
 <pre class="code">scripts/prefetch-zig-deps.sh
 ZIG_SYSTEM_DIR=vendor/zig-deps/pkg scripts/build-ghosttykit.sh</pre>
-            <p class="zh">构建被打断之后报 <span class="path">hash mismatch</span>，用 <span class="path">CLEAN=1 scripts/build-ghosttykit.sh</span> 重来。</p>
-            <p class="en">For a <span class="path">hash mismatch</span> after an interrupted build, run <span class="path">CLEAN=1 scripts/build-ghosttykit.sh</span>.</p>
-          </div>
-        </details>
+              <p class="zh">构建被打断之后报 <span class="path">hash mismatch</span>，用 <span class="path">CLEAN=1 scripts/build-ghosttykit.sh</span> 重来。</p>
+              <p class="en">For a <span class="path">hash mismatch</span> after an interrupted build, run <span class="path">CLEAN=1 scripts/build-ghosttykit.sh</span>.</p>
+            </div>
+          </details>
+        </div>
       </div>
     </section>
   </main>
@@ -1236,7 +1361,7 @@ ZIG_SYSTEM_DIR=vendor/zig-deps/pkg scripts/build-ghosttykit.sh</pre>
         </div>
       </div>
     </div>
-    <div class="wrap">
+    <div class="wrap folds">
       <details class="fold" id="license">
         <summary><span class="zh">许可证全文（MIT）</span><span class="en">License text (MIT)</span></summary>
         <div class="fold-body"><pre class="legal">MIT License
@@ -1273,39 +1398,28 @@ Parts of Sources/Ghostty/ are adapted from Ghostty&#x27;s macOS app under that l
   <script>
     (function () {
       var root = document.documentElement;
-      var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      root.classList.add("js");
-      if (!reduce && "IntersectionObserver" in window) {
+      function $(sel, ctx) { return (ctx || document).querySelector(sel); }
+      function $$(sel, ctx) { return Array.prototype.slice.call((ctx || document).querySelectorAll(sel)); }
+      function still() { return window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
+
+      // Reveal on scroll. Any intersection counts: a section taller than the
+      // screen never reaches a fixed share of itself.
+      var reveals = $$(".reveal");
+      if (!still() && "IntersectionObserver" in window) {
         var seen = new IntersectionObserver(function (entries) {
           entries.forEach(function (entry) {
             if (!entry.isIntersecting) return;
             entry.target.classList.add("in");
             seen.unobserve(entry.target);
           });
-        }, { threshold: 0.14 });
-        document.querySelectorAll(".reveal").forEach(function (el) { seen.observe(el); });
+        }, { rootMargin: "0px 0px -8% 0px" });
+        reveals.forEach(function (el) { seen.observe(el); });
       } else {
-        document.querySelectorAll(".reveal").forEach(function (el) { el.classList.add("in"); });
+        reveals.forEach(function (el) { el.classList.add("in"); });
       }
-      var light = document.getElementById("pointer-light");
-      var stage = document.querySelector(".hero-wrap");
-      if (light && stage && !reduce && window.matchMedia("(pointer: fine)").matches) {
-        stage.addEventListener("pointermove", function (e) {
-          var box = stage.getBoundingClientRect();
-          light.style.left = (e.clientX - box.left) + "px";
-          light.style.top = (e.clientY - box.top) + "px";
-          light.style.opacity = "1";
-        });
-        stage.addEventListener("pointerleave", function () { light.style.opacity = "0"; });
-      }
-      var sessions = Array.prototype.slice.call(document.querySelectorAll(".session"));
-      var terms = Array.prototype.slice.call(document.querySelectorAll(".term"));
-      var tab = document.getElementById("tab-label");
-      var monitor = document.getElementById("monitor");
-      var perf = document.getElementById("perf");
-      var win = document.querySelector(".window");
-      var desc = document.querySelector('meta[name="description"]');
-      var og = document.querySelector('meta[property="og:description"]');
+
+      var desc = $('meta[name="description"]');
+      var og = $('meta[property="og:description"]');
       var copy = {
         "zh-Hans": {
           title: "AgentDeck — 一个窗口，看住所有 Agent",
@@ -1317,120 +1431,278 @@ Parts of Sources/Ghostty/ are adapted from Ghostty&#x27;s macOS app under that l
         }
       };
 
-      var main = document.querySelector(".main");
-      var dashBtn = document.getElementById("dash");
-      var rows = Array.prototype.slice.call(document.querySelectorAll(".dash-row"));
-      var current = "codex";
-      var picked = "codex";
+      // One demo, two windows. The hero's sidebar and terminal panes hold the
+      // sessions; the overview window lists the same agents and shows the same
+      // panes, so an answer given in one shows up in the other.
+      var side = $("#side"), panes = $("#panes"), tab = $("#tab-label");
+      var monitor = $("#monitor"), perf = $("#perf"), win = $("#product .window");
+      var ovSide = $("#ov-side"), ovMain = $("#ov-main"), ovTab = $("#ov-tab"), ovTerm = $("#ov-term");
+      var ovToggle = $("#ov-toggle"), list = $("#dash-list"), peek = $("#peek");
+      var reply = $("#reply"), task = $("#task"), filter = $("#filter");
+      var home = { side: side.innerHTML, panes: panes.innerHTML };
+      var NOW = ["刚刚", "now"];
+      var MAX_TASKS = 2;
+      var STATES = {
+        wait:  { group: "wait", dot: "wait", side: "wait", badge: "waiting", what: "warn", zh: "等你", en: "Needs you" },
+        work:  { group: "work", dot: "work", side: "work", badge: "working", what: "badge working", zh: "运行中", en: "Working" },
+        done:  { group: "idle", dot: "done", side: "done", badge: "done", what: "dim", zh: "本轮完成", en: "Turn done" },
+        ready: { group: "idle", dot: "idle", side: "exit", badge: "exited", what: "dim", zh: "就绪", en: "Ready" },
+        exit:  { group: "exit", dot: "idle", side: "exit", badge: "exited", what: "dim", zh: "已退出", en: "Exited" }
+      };
+      var GROUPS = { wait: ["等你", "Needs you"], work: ["运行中", "Working"], idle: ["空闲", "Idle"], exit: ["已退出", "Exited"] };
+      var ORDER = ["wait", "work", "idle", "exit"];
+      var state, age, current, picked, opened, byFolder, sent, run = 0;
 
-      // The overview's peek shows the same terminal the session would.
-      function pick(id) {
-        picked = id;
-        rows.forEach(function (row) {
-          var on = row.getAttribute("data-pick") === id;
-          row.classList.toggle("on", on);
+      function bi(zh, en) { return '<span class="zh">' + zh + '</span><span class="en">' + en + "</span>"; }
+      function esc(text) { var d = document.createElement("div"); d.textContent = text; return d.innerHTML; }
+      function ses(id) { return $('.session[data-id="' + id + '"]', side); }
+      function pane(id) { return $('.term[data-id="' + id + '"]', panes); }
+      function agents() { return $$(".session[data-state]", side).map(function (b) { return b.getAttribute("data-id"); }); }
+      function folder(id) { return $(".folder", ses(id)).textContent; }
+      function add(id, tpl) { pane(id).appendChild(document.getElementById(tpl).content.cloneNode(true)); }
+      function clear(id) { $$(".ask, .prompt", pane(id)).forEach(function (el) { el.remove(); }); }
+
+      function reset() {
+        run++;
+        side.innerHTML = home.side;
+        panes.innerHTML = home.panes;
+        state = {}; age = {};
+        $$(".session[data-state]", side).forEach(function (b) {
+          var id = b.getAttribute("data-id");
+          state[id] = b.getAttribute("data-state");
+          age[id] = [b.getAttribute("data-age-zh"), b.getAttribute("data-age-en")];
+        });
+        current = "codex"; picked = "codex"; opened = null; byFolder = false; sent = 0;
+        filter.value = ""; task.value = ""; reply.value = ""; task.disabled = false;
+        render();
+      }
+
+      function render() {
+        var all = agents();
+        all.forEach(function (id) {
+          var b = ses(id), s = STATES[state[id]], badge = $(".badge", b);
+          b.setAttribute("data-state", state[id]);
+          b.classList.toggle("wait", state[id] === "wait");
+          badge.className = "badge " + s.badge;
+          badge.innerHTML = '<i class="dot ' + s.side + '"></i><b>' + bi(s.zh, s.en) + "</b>";
+        });
+
+        // Hero window
+        $$(".session", side).forEach(function (b) {
+          var on = b.getAttribute("data-id") === current;
+          b.classList.toggle("on", on);
+          b.setAttribute("aria-pressed", on ? "true" : "false");
           if (!on) return;
-          document.getElementById("peek-name").textContent = row.getAttribute("data-name");
-          document.getElementById("peek-dir").textContent = row.getAttribute("data-dir");
+          tab.textContent = b.getAttribute("data-tab");
+          monitor.classList.toggle("is-remote", b.hasAttribute("data-remote"));
         });
-        var pane = document.querySelector('.term[data-id="' + id + '"]');
-        document.getElementById("peek-body").innerHTML = pane ? pane.innerHTML : "";
-        var row = document.querySelector('.dash-row[data-pick="' + id + '"]');
-        document.querySelector(".peek").classList.toggle("waiting", !!(row && row.querySelector(".dot.wait")));
+        $$(".term", panes).forEach(function (p) { p.classList.toggle("on", p.getAttribute("data-id") === current); });
+        var at = all.indexOf(current);
+        $("#agent-pos").textContent = (at < 0 ? "–" : at + 1) + "/" + all.length;
+
+        // Overview window: its sidebar mirrors the hero's.
+        ovSide.innerHTML = side.innerHTML;
+        $$(".session", ovSide).forEach(function (b) {
+          var on = b.getAttribute("data-id") === opened;
+          b.classList.toggle("on", on);
+          b.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+        ovMain.classList.toggle("show-dash", !opened);
+        ovToggle.setAttribute("aria-pressed", opened ? "false" : "true");
+        if (opened) {
+          ovTab.textContent = ses(opened).getAttribute("data-tab");
+          ovTerm.innerHTML = pane(opened).innerHTML;
+        } else {
+          var n = all.filter(function (id) { return state[id] === "wait"; }).length;
+          ovTab.innerHTML = bi("Agent 总览 · " + all.length + " 个 Agent · " + n + " 个等你",
+            "Agents · " + all.length + " agents · " + n + (n === 1 ? " needs you" : " need you"));
+        }
+        layout();
+        showPeek();
       }
 
-      // Agents in sidebar order, for "2/4" and its arrows.
-      var agents = rows.length ? ["claude", "codex", "grok", "gemini"] : [];
-      var switcher = document.getElementById("switch");
-      function position() {
-        var i = agents.indexOf(current);
-        document.getElementById("agent-pos").textContent = (i < 0 ? "–" : i + 1) + "/" + agents.length;
-        switcher.hidden = main.classList.contains("show-dash");
+      function row(id) {
+        var b = ses(id), s = STATES[state[id]], what;
+        if (state[id] === "wait") what = bi(esc(b.getAttribute("data-ask-zh") || s.zh), esc(b.getAttribute("data-ask-en") || s.en));
+        else if (state[id] === "work") what = "<b>" + bi(s.zh, s.en) + "</b>";
+        else what = bi(s.zh, s.en);
+        return '<button type="button" class="dash-row' + (b.hasAttribute("data-fresh") ? " fresh" : "") + '" data-pick="' + id + '">' +
+          '<i class="dot ' + s.dot + '"></i>' + $(".kind", b).outerHTML +
+          '<span class="who">' + esc($(".name", b).textContent) + "<small>" + esc(folder(id)) + "</small></span>" +
+          '<span class="what ' + s.what + '">' + what + "</span>" +
+          '<span class="age">' + bi(age[id][0], age[id][1]) + "</span></button>";
       }
+
+      function layout() {
+        var q = filter.value.trim().toLowerCase();
+        var groups = [], byKey = {};
+        agents().forEach(function (id) {
+          var b = ses(id);
+          var hay = ($(".name", b).textContent + " " + b.getAttribute("data-name") + " " + folder(id)).toLowerCase();
+          if (q && hay.indexOf(q) < 0) return;
+          var key = byFolder ? folder(id) : STATES[state[id]].group;
+          if (!byKey[key]) {
+            byKey[key] = { label: byFolder ? esc(key) : bi(GROUPS[key][0], GROUPS[key][1]), order: byFolder ? groups.length : ORDER.indexOf(key), ids: [] };
+            groups.push(byKey[key]);
+          }
+          byKey[key].ids.push(id);
+        });
+        groups.sort(function (a, b) { return a.order - b.order; });
+        list.classList.toggle("by-folder", byFolder);
+        list.innerHTML = groups.length ? groups.map(function (g) {
+          return '<p class="dash-group">' + g.label + " " + g.ids.length + "</p>" + g.ids.map(row).join("");
+        }).join("") : '<p class="dash-empty">' + bi("没有匹配“" + esc(filter.value.trim()) + "”的 Agent", "No agent matches “" + esc(filter.value.trim()) + "”") + "</p>";
+        $$("#seg button").forEach(function (b) {
+          b.setAttribute("aria-pressed", (b.getAttribute("data-group") === "folder") === byFolder ? "true" : "false");
+        });
+        $$(".session[data-fresh]", side).forEach(function (b) { b.removeAttribute("data-fresh"); });
+        mark();
+      }
+
+      function mark() {
+        $$(".dash-row", list).forEach(function (r) { r.classList.toggle("on", r.getAttribute("data-pick") === picked); });
+      }
+
+      // The peek shows the same terminal the session would.
+      function showPeek() {
+        var b = ses(picked);
+        $("#peek-name").textContent = b.getAttribute("data-name");
+        $("#peek-dir").textContent = b.getAttribute("data-dir");
+        $("#peek-body").innerHTML = pane(picked).innerHTML;
+        peek.classList.toggle("waiting", state[picked] === "wait");
+        peek.classList.toggle("exited", state[picked] === "exit");
+        reply.disabled = state[picked] === "exit";
+        mark();
+        hints();
+      }
+
+      function hints() {
+        var en = root.lang === "en", name = ses(picked).getAttribute("data-name");
+        reply.placeholder = en ? "Reply to " + name + ", Return to send" : "回复 " + name + "，回车发送";
+        task.placeholder = sent >= MAX_TASKS ? (en ? "Two is enough for a sketch" : "示意里先派这两个")
+          : (en ? "Hand out a task, Return to start" : "派一个新任务，回车开始");
+        filter.placeholder = en ? "Filter" : "筛选";
+      }
+
+      // A turn runs for a moment, then finishes.
+      function work(id) {
+        var mine = run;
+        state[id] = "work"; age[id] = NOW;
+        render();
+        setTimeout(function () {
+          if (mine !== run || state[id] !== "work") return;
+          add(id, "t-done");
+          state[id] = "done"; age[id] = NOW;
+          render();
+        }, 2800);
+      }
+
+      function quick(key) {
+        if (state[picked] !== "wait") return;
+        clear(picked);
+        if (key === "3" || key === "esc") {
+          add(picked, "t-deny");
+          add(picked, "t-done");
+          state[picked] = "done"; age[picked] = NOW;
+          render();
+        } else {
+          add(picked, "t-allow");
+          work(picked);
+        }
+        reply.focus({ preventScroll: true });
+      }
+
+      function dispatch(text) {
+        if (!text || sent >= MAX_TASKS) return;
+        sent++;
+        var id = "task" + sent;
+        var b = ses("claude").cloneNode(true);
+        b.setAttribute("data-id", id);
+        b.setAttribute("data-tab", "claude · shop");
+        b.setAttribute("data-dir", "~/src/shop");
+        b.setAttribute("data-fresh", "");
+        $(".folder", b).textContent = "shop";
+        side.insertBefore(b, ses("shell"));
+        var p = document.createElement("div");
+        p.className = "term";
+        p.setAttribute("data-id", id);
+        p.innerHTML = '<p><span class="dim">~/src/shop</span> <span class="info">main</span></p>' +
+          '<p><span class="ps">❯</span> claude "' + esc(text) + '"</p>' +
+          '<p class="gap"><span class="info">●</span> ' + bi("开始这个任务…", "Starting on the task…") + "</p>";
+        panes.appendChild(p);
+        state[id] = "work"; age[id] = NOW;
+        picked = id;
+        task.value = "";
+        task.disabled = sent >= MAX_TASKS;
+        render();
+      }
+
+      function send(text) {
+        if (!text || state[picked] === "exit") return;
+        clear(picked);
+        var p = document.createElement("p");
+        p.className = "gap";
+        p.innerHTML = '<span class="ps">❯</span> ' + esc(text);
+        pane(picked).appendChild(p);
+        add(picked, "t-work");
+        reply.value = "";
+        work(picked);
+      }
+
+      document.addEventListener("click", function (e) {
+        var s = e.target.closest("button.session");
+        if (s) {
+          var id = s.getAttribute("data-id"), mirror = ovSide.contains(s);
+          if (mirror) opened = id; else current = id;
+          render();
+          if (mirror) $('.session[data-id="' + id + '"]', ovSide).focus({ preventScroll: true });
+          return;
+        }
+        var r = e.target.closest(".dash-row");
+        if (r) { picked = r.getAttribute("data-pick"); showPeek(); return; }
+        var k = e.target.closest("[data-key]");
+        if (k) { quick(k.getAttribute("data-key")); return; }
+        var g = e.target.closest("#seg button");
+        if (g) { byFolder = g.getAttribute("data-group") === "folder"; layout(); }
+      });
+      list.addEventListener("dblclick", function (e) {
+        var r = e.target.closest(".dash-row");
+        if (r) { opened = r.getAttribute("data-pick"); render(); }
+      });
+      list.addEventListener("keydown", function (e) {
+        var r = e.target.closest(".dash-row");
+        if (!r || e.key !== "Enter") return;
+        e.preventDefault();
+        opened = r.getAttribute("data-pick");
+        render();
+        ovToggle.focus({ preventScroll: true });
+      });
+      $("#ov").addEventListener("keydown", function (e) {
+        if (e.key !== "Escape" || !opened) return;
+        opened = null;
+        render();
+      });
+      $("#peek-open").addEventListener("click", function () { opened = picked; render(); });
+      $("#peek-restart").addEventListener("click", function () {
+        if (state[picked] !== "exit") return;
+        clear(picked);
+        add(picked, "t-ready");
+        state[picked] = "ready"; age[picked] = NOW;
+        render();
+      });
+      ovToggle.addEventListener("click", function () { opened = opened ? null : picked; render(); });
+      filter.addEventListener("input", layout);
+      $("#send").addEventListener("submit", function (e) { e.preventDefault(); dispatch(task.value.trim()); });
+      $("#reply-form").addEventListener("submit", function (e) { e.preventDefault(); send(reply.value.trim()); });
+      $("#reset").addEventListener("click", reset);
+
       function step(delta) {
-        var i = agents.indexOf(current);
-        select(agents[i < 0 ? (delta > 0 ? 0 : agents.length - 1) : (i + delta + agents.length) % agents.length]);
+        var all = agents(), i = all.indexOf(current);
+        current = all[i < 0 ? (delta > 0 ? 0 : all.length - 1) : (i + delta + all.length) % all.length];
+        render();
       }
-      document.getElementById("agent-prev").addEventListener("click", function () { step(-1); });
-      document.getElementById("agent-next").addEventListener("click", function () { step(1); });
-
-      function showDash() {
-        main.classList.add("show-dash");
-        switcher.hidden = true;
-        dashBtn.setAttribute("aria-expanded", "true");
-        if (tab) tab.innerHTML = '<span class="zh">Agent 总览 · 4 个 Agent · 1 个等你</span><span class="en">Agents · 4 agents · 1 needs you</span>';
-        pick(picked);
-      }
-
-      function select(id) {
-        current = id;
-        main.classList.remove("show-dash");
-        dashBtn.setAttribute("aria-expanded", "false");
-        sessions.forEach(function (btn) {
-          var on = btn.getAttribute("data-id") === id;
-          btn.classList.toggle("on", on);
-          btn.setAttribute("aria-pressed", on ? "true" : "false");
-          if (on && tab) tab.textContent = btn.getAttribute("data-tab") || "";
-          if (on) monitor.classList.toggle("is-remote", btn.getAttribute("data-remote") === "true");
-        });
-        terms.forEach(function (pane) {
-          pane.classList.toggle("on", pane.getAttribute("data-id") === id);
-        });
-        position();
-      }
-
-      sessions.forEach(function (btn) {
-        btn.addEventListener("click", function () { select(btn.getAttribute("data-id")); });
-      });
-
-      document.querySelectorAll("[data-jump]").forEach(function (btn) {
-        btn.addEventListener("click", function () {
-          var id = btn.getAttribute("data-jump");
-          select(id);
-          var target = document.querySelector('.session[data-id="' + id + '"]');
-          if (target) target.focus({ preventScroll: true });
-          var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-          var product = document.getElementById("product");
-          product.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
-        });
-      });
-
-      function toStage() {
-        var still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        document.getElementById("product").scrollIntoView({ behavior: still ? "auto" : "smooth", block: "center" });
-      }
-      dashBtn.addEventListener("click", function () {
-        if (main.classList.contains("show-dash")) select(current); else showDash();
-      });
-      rows.forEach(function (row) {
-        row.addEventListener("click", function () { pick(row.getAttribute("data-pick")); });
-        row.addEventListener("dblclick", function () { select(row.getAttribute("data-pick")); });
-        row.addEventListener("keydown", function (e) {
-          if (e.key === "Enter") { e.preventDefault(); select(row.getAttribute("data-pick")); }
-        });
-      });
-      document.getElementById("peek-open").addEventListener("click", function () { select(picked); });
-      document.querySelectorAll("[data-dash]").forEach(function (btn) {
-        btn.addEventListener("click", function () {
-          showDash();
-          dashBtn.focus({ preventScroll: true });
-          toStage();
-        });
-      });
-      pick(picked);
-
-      function unfold() {
-        var target = location.hash.length > 1 && document.getElementById(location.hash.slice(1));
-        if (target && target.tagName === "DETAILS") target.open = true;
-      }
-      window.addEventListener("hashchange", unfold);
-      document.querySelectorAll('a[href^="#"]').forEach(function (a) {
-        a.addEventListener("click", function () {
-          var target = document.getElementById(a.getAttribute("href").slice(1));
-          if (target && target.tagName === "DETAILS") target.open = true;
-        });
-      });
-      unfold();
+      $("#agent-prev").addEventListener("click", function () { step(-1); });
+      $("#agent-next").addEventListener("click", function () { step(1); });
 
       perf.addEventListener("click", function () {
         var open = win.classList.toggle("show-monitor");
@@ -1438,14 +1710,31 @@ Parts of Sources/Ghostty/ are adapted from Ghostty&#x27;s macOS app under that l
         monitor.setAttribute("aria-hidden", open ? "false" : "true");
       });
 
-      document.getElementById("lang").addEventListener("click", function () {
+      // A link to a folded section opens it.
+      function unfold() {
+        var target = location.hash.length > 1 && document.getElementById(location.hash.slice(1));
+        if (target && target.tagName === "DETAILS") target.open = true;
+      }
+      window.addEventListener("hashchange", unfold);
+      $$('a[href^="#"]').forEach(function (a) {
+        a.addEventListener("click", function () {
+          var target = document.getElementById(a.getAttribute("href").slice(1));
+          if (target && target.tagName === "DETAILS") target.open = true;
+        });
+      });
+      unfold();
+
+      $("#lang").addEventListener("click", function () {
         var next = root.lang === "en" ? "zh-Hans" : "en";
         root.lang = next;
         document.title = copy[next].title;
         if (desc) desc.setAttribute("content", copy[next].desc);
         if (og) og.setAttribute("content", copy[next].desc);
         try { localStorage.setItem("agentdeck-lang", next === "en" ? "en" : "zh"); } catch (e) {}
+        hints();
       });
+
+      reset();
     })();
   </script>
 </body>
