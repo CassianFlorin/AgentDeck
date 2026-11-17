@@ -55,6 +55,13 @@ struct AgentKind: Codable, Hashable, Identifiable {
     var canResume: Bool { isAgent && resumeArgs.contains("{id}") }
     var canContinue: Bool { isAgent && !continueArgs.isEmpty }
     var canTakePrompt: Bool { isAgent && promptArgs.contains("{prompt}") }
+    /// The install hint, when it is a shell command we can run for you
+    /// (some hints are just a pointer to the vendor's instructions).
+    var installCommand: String? {
+        guard let hint = installHint?.trimmingCharacters(in: .whitespaces), !hint.isEmpty,
+              hint.allSatisfy(\.isASCII) else { return nil }
+        return hint
+    }
 
     init(id: String, name: String, symbol: String, command: String?, newArgs: String = "",
          resumeArgs: String = "", continueArgs: String = "", promptArgs: String = "", history: History = .none,
@@ -114,12 +121,56 @@ struct AgentKind: Codable, Hashable, Identifiable {
         newArgs: "", resumeArgs: "--resume {id}", continueArgs: "--resume latest",
         promptArgs: "-i {prompt}", installHint: "npm install -g @google/gemini-cli", isBuiltIn: true)
 
+    // Below: launch and the generic status signals work for all of them. The
+    // conversation arguments are filled only where the CLI documents them;
+    // anything left empty just hides that feature for the agent.
+
+    static let opencode = AgentKind(
+        id: "opencode", name: "opencode", symbol: "curlybraces", command: "opencode",
+        resumeArgs: "--session {id}", continueArgs: "--continue", promptArgs: "--prompt {prompt}",
+        installHint: "npm install -g opencode-ai", isBuiltIn: true)
+
+    static let qwen = AgentKind(
+        id: "qwen", name: "Qwen Code", symbol: "q.circle", command: "qwen",
+        resumeArgs: "--resume {id}", continueArgs: "--continue", promptArgs: "-i {prompt}",
+        installHint: "npm install -g @qwen-code/qwen-code@latest", isBuiltIn: true)
+
+    static let cursor = AgentKind(
+        id: "cursor", name: "Cursor CLI", symbol: "cursorarrow.rays", command: "cursor-agent",
+        resumeArgs: "--resume {id}", continueArgs: "resume", promptArgs: "{prompt}",
+        installHint: "curl https://cursor.com/install -fsS | bash", isBuiltIn: true)
+
+    static let copilot = AgentKind(
+        id: "copilot", name: "Copilot CLI", symbol: "airplane", command: "copilot",
+        resumeArgs: "--resume={id}", continueArgs: "--continue", promptArgs: "-i {prompt}",
+        installHint: "npm install -g @github/copilot", isBuiltIn: true)
+
+    static let droid = AgentKind(
+        id: "droid", name: "Droid", symbol: "ant", command: "droid",
+        resumeArgs: "--resume {id}", continueArgs: "--resume", promptArgs: "{prompt}",
+        installHint: "curl -fsSL https://app.factory.ai/cli | sh", isBuiltIn: true)
+
+    static let amp = AgentKind(
+        id: "amp", name: "Amp", symbol: "waveform", command: "amp",
+        installHint: "curl -fsSL https://ampcode.com/install.sh | bash", isBuiltIn: true)
+
+    static let crush = AgentKind(
+        id: "crush", name: "Crush", symbol: "heart", command: "crush",
+        installHint: "brew install charmbracelet/tap/crush", isBuiltIn: true)
+
+    static let aider = AgentKind(
+        id: "aider", name: "Aider", symbol: "hammer", command: "aider",
+        continueArgs: "--restore-chat-history",
+        installHint: "python -m pip install aider-install && aider-install", isBuiltIn: true)
+
     static let shell = AgentKind(id: "shell", name: "Shell", symbol: "terminal", command: nil, isBuiltIn: true)
 
     /// Remote session; the actual ssh command comes from the RemoteHost. Not in the catalog.
     static let ssh = AgentKind(id: "ssh", name: "SSH", symbol: "server.rack", command: nil)
 
-    static let builtIns: [AgentKind] = [.claude, .codex, .grok, .gemini, .shell]
+    /// Mainstream agents first; the menus only show the ones found on your PATH.
+    static let builtIns: [AgentKind] = [.claude, .codex, .gemini, .grok, .opencode, .qwen, .cursor,
+                                        .copilot, .droid, .amp, .crush, .aider, .shell]
 
     /// Symbols offered when creating a custom agent.
     static let symbolChoices = ["sparkle", "bolt", "diamond", "cpu", "brain", "wand.and.stars",

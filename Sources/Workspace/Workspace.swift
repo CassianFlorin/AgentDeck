@@ -37,6 +37,8 @@ final class Workspace: ObservableObject {
     private var hookObserver: NSObjectProtocol?
 
     private var cancellables: [AgentSession.ID: AnyCancellable] = [:]
+    /// Install sessions we're waiting on, to re-detect agents when they finish.
+    private var installWatchers: [AgentSession.ID: AnyCancellable] = [:]
     private let store = WorkspaceStore()
 
     var selected: AgentSession? { sessions.first { $0.id == selectedID } }
@@ -214,6 +216,26 @@ final class Workspace: ObservableObject {
         return launch(kind, resume: conversationID)
     }
 
+    /// Run an agent's install command in a new terminal session, where you can
+    /// see the output and answer prompts (sudo, Homebrew…). When the command
+    /// finishes, installed agents are detected again so the agent shows up in
+    /// the new-session menus.
+    func install(_ agent: AgentKind) {
+        guard let command = agent.installCommand else { return }
+        managingAgents = false
+        let session = openCommand(command, title: "安装 \(agent.name)", on: nil)
+        installWatchers[session.id] = session.$status.sink { [weak self, id = session.id] status in
+            guard case .finished = status else { return }
+            DispatchQueue.main.async {
+                self?.installWatchers[id] = nil
+                #if DEBUG
+                DebugHooks.log("install finished: \(status), detecting again")
+                #endif
+                self?.catalog.detectInstalled()
+            }
+        }
+    }
+
     /// After an agent exited: start it again in its pane, back in the same
     /// conversation if we know it. Without `pane`: the focused pane's agent if
     /// it exited, else the first exited one.
@@ -293,7 +315,7 @@ final class Workspace: ObservableObject {
         let dir = directory ?? selected.flatMap { $0.remote == nil ? $0.directory : nil }
             ?? recentDirectories.first ?? NSHomeDirectory()
         let agent = agentID ?? selected.flatMap { $0.kind.history != .none ? $0.kind.id : nil }
-            ?? catalog.visible.first { $0.history != .none }?.id ?? "claude"
+            ?? catalog.available.first { $0.history != .none }?.id ?? "claude"
         resumeRequest = ResumeRequest(directory: dir, agentID: agent)
     }
 

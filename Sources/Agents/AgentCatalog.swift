@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import AppKit
 
 /// The agents AgentDeck knows: built-in presets plus your own, with your
 /// edits layered on top. Stored in agents.json next to workspace.json.
@@ -11,14 +12,30 @@ final class AgentCatalog: ObservableObject {
     @Published private(set) var detecting = false
 
     private var url: URL { AppPaths.support.appendingPathComponent("agents.json") }
+    private var lastDetection = Date.distantPast
+    private var activation: AnyCancellable?
+    /// Asked to detect again while a lookup was running (e.g. an agent was saved).
+    private var detectAgain = false
 
     init() {
         load()
         detectInstalled()
+        // Installed a CLI in another window? Pick it up when you come back,
+        // without spawning a login shell on every app switch.
+        activation = NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)
+            .sink { [weak self] _ in
+                guard let self, Date().timeIntervalSince(self.lastDetection) > 60 else { return }
+                self.detectInstalled()
+            }
     }
 
-    /// Agents for "new session" menus.
+    /// Not hidden by you (installed or not): what 管理 Agent lists first.
     var visible: [AgentKind] { agents.filter { !$0.hidden } }
+
+    /// Agents for "new session" menus: not hidden, and found on your PATH.
+    /// While detection hasn't finished (or couldn't run) everything counts as
+    /// available, so a slow shell never empties the menus.
+    var available: [AgentKind] { visible.filter { isInstalled($0) != false } }
 
     func agent(id: String) -> AgentKind? { agents.first { $0.id == id } }
 
@@ -76,6 +93,8 @@ final class AgentCatalog: ObservableObject {
                     // Saved by a version that knew fewer ways to get status.
                     if a.hooks == .none { a.hooks = list[i].hooks }
                     if a.promptArgs.isEmpty { a.promptArgs = list[i].promptArgs }
+                    // Not editable, so always the current preset's.
+                    a.installHint = list[i].installHint
                     list[i] = a
                 } else {
                     a.isBuiltIn = false
@@ -101,17 +120,25 @@ final class AgentCatalog: ObservableObject {
     func detectInstalled() {
         let names = Array(Set(agents.compactMap(\.executable))).sorted()
         guard !names.isEmpty else { return }
+        if detecting { detectAgain = true; return }
         detecting = true
+        lastDetection = Date()
         Task.detached {
             let result = Self.lookup(names)
             await MainActor.run {
-                self.installed = result
+                // nil = the shell couldn't answer; keep what we knew rather than
+                // marking every agent as missing.
+                if let result { self.installed = result }
                 self.detecting = false
+                if self.detectAgain {
+                    self.detectAgain = false
+                    self.detectInstalled()
+                }
             }
         }
     }
 
-    nonisolated private static func lookup(_ names: [String]) -> [String: String?] {
+    nonisolated private static func lookup(_ names: [String]) -> [String: String?]? {
         let shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
         let script = names.map { n in
             "printf '@@%s\\t%s\\n' \(SSH.quote(n)) \"$(command -v \(SSH.quote(n)) 2>/dev/null)\""
@@ -125,12 +152,12 @@ final class AgentCatalog: ObservableObject {
         p.standardError = FileHandle.nullDevice
         var result: [String: String?] = [:]
         for n in names { result[n] = .some(nil) }
-        do { try p.run() } catch { return result }
+        do { try p.run() } catch { return nil }
 
         // Interactive shells can hang on odd rc files; don't wait forever.
         let deadline = Date().addingTimeInterval(10)
         while p.isRunning && Date() < deadline { usleep(50_000) }
-        if p.isRunning { p.terminate() }
+        if p.isRunning { p.terminate(); return nil }
 
         let text = String(decoding: out.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
         for line in text.components(separatedBy: .newlines) where line.hasPrefix("@@") {

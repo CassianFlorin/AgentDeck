@@ -281,7 +281,7 @@ struct NewSessionMenu: View {
 
     var body: some View {
         Menu {
-            ForEach(catalog.visible) { kind in
+            ForEach(catalog.available) { kind in
                 Menu {
                     Button("选择文件夹…") { NewSessionPanel.present(kind: kind, in: workspace) }
                     if !workspace.recentDirectories.isEmpty {
@@ -295,8 +295,7 @@ struct NewSessionMenu: View {
                         Button("恢复之前的对话…") { workspace.showResume(agentID: kind.id) }
                     }
                 } label: {
-                    Label(catalog.isInstalled(kind) == false ? "\(kind.name)（未安装）" : kind.name,
-                          systemImage: kind.symbol)
+                    Label(kind.name, systemImage: kind.symbol)
                 }
             }
             Divider()

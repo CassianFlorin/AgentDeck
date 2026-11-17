@@ -18,6 +18,7 @@ import SwiftUI
 ///   screen                     log the focused pane's visible text (no screenshot needed)
 ///   history:<agentID>:<dir>    log the newest conversations found for that agent and folder
 ///   agents                     log the agent catalog and install detection
+///   install:<agentID>          run that agent's install command, as 管理 Agent's 安装 button does
 ///   ui:agents | ui:resume[:<agentID>:<dir>] | ui:close   open/close the agent manager / resume sheet
 ///   restart                    restart an exited agent in the selected session (resume if known)
 ///   agent:<agentID>            start that agent in a new split of the selected session
@@ -89,6 +90,9 @@ enum DebugHooks {
             let items = ConversationHistory.list(for: agent, directory: parts[1], limit: 5)
             log("history \(agent.id) \(parts[1]): \(items.count) shown")
             for c in items { log("  \(c.updated) \(c.id) \(c.title)") }
+        case "install":
+            // install:<agentID>  run its install command as the 安装 button does
+            if let a = workspace.catalog.agent(id: arg) { workspace.install(a) }
         case "agents":
             for a in workspace.catalog.agents {
                 log("agent \(a.id) installed=\(String(describing: workspace.catalog.isInstalled(a))) path=\(workspace.catalog.path(of: a) ?? "-")")
