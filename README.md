@@ -14,7 +14,7 @@
   <a href="https://github.com/CassianFlorin/AgentDeck/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/CassianFlorin/AgentDeck?label=release&color=3eecc8"></a>
   <img alt="macOS 14+ on Apple silicon" src="https://img.shields.io/badge/macOS-14%2B%20·%20Apple%20silicon-black?logo=apple">
   <a href="#install"><img alt="Homebrew" src="https://img.shields.io/badge/brew-cassianflorin%2Ftap%2Fagentdeck-orange?logo=homebrew"></a>
-  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/github/license/CassianFlorin/AgentDeck"></a>
+  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-blue"></a>
 </p>
 
 <p align="center">
