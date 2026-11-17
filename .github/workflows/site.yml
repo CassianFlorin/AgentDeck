@@ -7,7 +7,7 @@ name: Site
 on:
   push:
     branches: [main]
-    paths: ["site/**"]
+    paths: ["site/**", "functions/**"]
   # By hand, e.g. after a sync was refused (see below).
   workflow_dispatch:
 

@@ -9,13 +9,16 @@ CSS shows one of them by <html lang>. This script
     seo:begin / seo:end markers) for the Chinese page at /,
   * writes site/en/index.html, the same page with lang="en" and an English
     SEO block, served at /en/,
-  * writes site/sitemap.xml listing both, with hreflang alternates.
+  * writes site/sitemap.xml listing both, with hreflang alternates,
+  * writes site/index.md and site/en/index.md, the page's text as Markdown,
+    which functions/_middleware.js serves to agents sending Accept: text/markdown.
 
 Run it after editing site/index.html:
 
     scripts/build-site.py           # write the files
     scripts/build-site.py --check   # CI: fail if they are out of date
 """
+import html.parser
 import json
 import pathlib
 import re
@@ -155,6 +158,114 @@ def page(src, key):
     return out
 
 
+class _Markdown(html.parser.HTMLParser):
+    """Turn the page into Markdown in one language, for agents that ask for it.
+
+    Keeps the copy (headings, paragraphs, lists, keys, code) and drops the
+    interactive demo windows, scripts, buttons and the other language.
+    """
+    SKIP_TAGS = {"script", "style", "template", "svg", "button", "input", "form", "nav", "header", "footer", "summary"}
+    SKIP_CLASSES = {"window", "caption", "skip", "brand", "try", "eyebrow", "m-only"}
+    VOID = {"br", "img", "meta", "link", "hr", "input"}
+    BLOCK = {"h1": "# ", "h2": "## ", "h3": "### ", "h4": "#### ", "p": "", "li": "- ", "dt": "dt", "dd": "dd", "pre": ""}
+
+    def __init__(self, key):
+        super().__init__(convert_charrefs=True)
+        self.drop = "en" if key == "zh" else "zh"
+        self.stack = []          # (tag, skipping) for open elements
+        self.skip = 0
+        self.blocks = []
+        self.buf = None          # (prefix, [text]) of the block being read
+        self.in_pre = False
+
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        classes = set((a.get("class") or "").split())
+        skipping = (tag in self.SKIP_TAGS or self.drop in classes or bool(classes & self.SKIP_CLASSES)
+                    or a.get("aria-hidden") == "true" or (tag == "div" and a.get("id") == "dash-view"))
+        if tag in self.VOID:
+            if tag == "br" and self.buf and not self.skip:
+                self.buf[1].append(" ")
+            return
+        self.stack.append((tag, skipping, None))
+        if skipping:
+            self.skip += 1
+            return
+        if self.skip:
+            return
+        if self.buf is None and (tag in self.BLOCK or "keyrow" in classes):
+            self.buf = ("- " if "keyrow" in classes else self.BLOCK[tag], [], len(self.stack))
+            self.in_pre = tag == "pre"
+        elif self.buf and tag in ("h3", "h4"):
+            self.stack[-1] = (tag, False, "label")
+        elif self.buf and "combo" in classes:
+            self.stack[-1] = (tag, False, "combo")
+        elif self.buf and tag in ("code", "kbd"):
+            self.buf[1].append("`")
+        elif self.buf and tag in ("strong", "b") and not self.buf[0].startswith("#"):
+            self.buf[1].append("**")
+
+    def handle_endtag(self, tag):
+        if tag in self.VOID:
+            return
+        role = None
+        while self.stack:
+            t, skipping, role = self.stack.pop()
+            if skipping:
+                self.skip -= 1
+            if t == tag:
+                break
+        if self.skip:
+            return
+        if self.buf and role in ("label", "combo"):
+            self.buf[1].append(": " if role == "label" else " — ")
+            return
+        if self.buf and tag in ("code", "kbd"):
+            self.buf[1].append("`")
+        elif self.buf and tag in ("strong", "b") and not self.buf[0].startswith("#"):
+            self.buf[1].append("**")
+        elif self.buf and len(self.stack) < self.buf[2]:
+            prefix, parts, _ = self.buf
+            text = "".join(parts)
+            if self.in_pre:
+                text = "```\n" + text.strip("\n") + "\n```"
+            else:
+                text = re.sub(r"\s+", " ", text).strip().replace("****", "").replace("``", " ")
+                text = re.sub(r"([.。!?！？])\*\*(?=\S)", r"\1** ", text)
+                text = re.sub(r"\s+([:：])", r"\1", text)
+            if text.strip("*` "):
+                self.blocks.append((prefix, text))
+            self.buf, self.in_pre = None, False
+
+    def handle_data(self, data):
+        if self.buf and not self.skip:
+            self.buf[1].append(data)
+
+    def text(self):
+        out, blocks = [], []
+        for prefix, text in self.blocks:      # <dt>X</dt><dd>Y</dd> -> "- **X**: Y"
+            if blocks and blocks[-1][0] == "dt" and prefix == "dd":
+                blocks[-1] = ("- ", f"**{blocks[-1][1]}**: {text}")
+            else:
+                blocks.append(("dt" if prefix == "dt" else prefix, text))
+        for prefix, text in blocks:
+            item = prefix == "- "
+            if out and not (item and out[-1].startswith("- ")):
+                out.append("")
+            out.append(prefix + text)
+        return "\n".join(out) + "\n"
+
+
+def markdown(src, key):
+    c = LANGS[key]
+    body = src[src.index("<body"):]
+    m = _Markdown(key)
+    m.feed(body)
+    head = (f"<!-- {SITE}{c['path']} as Markdown, generated from the page by scripts/build-site.py -->\n\n"
+            f"{c['desc']}\n\n")
+    return head + m.text()
+
+
 def sitemap():
     urls = []
     for key in ("zh", "en"):
@@ -178,6 +289,8 @@ def main():
         ROOT / "index.html": page(src, "zh"),
         ROOT / "en" / "index.html": page(src, "en"),
         ROOT / "sitemap.xml": sitemap(),
+        ROOT / "index.md": markdown(src, "zh"),
+        ROOT / "en" / "index.md": markdown(src, "en"),
     }
     stale = []
     for path, text in outputs.items():
