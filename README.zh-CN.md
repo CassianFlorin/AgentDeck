@@ -100,4 +100,4 @@ AgentDeck 是照着我自己的工作流做的，开源出来，也许正好适�
 
 终端引擎是 Mitchell Hashimoto 和贡献者们的 [Ghostty](https://github.com/ghostty-org/ghostty)（MIT）。应用内更新用的是 [Sparkle](https://sparkle-project.org)。
 
-MIT 许可，见 [LICENSE](LICENSE)。
+MIT 许可，见 [LICENSE](LICENSE)；Ghostty 和 Sparkle 的许可见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
