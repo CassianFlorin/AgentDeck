@@ -26,7 +26,7 @@
 
 <p align="center">
   <a href="https://agentdeck.cassianflorin.com/en/">
-    <img src="site/og-en.png" alt="AgentDeck: a sidebar of coding agents, each showing whether it is working, waiting for you, done or exited, next to a terminal where Codex asks to edit a file" width="860">
+    <img src="docs/images/agentdeck-en.png" alt="AgentDeck: a sidebar of coding agents, each showing whether it is working, waiting for you, done or exited, next to a terminal where Codex asks to edit a file" width="860">
   </a>
   <br>
   <sub>The <a href="https://agentdeck.cassianflorin.com/en/">website</a> has a clickable version of this sketch.</sub>

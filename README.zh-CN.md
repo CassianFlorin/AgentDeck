@@ -26,7 +26,7 @@
 
 <p align="center">
   <a href="https://agentdeck.cassianflorin.com">
-    <img src="site/og.png" alt="AgentDeck：侧边栏里的多个编程 Agent 各自显示运行中、等你、本轮完成或已退出，旁边的终端里 Codex 正在请求修改文件" width="860">
+    <img src="docs/images/agentdeck-zh.png" alt="AgentDeck：侧边栏里的多个编程 Agent 各自显示运行中、等你、本轮完成或已退出，旁边的终端里 Codex 正在请求修改文件" width="860">
   </a>
   <br>
   <sub><a href="https://agentdeck.cassianflorin.com">官网</a>上有这张示意图的可交互版本。</sub>
