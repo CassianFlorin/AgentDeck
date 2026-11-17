@@ -1,0 +1,7 @@
+# Cloudflare Pages: keep the *.pages.dev copies out of search results, so only
+# agentdeck.cassianflorin.com is indexed (the pages also carry a canonical link).
+https://:project.pages.dev/*
+  X-Robots-Tag: noindex
+
+https://:version.:project.pages.dev/*
+  X-Robots-Tag: noindex

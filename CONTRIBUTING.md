@@ -39,7 +39,7 @@ A Debug build can also be driven from the shell with `scripts/debug-cmd.sh` (see
 | `Sources/Remote/` | SSH hosts, tmux / zellij |
 | `Sources/Monitor/` | The performance panel |
 | `Sources/Ghostty/` | The libghostty bridge |
-| `site/` | The landing page, a single `index.html` with Chinese and English text side by side |
+| `site/` | The landing page. Edit `site/index.html` (Chinese and English text side by side); `scripts/build-site.py` generates the English page at `/en/` and the sitemap |
 
 ## Pull requests
 
@@ -47,7 +47,7 @@ A Debug build can also be driven from the shell with `scripts/debug-cmd.sh` (see
 - The `Build (Debug)` check must pass before merging.
 - Don't bump the version or create tags. Releases are cut by the maintainer.
 - **Adding an agent preset:** only fill in arguments the CLI documents (resume, continue, start with a prompt). Leaving one empty just hides that feature for the agent, which is better than a wrong guess.
-- **Landing page:** every visible string has a Chinese and an English version (`<span class="zh">` / `<span class="en">`); please update both, and check it at phone width.
+- **Landing page:** every visible string has a Chinese and an English version (`<span class="zh">` / `<span class="en">`); please update both, run `scripts/build-site.py`, and check it at phone width. CI fails if the generated pages are out of date.
 - User-facing behavior changes should also update [docs/FEATURES.md](docs/FEATURES.md).
 
 By contributing, you agree that your contributions are licensed under the [MIT License](LICENSE).
