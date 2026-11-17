@@ -100,4 +100,4 @@ AgentDeck is a personal tool, built for my own workflow and open-sourced in case
 
 The terminal engine is [Ghostty](https://github.com/ghostty-org/ghostty) by Mitchell Hashimoto and contributors (MIT). Updates are delivered with [Sparkle](https://sparkle-project.org).
 
-MIT licensed. See [LICENSE](LICENSE).
+MIT licensed. See [LICENSE](LICENSE), and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for Ghostty and Sparkle.
