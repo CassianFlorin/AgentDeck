@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>404 · AgentDeck</title>
+  <meta name="robots" content="noindex">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#08101c">
+  <link rel="icon" href="/favicon.png" type="image/png">
+  <style>
+    :root { --bg: #08101c; --ink: #f4f7fb; --muted: #97a4bc; --line: rgba(232, 238, 248, 0.16); --mint: #3eecc8; --mint-ink: #06241c; }
+    * { box-sizing: border-box; margin: 0; }
+    body {
+      min-height: 100vh; display: grid; place-items: center; padding: 24px 16px;
+      background: var(--bg); color: var(--ink); text-align: center;
+      font-family: -apple-system, BlinkMacSystemFont, system-ui, "PingFang SC", "Helvetica Neue", sans-serif;
+    }
+    img { display: block; margin: 0 auto 20px; }
+    .code { color: var(--mint); font: 600 13px/1 "SF Mono", ui-monospace, Menlo, monospace; letter-spacing: 0.08em; }
+    h1 { margin-top: 12px; font-size: clamp(26px, 5vw, 36px); font-weight: 650; letter-spacing: -0.02em; }
+    p { margin-top: 10px; color: var(--muted); line-height: 1.6; }
+    .links { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 26px; }
+    a { display: inline-flex; align-items: center; min-height: 40px; padding: 0 18px; border-radius: 999px; text-decoration: none; font-weight: 600; font-size: 15px; }
+    .primary { background: var(--mint); color: var(--mint-ink); }
+    .ghost { border: 1px solid var(--line); color: var(--ink); }
+  </style>
+</head>
+<body>
+  <main>
+    <img src="/icon.png" width="64" height="64" alt="AgentDeck">
+    <p class="code">404</p>
+    <h1>这个页面不存在</h1>
+    <p lang="en">This page doesn't exist.</p>
+    <div class="links">
+      <a class="primary" href="/">回到首页</a>
+      <a class="ghost" href="/en/" lang="en">English home</a>
+    </div>
+  </main>
+</body>
+</html>

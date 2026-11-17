@@ -11,6 +11,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  site:
+    name: Site pages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # site/en/index.html and site/sitemap.xml are generated from site/index.html.
+      - name: Generated pages are up to date
+        run: python3 scripts/build-site.py --check
+
   build:
     name: Build (Debug)
     runs-on: macos-26
