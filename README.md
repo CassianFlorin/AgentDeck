@@ -18,7 +18,15 @@ AgentDeck is my own terminal built for that workflow. It's one window with a sid
 
 It's a personal tool, open-sourced in case it fits your workflow too.
 
-Download it from [Releases](../../releases). It requires macOS 14 or later on Apple silicon. See [docs/FEATURES.md](docs/FEATURES.md) for features and [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for building it yourself.
+It works with Claude Code, Codex, Gemini, Grok, opencode, Qwen Code, Cursor CLI, Copilot CLI, Droid, Amp, Crush and Aider out of the box, lists the ones you have installed, and can install the rest for you. Any other CLI can be added.
+
+## Install
+
+```bash
+brew install --cask cassianflorin/tap/agentdeck
+```
+
+Or download the DMG from [Releases](../../releases). It requires macOS 14 or later on Apple silicon, and updates itself from then on. More at [agentdeck.cassianflorin.com](https://agentdeck.cassianflorin.com). See [docs/FEATURES.md](docs/FEATURES.md) for features and [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for building it yourself.
 
 ## Credits
 
