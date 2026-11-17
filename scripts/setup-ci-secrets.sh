@@ -7,6 +7,11 @@
 # Secrets written (used by .github/workflows/release.yml):
 #   CERT_P12_BASE64, CERT_P12_PASSWORD     Developer ID Application cert + private key
 #   NOTARY_KEY_P8, NOTARY_KEY_ID, NOTARY_ISSUER_ID   App Store Connect API key
+#
+# Optional, set separately (see docs/DEVELOPMENT.md → Releasing):
+#   HOMEBREW_TAP_TOKEN   fine-grained PAT, Contents: write on CassianFlorin/homebrew-tap only;
+#                        lets the release bump Casks/agentdeck.rb. Without it that step is skipped.
+#                        gh secret set HOMEBREW_TAP_TOKEN --repo CassianFlorin/AgentDeck
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -42,4 +47,6 @@ printf '%s' "$ISSUER" | gh secret set NOTARY_ISSUER_ID --repo "$REPO"
 unset P12_PASS
 
 echo; gh secret list --repo "$REPO"
+gh secret list --repo "$REPO" | grep -q '^HOMEBREW_TAP_TOKEN' \
+  || echo "Note: HOMEBREW_TAP_TOKEN is not set, so releases won't update the Homebrew cask (see docs/DEVELOPMENT.md)."
 echo "Done. Release with: git tag v0.1.0 && git push origin v0.1.0"
