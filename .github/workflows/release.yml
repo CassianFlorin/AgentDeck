@@ -161,6 +161,8 @@ jobs:
           # old file and record the rename, so `brew upgrade` moves existing
           # installs over to waitlight.
           if [ -f Casks/agentdeck.rb ]; then git rm -q Casks/agentdeck.rb; fi
+          # git drops the folder when that was its only file.
+          mkdir -p Casks
           python3 - <<'PY'
           import json, os
           path = "cask_renames.json"
