@@ -2,7 +2,7 @@ import Foundation
 import Combine
 import AppKit
 
-/// The agents AgentDeck knows: built-in presets plus your own, with your
+/// The agents Waitlight knows: built-in presets plus your own, with your
 /// edits layered on top. Stored in agents.json next to workspace.json.
 @MainActor
 final class AgentCatalog: ObservableObject {

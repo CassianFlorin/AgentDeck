@@ -8,7 +8,7 @@ import Sparkle
 /// signature as this one.
 ///
 /// Debug builds don't start the updater (they would replace a dev build
-/// with a release one) unless `AGENTDECK_UPDATER=1` is set, for testing.
+/// with a release one) unless `WAITLIGHT_UPDATER=1` is set, for testing.
 @MainActor
 final class AppUpdater: NSObject, ObservableObject, SPUUpdaterDelegate {
     static let shared = AppUpdater()
@@ -21,7 +21,7 @@ final class AppUpdater: NSObject, ObservableObject, SPUUpdaterDelegate {
 
     private override init() {
         #if DEBUG
-        isEnabled = ProcessInfo.processInfo.environment["AGENTDECK_UPDATER"] == "1"
+        isEnabled = ProcessInfo.processInfo.environment["WAITLIGHT_UPDATER"] == "1"
         #else
         isEnabled = true
         #endif
@@ -39,11 +39,11 @@ final class AppUpdater: NSObject, ObservableObject, SPUUpdaterDelegate {
 
     // MARK: SPUUpdaterDelegate
 
-    /// `AGENTDECK_UPDATE_FEED` points the updater at another feed, for testing
+    /// `WAITLIGHT_UPDATE_FEED` points the updater at another feed, for testing
     /// against a local server. The feed and the update still have to be
     /// signed with the key in Info.plist.
     nonisolated func feedURLString(for updater: SPUUpdater) -> String? {
-        ProcessInfo.processInfo.environment["AGENTDECK_UPDATE_FEED"]
+        ProcessInfo.processInfo.environment["WAITLIGHT_UPDATE_FEED"]
     }
 
     /// Relaunching kills every terminal. Sessions, splits and conversations
@@ -61,7 +61,7 @@ final class AppUpdater: NSObject, ObservableObject, SPUUpdaterDelegate {
             alert.informativeText = """
                 有 \(busy.count) 个 Agent 正在运行或等你回复，重启会中断它们当前这一轮。\
                 会话、分屏和对话在重启后会恢复。
-                也可以先继续工作，退出 AgentDeck 时会自动安装更新。
+                也可以先继续工作，退出 Waitlight 时会自动安装更新。
                 """
             alert.addButton(withTitle: "退出时再安装")
             alert.addButton(withTitle: "立即重启")

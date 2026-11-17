@@ -1,5 +1,5 @@
 #!/usr/bin/env swift
-// Renders AgentDeck's app icon (1024×1024 PNG) with CoreGraphics.
+// Renders Waitlight's app icon (1024×1024 PNG) with CoreGraphics.
 //   swift scripts/render-icon.swift <out.png>
 // Then scripts/make-appicon.sh builds the asset catalog sizes from it.
 //

@@ -40,14 +40,14 @@ jobs:
         run: |
           set -o pipefail
           xcodegen generate --quiet
-          xcodebuild -project AgentDeck.xcodeproj -scheme AgentDeck -configuration Debug \
+          xcodebuild -project Waitlight.xcodeproj -scheme Waitlight -configuration Debug \
             -derivedDataPath build/DerivedData build | tail -n 30
 
       - name: Check the app bundle
         run: |
-          APP=build/DerivedData/Build/Products/Debug/AgentDeck.app
-          test -x "$APP/Contents/MacOS/AgentDeck"
-          test "$(readlink "$APP/Contents/MacOS/ghostty")" = AgentDeck
+          APP=build/DerivedData/Build/Products/Debug/Waitlight.app
+          test -x "$APP/Contents/MacOS/Waitlight"
+          test "$(readlink "$APP/Contents/MacOS/ghostty")" = Waitlight
           test -d "$APP/Contents/Resources/ghostty/shell-integration"
           test -f "$APP/Contents/Resources/AppIcon.icns"
           test -d "$APP/Contents/Frameworks/Sparkle.framework"

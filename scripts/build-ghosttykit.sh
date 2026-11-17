@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build GhosttyKit.xcframework (libghostty) from the vendor/ghostty submodule
-# and stage the runtime resources AgentDeck bundles.
+# and stage the runtime resources Waitlight bundles.
 #
 #   scripts/build-ghosttykit.sh            # uses `zig` on PATH
 #   ZIG=/path/to/zig scripts/build-ghosttykit.sh

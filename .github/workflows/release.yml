@@ -115,25 +115,25 @@ jobs:
           cat > "$NOTES" <<'EOF'
           ## 安装
 
-          下载 `AgentDeck-*.dmg`，把 AgentDeck 拖进「应用程序」即可。
+          下载 `Waitlight-*.dmg`，把 Waitlight 拖进「应用程序」即可。
           已使用 Apple Developer ID 签名并通过 Apple 公证，可以直接打开，不需要右键或在「隐私与安全性」里放行。
           需要 macOS 14 或更新版本（Apple 芯片）。
 
-          已经装了 AgentDeck 的话，在菜单「AgentDeck → 检查更新…」里就能直接更新（0.2.0 起）。
+          已经装了 Waitlight 的话，在菜单「Waitlight → 检查更新…」里就能直接更新（0.2.0 起）。
 
           `.sha256` 文件里是 DMG / ZIP 的校验值。`appcast.xml` 是应用内更新用的。
           EOF
-          FILES=(build/dist/AgentDeck-$VERSION.dmg build/dist/AgentDeck-$VERSION.zip build/dist/AgentDeck-$VERSION.sha256 build/dist/appcast.xml)
+          FILES=(build/dist/Waitlight-$VERSION.dmg build/dist/Waitlight-$VERSION.zip build/dist/Waitlight-$VERSION.sha256 build/dist/appcast.xml)
           for f in "${FILES[@]}"; do test -f "$f" || { echo "::error::missing $f"; exit 1; }; done
           if gh release view "$TAG" >/dev/null 2>&1; then
             # Re-running a release replaces its assets instead of failing.
             gh release upload "$TAG" "${FILES[@]}" --clobber
           else
-            gh release create "$TAG" "${FILES[@]}" --title "AgentDeck $VERSION" \
+            gh release create "$TAG" "${FILES[@]}" --title "Waitlight $VERSION" \
               --notes-file "$NOTES" --generate-notes
           fi
 
-      # Point the Homebrew cask (brew install --cask cassianflorin/tap/agentdeck)
+      # Point the Homebrew cask (brew install --cask cassianflorin/tap/waitlight)
       # at this release. Installed copies update themselves through Sparkle
       # (the cask says auto_updates true); this only matters for new installs.
       # Needs HOMEBREW_TAP_TOKEN, a fine-grained PAT with Contents: write on
@@ -147,31 +147,72 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${HOMEBREW_TAP_TOKEN:-}" ]; then
-            echo "::notice::Skipping Homebrew cask update: HOMEBREW_TAP_TOKEN is not configured. Bump Casks/agentdeck.rb in $HOMEBREW_TAP_REPO by hand."
+            echo "::notice::Skipping Homebrew cask update: HOMEBREW_TAP_TOKEN is not configured. Bump Casks/waitlight.rb in $HOMEBREW_TAP_REPO by hand."
             exit 0
           fi
-          DMG="AgentDeck-$VERSION.dmg"
-          SHA=$(awk -v f="$DMG" '$2 == f || $2 == "*"f { print $1 }' "build/dist/AgentDeck-$VERSION.sha256")
+          DMG="Waitlight-$VERSION.dmg"
+          SHA=$(awk -v f="$DMG" '$2 == f || $2 == "*"f { print $1 }' "build/dist/Waitlight-$VERSION.sha256")
           [[ "$SHA" =~ ^[0-9a-f]{64}$ ]] || { echo "::error::no sha256 for $DMG"; exit 1; }
 
           TAP="$RUNNER_TEMP/homebrew-tap"
           git clone --depth 1 "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/${HOMEBREW_TAP_REPO}.git" "$TAP"
-          CASK="$TAP/Casks/agentdeck.rb"
-          sed -i '' -E \
-            -e "s/^(  version )\"[^\"]*\"/\1\"$VERSION\"/" \
-            -e "s/^(  sha256 )\"[^\"]*\"/\1\"$SHA\"/" "$CASK"
-          if ! grep -q "^  version \"$VERSION\"$" "$CASK" || ! grep -q "^  sha256 \"$SHA\"$" "$CASK"; then
-            echo "::error::could not update version/sha256 in Casks/agentdeck.rb"; exit 1
-          fi
-
           cd "$TAP"
+          # The cask was called agentdeck before the app was renamed. Drop the
+          # old file and record the rename, so `brew upgrade` moves existing
+          # installs over to waitlight.
+          if [ -f Casks/agentdeck.rb ]; then git rm -q Casks/agentdeck.rb; fi
+          python3 - <<'PY'
+          import json, os
+          path = "cask_renames.json"
+          renames = json.load(open(path)) if os.path.exists(path) else {}
+          renames["agentdeck"] = "waitlight"
+          with open(path, "w") as f:
+              json.dump(renames, f, indent=2, sort_keys=True)
+              f.write("\n")
+          PY
+
+          # The whole cask is written here, so it always matches this release.
+          cat > Casks/waitlight.rb <<EOF
+          cask "waitlight" do
+            version "$VERSION"
+            sha256 "$SHA"
+
+            url "https://github.com/CassianFlorin/Waitlight/releases/download/v#{version}/Waitlight-#{version}.dmg"
+            name "Waitlight"
+            desc "Native workbench for running AI coding agents side by side"
+            homepage "https://waitlight.cassianflorin.com/"
+
+            livecheck do
+              url :url
+              strategy :github_latest
+            end
+
+            auto_updates true
+            depends_on arch: :arm64
+            depends_on macos: :sonoma
+
+            app "Waitlight.app"
+
+            zap trash: [
+              "~/Library/Application Support/AgentDeck",
+              "~/Library/Application Support/Waitlight",
+              "~/Library/Caches/AgentDeck",
+              "~/Library/Caches/Waitlight",
+              "~/Library/Caches/com.cassianflorin.agentdeck",
+              "~/Library/HTTPStorages/com.cassianflorin.agentdeck",
+              "~/Library/Preferences/com.cassianflorin.agentdeck.plist",
+              "~/Library/Saved Application State/com.cassianflorin.agentdeck.savedState",
+            ]
+          end
+          EOF
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add Casks/agentdeck.rb
+          git add Casks/waitlight.rb cask_renames.json
           if git diff --cached --quiet; then
             echo "Homebrew cask already at $VERSION."
             exit 0
           fi
-          git commit -m "Update agentdeck to v$VERSION"
+          git commit -m "Update waitlight to v$VERSION"
           # The tap is shared with other projects' release jobs; retry once on a race.
           git push || { git pull --rebase && git push; }

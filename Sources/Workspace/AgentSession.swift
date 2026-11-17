@@ -70,7 +70,7 @@ final class PaneAgent {
     var activity: AgentActivity = .ready { didSet { since = Date() } }
     /// When it entered its current state.
     private(set) var since = Date()
-    /// Not started by AgentDeck: you typed the agent's command into a shell
+    /// Not started by Waitlight: you typed the agent's command into a shell
     /// pane. Tracked from generic signals, and forgotten when it exits.
     let adopted: Bool
     fileprivate var discovery: Task<Void, Never>?
@@ -338,7 +338,7 @@ final class AgentSession: ObservableObject, Identifiable {
         }
     }
 
-    /// Does this session contain the pane with this AGENTDECK_PANE id?
+    /// Does this session contain the pane with this WAITLIGHT_PANE id?
     func pane(withID id: String) -> PaneView? {
         panes.first { $0.terminal.paneID == id }
     }

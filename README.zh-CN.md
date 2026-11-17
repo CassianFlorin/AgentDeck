@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="Resources/AppIcon-1024.png" alt="AgentDeck 图标" width="112">
+  <img src="Resources/AppIcon-1024.png" alt="Waitlight 图标" width="112">
 </p>
 
-<h1 align="center">AgentDeck</h1>
+<h1 align="center">Waitlight</h1>
 
 <p align="center">
   <strong>一个窗口，看住所有编程 Agent。</strong><br>
@@ -11,30 +11,32 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/CassianFlorin/AgentDeck/releases/latest"><img alt="最新版本" src="https://img.shields.io/github/v/release/CassianFlorin/AgentDeck?label=release&color=3eecc8"></a>
+  <a href="https://github.com/CassianFlorin/Waitlight/releases/latest"><img alt="最新版本" src="https://img.shields.io/github/v/release/CassianFlorin/Waitlight?label=release&color=3eecc8"></a>
   <img alt="macOS 14+，Apple 芯片" src="https://img.shields.io/badge/macOS-14%2B%20·%20Apple%20silicon-black?logo=apple">
-  <a href="#安装"><img alt="Homebrew" src="https://img.shields.io/badge/brew-cassianflorin%2Ftap%2Fagentdeck-orange?logo=homebrew"></a>
+  <a href="#安装"><img alt="Homebrew" src="https://img.shields.io/badge/brew-cassianflorin%2Ftap%2Fwaitlight-orange?logo=homebrew"></a>
   <a href="LICENSE"><img alt="MIT 许可" src="https://img.shields.io/badge/license-MIT-blue"></a>
 </p>
 
 <p align="center">
-  <a href="https://agentdeck.cassianflorin.com"><b>官网</b></a> ·
-  <a href="https://github.com/CassianFlorin/AgentDeck/releases/latest"><b>下载</b></a> ·
+  <a href="https://waitlight.cassianflorin.com"><b>官网</b></a> ·
+  <a href="https://github.com/CassianFlorin/Waitlight/releases/latest"><b>下载</b></a> ·
   <a href="docs/FEATURES.md"><b>全部功能（英文）</b></a> ·
   <a href="README.md"><b>English</b></a>
 </p>
 
 <p align="center">
-  <a href="https://agentdeck.cassianflorin.com">
-    <img src="docs/images/agentdeck-zh.png" alt="AgentDeck：侧边栏里的多个编程 Agent 各自显示运行中、等你、本轮完成或已退出，旁边的终端里 Codex 正在请求修改文件" width="860">
+  <a href="https://waitlight.cassianflorin.com">
+    <img src="docs/images/waitlight-zh.png" alt="Waitlight：侧边栏里的多个编程 Agent 各自显示运行中、等你、本轮完成或已退出，旁边的终端里 Codex 正在请求修改文件" width="860">
   </a>
   <br>
-  <sub><a href="https://agentdeck.cassianflorin.com">官网</a>上有这张示意图的可交互版本。</sub>
+  <sub><a href="https://waitlight.cassianflorin.com">官网</a>上有这张示意图的可交互版本。</sub>
 </p>
 
-**AgentDeck 是一个原生 macOS 应用，用来并排运行多个 AI 编程 Agent（Claude Code、Codex、Gemini 等），本地和 SSH 服务器上的都行，一条侧边栏告诉你哪个 Agent 在等你。**
+**Waitlight 是一个原生 macOS 应用，用来并排运行多个 AI 编程 Agent（Claude Code、Codex、Gemini 等），本地和 SSH 服务器上的都行，一条侧边栏告诉你哪个 Agent 在等你。**
 
-用 AI 写代码，往往是好几个 Agent 一起跑：一个仓库里开着 Claude Code，另一个开着 Codex，服务器上还有一个。终端标签页越开越多，你得来回翻：哪个还在跑，哪个卡在权限确认上等你，窗口关掉以后那段对话又去哪了。AgentDeck 把它们放进一个窗口，并告诉你哪个在等你。
+> Waitlight 0.10 之前叫 **AgentDeck**。已经装了的直接在 App 里更新，会话、服务器和设置都会留着。
+
+用 AI 写代码，往往是好几个 Agent 一起跑：一个仓库里开着 Claude Code，另一个开着 Codex，服务器上还有一个。终端标签页越开越多，你得来回翻：哪个还在跑，哪个卡在权限确认上等你，窗口关掉以后那段对话又去哪了。Waitlight 把它们放进一个窗口，并告诉你哪个在等你。
 
 ## 亮点
 
@@ -62,7 +64,7 @@
   <tr>
     <td width="50%" valign="top">
       <h3>🔍 自动检测装了哪些 Agent</h3>
-      AgentDeck 在登录 shell 的 PATH 里找 Agent 命令行工具，菜单里只列找到的。没装的在 App 里一键安装，其他命令行工具也可以自己加。
+      Waitlight 在登录 shell 的 PATH 里找 Agent 命令行工具，菜单里只列找到的。没装的在 App 里一键安装，其他命令行工具也可以自己加。
     </td>
     <td width="50%" valign="top">
       <h3>⌨️ 真正的终端</h3>
@@ -94,10 +96,10 @@
 ## 安装
 
 ```bash
-brew install --cask cassianflorin/tap/agentdeck
+brew install --cask cassianflorin/tap/waitlight
 ```
 
-也可以从 [Releases](https://github.com/CassianFlorin/AgentDeck/releases/latest) 下载 DMG。已用 Apple Developer ID 签名并通过公证，装好后会自己更新。需要 **macOS 14 或更新版本，Apple 芯片**。
+也可以从 [Releases](https://github.com/CassianFlorin/Waitlight/releases/latest) 下载 DMG。已用 Apple Developer ID 签名并通过公证，装好后会自己更新。需要 **macOS 14 或更新版本，Apple 芯片**。
 
 ## 快捷键
 
@@ -117,7 +119,7 @@ brew install --cask cassianflorin/tap/agentdeck
 <details>
 <summary><b>服务器上要装东西吗？</b></summary>
 <br>
-不用。AgentDeck 走普通的 SSH，<code>~/.ssh/config</code> 里的服务器直接能用。服务器上有 tmux 或 zellij 就会用上，断线重连后 Agent 还在原地跑。
+不用。Waitlight 走普通的 SSH，<code>~/.ssh/config</code> 里的服务器直接能用。服务器上有 tmux 或 zellij 就会用上，断线重连后 Agent 还在原地跑。
 </details>
 
 <details>
@@ -129,16 +131,16 @@ brew install --cask cassianflorin/tap/agentdeck
 <details>
 <summary><b>会改我的 Agent 配置吗？</b></summary>
 <br>
-不会。Claude Code 的 hooks 在启动时用 <code>--settings</code> 传进去。Codex 和 Grok 的状态 hook 要你自己打开，它只写一份 AgentDeck 自己的文件，关掉就删除。
+不会。Claude Code 的 hooks 在启动时用 <code>--settings</code> 传进去。Codex 和 Grok 的状态 hook 要你自己打开，它只写一份 Waitlight 自己的文件，关掉就删除。
 </details>
 
 <details>
 <summary><b>会收集我的数据吗？</b></summary>
 <br>
-不会。AgentDeck 没有统计和遥测，唯一主动的联网是检查更新时读取 GitHub Releases。
+不会。Waitlight 没有统计和遥测，唯一主动的联网是检查更新时读取 GitHub Releases。
 </details>
 
-更多问题见[官网](https://agentdeck.cassianflorin.com/#faq)。
+更多问题见[官网](https://waitlight.cassianflorin.com/#faq)。
 
 ## 从源码构建
 
@@ -147,10 +149,10 @@ brew install --cask cassianflorin/tap/agentdeck
 <br>
 
 ```bash
-git clone --recursive https://github.com/CassianFlorin/AgentDeck.git
-cd AgentDeck
+git clone --recursive https://github.com/CassianFlorin/Waitlight.git
+cd Waitlight
 scripts/build-ghosttykit.sh && scripts/fetch-sparkle.sh
-xcodegen && open AgentDeck.xcodeproj
+xcodegen && open Waitlight.xcodeproj
 ```
 
 常见问题和发版流程见 [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)。欢迎贡献，见 [CONTRIBUTING.md](CONTRIBUTING.md)。
@@ -158,6 +160,6 @@ xcodegen && open AgentDeck.xcodeproj
 
 ## 关于
 
-AgentDeck 是照着我自己的工作流做的，开源出来，也许正好适合你。欢迎提 issue 和想法。
+Waitlight 是照着我自己的工作流做的，开源出来，也许正好适合你。欢迎提 issue 和想法。
 
-终端引擎是 Mitchell Hashimoto 和贡献者们的 [Ghostty](https://github.com/ghostty-org/ghostty)（MIT）。应用内更新用的是 [Sparkle](https://sparkle-project.org)。AgentDeck 采用 MIT 许可，见 [LICENSE](LICENSE) 和 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+终端引擎是 Mitchell Hashimoto 和贡献者们的 [Ghostty](https://github.com/ghostty-org/ghostty)（MIT）。应用内更新用的是 [Sparkle](https://sparkle-project.org)。Waitlight 采用 MIT 许可，见 [LICENSE](LICENSE) 和 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。

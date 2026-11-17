@@ -1,5 +1,5 @@
 name: Feature request / 功能建议
-description: An idea or a workflow AgentDeck doesn't cover yet. / 一个想法，或 AgentDeck 还没覆盖的用法。
+description: An idea or a workflow Waitlight doesn't cover yet. / 一个想法，或 Waitlight 还没覆盖的用法。
 labels: [enhancement]
 body:
   - type: textarea

@@ -9,7 +9,9 @@ enum SSH {
         return "'" + s.replacingOccurrences(of: "'", with: "'\\''") + "'"
     }
 
-    /// tmux/zellij-safe session name.
+    /// tmux/zellij-safe session name. The default, "agentdeck", dates from when
+    /// the app had that name; it stays so sessions already running on servers
+    /// are reattached.
     static func sessionName(_ s: String) -> String {
         let cleaned = s.lowercased().map { $0.isLetter || $0.isNumber || $0 == "-" || $0 == "_" ? $0 : "-" }
         let name = String(cleaned).trimmingCharacters(in: CharacterSet(charactersIn: "-"))
@@ -45,11 +47,11 @@ enum SSH {
             let name = quote(sessionName ?? "agentdeck")
             // Fall back to a plain shell if tmux isn't installed, and say so.
             return cd + "if command -v tmux >/dev/null 2>&1; then exec \(tmuxAttach(name)); "
-                + "else echo '[AgentDeck] 服务器上没有 tmux，断线后无法恢复。'; exec \"$SHELL\" -l; fi"
+                + "else echo '[Waitlight] 服务器上没有 tmux，断线后无法恢复。'; exec \"$SHELL\" -l; fi"
         case .zellij:
             let name = quote(sessionName ?? "agentdeck")
             return cd + "if command -v zellij >/dev/null 2>&1; then exec zellij attach -c \(name); "
-                + "else echo '[AgentDeck] 服务器上没有 zellij，断线后无法恢复。'; exec \"$SHELL\" -l; fi"
+                + "else echo '[Waitlight] 服务器上没有 zellij，断线后无法恢复。'; exec \"$SHELL\" -l; fi"
         case .auto:
             // Whatever the server has; silently a plain shell if neither.
             let name = quote(sessionName ?? "agentdeck")
@@ -231,7 +233,8 @@ enum SSH {
 
 /// Passwords for hosts, in the login Keychain.
 enum HostKeychain {
-    private static let service = "com.cassianflorin.agentdeck.ssh"
+    /// Named after the bundle id (see AppPaths), so passwords saved before the rename still work.
+    private static let service = "\(AppPaths.bundleID).ssh"
 
     static func password(for id: UUID) -> String? {
         let q: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
@@ -259,7 +262,7 @@ enum HostKeychain {
         if SecItemUpdate(base as CFDictionary, [kSecValueData as String: data] as CFDictionary) == errSecItemNotFound {
             var add = base
             add[kSecValueData as String] = data
-            add[kSecAttrLabel as String] = "AgentDeck SSH: \(label)"
+            add[kSecAttrLabel as String] = "Waitlight SSH: \(label)"
             SecItemAdd(add as CFDictionary, nil)
         }
     }
@@ -272,14 +275,14 @@ enum HostKeychain {
     }
 }
 
-/// When ssh runs AgentDeck as SSH_ASKPASS, we answer its prompt and exit
+/// When ssh runs Waitlight as SSH_ASKPASS, we answer its prompt and exit
 /// without ever starting the UI.
 ///
 /// - Password prompts are answered from the Keychain.
 /// - Anything else (host-key confirmation, key passphrase, OTP) gets a small
 ///   native dialog, so first connections and 2FA still work.
 enum Askpass {
-    static let hostEnv = "AGENTDECK_ASKPASS_HOST"
+    static let hostEnv = "WAITLIGHT_ASKPASS_HOST"
 
     /// Call first thing at launch.
     static func runIfRequested() {

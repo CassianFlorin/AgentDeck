@@ -1,10 +1,10 @@
-# Contributing to AgentDeck
+# Contributing to Waitlight
 
-Thanks for taking a look. AgentDeck is a small, personal project, so the process is light. Issues and pull requests in English or Chinese are both fine (中文也可以).
+Thanks for taking a look. Waitlight is a small, personal project, so the process is light. Issues and pull requests in English or Chinese are both fine (中文也可以).
 
 ## Before you start
 
-- **Bugs:** open an issue with the bug template, including the AgentDeck version (AgentDeck → About) and your macOS version.
+- **Bugs:** open an issue with the bug template, including the Waitlight version (Waitlight → About) and your macOS version.
 - **Features and bigger changes:** open an issue first, so we can agree on the approach before you spend time on it.
 - **Security problems:** please don't open a public issue. See [SECURITY.md](SECURITY.md).
 
@@ -13,18 +13,18 @@ Thanks for taking a look. AgentDeck is a small, personal project, so the process
 You need macOS 14+, Xcode 16+, [XcodeGen](https://github.com/yonaskolb/XcodeGen) and Zig. The full steps and troubleshooting are in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md):
 
 ```bash
-git clone --recursive https://github.com/CassianFlorin/AgentDeck.git
-cd AgentDeck
+git clone --recursive https://github.com/CassianFlorin/Waitlight.git
+cd Waitlight
 scripts/build-ghosttykit.sh && scripts/fetch-sparkle.sh
-xcodegen && open AgentDeck.xcodeproj
+xcodegen && open Waitlight.xcodeproj
 ```
 
 The Debug configuration is ad-hoc signed, so no certificate is needed.
 
-To try a change without touching the AgentDeck you use every day, start an isolated instance. It has its own workspace, hosts and caches:
+To try a change without touching the Waitlight you use every day, start an isolated instance. It has its own workspace, hosts and caches:
 
 ```bash
-AGENTDECK_HOME=/tmp/ad-test scripts/test-instance.sh
+WAITLIGHT_HOME=/tmp/ad-test scripts/test-instance.sh
 ```
 
 A Debug build can also be driven from the shell with `scripts/debug-cmd.sh` (see `Sources/App/DebugHooks.swift` for the commands).

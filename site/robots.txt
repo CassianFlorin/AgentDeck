@@ -1,10 +1,10 @@
-# AgentDeck's landing page: every crawler is welcome, AI crawlers included.
+# Waitlight's landing page: every crawler is welcome, AI crawlers included.
 #
 # Content Signals (https://contentsignals.org) state how the content may be used:
 #   search    - building a search index and showing links and short excerpts
 #   ai-input  - feeding the content to an AI model to answer a question (RAG, grounding)
 #   ai-train  - training or fine-tuning AI models
-# AgentDeck is open source and wants to be found, so all three are allowed.
+# Waitlight is open source and wants to be found, so all three are allowed.
 
 User-agent: *
 User-agent: GPTBot
@@ -24,4 +24,4 @@ User-agent: Bytespider
 Content-Signal: search=yes, ai-input=yes, ai-train=yes
 Allow: /
 
-Sitemap: https://agentdeck.cassianflorin.com/sitemap.xml
+Sitemap: https://waitlight.cassianflorin.com/sitemap.xml

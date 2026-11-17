@@ -1,4 +1,4 @@
-name: AgentDeck
+name: Waitlight
 options:
   bundleIdPrefix: com.cassianflorin
   deploymentTarget:
@@ -19,7 +19,7 @@ settings:
     SPARKLE_PUBLIC_ED_KEY: "/Vtf2a3VvELEvQPYTTpuKisZjK7VKa5KCfI7CWStb5Q="
 
 targets:
-  AgentDeck:
+  Waitlight:
     type: application
     platform: macOS
     sources:
@@ -62,8 +62,8 @@ targets:
         # UI is Chinese; this also makes system menus and date formatting Chinese.
         CFBundleDevelopmentRegion: zh-Hans
         CFBundleLocalizations: [zh-Hans, en]
-        CFBundleName: AgentDeck
-        CFBundleDisplayName: AgentDeck
+        CFBundleName: Waitlight
+        CFBundleDisplayName: Waitlight
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         LSMinimumSystemVersion: "14.0"
@@ -79,7 +79,7 @@ targets:
         NSPhotoLibraryUsageDescription: "终端里运行的程序想要访问照片。"
         # Sparkle (Sources/App/AppUpdater.swift). Release CI publishes
         # appcast.xml with every GitHub Release; "latest" redirects to it.
-        SUFeedURL: "https://github.com/CassianFlorin/AgentDeck/releases/latest/download/appcast.xml"
+        SUFeedURL: "https://github.com/CassianFlorin/Waitlight/releases/latest/download/appcast.xml"
         SUPublicEDKey: "$(SPARKLE_PUBLIC_ED_KEY)"
         SUEnableAutomaticChecks: true
         # Check the EdDSA signature before unpacking anything.
@@ -87,6 +87,8 @@ targets:
         SURequireSignedFeed: true
     settings:
       base:
+        # From when the app was called AgentDeck. Keep it: installed copies keep
+        # their preferences, saved SSH passwords and update channel by it.
         PRODUCT_BUNDLE_IDENTIFIER: com.cassianflorin.agentdeck
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         OTHER_LDFLAGS: "-lstdc++"
@@ -106,7 +108,7 @@ targets:
           CODE_SIGN_STYLE: Manual
           CODE_SIGN_IDENTITY: "Developer ID Application"
           DEVELOPMENT_TEAM: HU729D6ML5
-          CODE_SIGN_ENTITLEMENTS: Support/AgentDeck.entitlements
+          CODE_SIGN_ENTITLEMENTS: Support/Waitlight.entitlements
           ENABLE_HARDENED_RUNTIME: YES
           OTHER_CODE_SIGN_FLAGS: "--timestamp"
           # GhosttyKit is built for the native arch only (-Dxcframework-target=native).

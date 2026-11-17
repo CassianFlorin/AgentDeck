@@ -72,7 +72,7 @@ struct SessionsReading {
         let processes: Int
     }
     var rows: [Row]
-    /// AgentDeck itself plus every process it started.
+    /// Waitlight itself plus every process it started.
     var totalCPU: Double
     var totalMemory: UInt64
     var totalProcesses: Int
@@ -304,7 +304,7 @@ final class SystemSampler: @unchecked Sendable {
         return best
     }
 
-    // MARK: Sessions (AgentDeck's process tree)
+    // MARK: Sessions (Waitlight's process tree)
 
     private func sampleSessions(_ probes: [SessionProbe]) -> SessionsReading {
         let me = getpid()
@@ -357,7 +357,7 @@ final class SystemSampler: @unchecked Sendable {
         lastProcTime = now
 
         // A pane's foreground pid is the agent (or the shell at its prompt).
-        // Climb to the direct child of AgentDeck (login/ssh) so the shell,
+        // Climb to the direct child of Waitlight (login/ssh) so the shell,
         // the agent and everything they spawned all count.
         func sessionRoot(_ pid: pid_t) -> pid_t? {
             var p = pid, hops = 0

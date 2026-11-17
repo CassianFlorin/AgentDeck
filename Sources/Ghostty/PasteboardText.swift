@@ -22,7 +22,7 @@ enum PasteboardText {
         return nil
     }
 
-    /// Writes an image on the pasteboard to ~/Library/Caches/AgentDeck/pastes.
+    /// Writes an image on the pasteboard to ~/Library/Caches/Waitlight/pastes.
     static func saveImage(from pb: NSPasteboard) -> String? {
         let png: Data?
         if let data = pb.data(forType: .png) {
@@ -46,7 +46,7 @@ enum PasteboardText {
             try png.write(to: url, options: .atomic)
             return url.path
         } catch {
-            NSLog("AgentDeck: failed to save pasted image: %@", error.localizedDescription)
+            NSLog("Waitlight: failed to save pasted image: %@", error.localizedDescription)
             return nil
         }
     }

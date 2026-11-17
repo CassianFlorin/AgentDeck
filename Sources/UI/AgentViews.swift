@@ -33,7 +33,7 @@ struct AgentManagerView: View {
                     } header: {
                         Text("未安装")
                     } footer: {
-                        Text("在登录 shell 的 PATH 上找不到。装好后回到 AgentDeck 会自动重新检测，也可以点“重新检测”。")
+                        Text("在登录 shell 的 PATH 上找不到。装好后回到 Waitlight 会自动重新检测，也可以点“重新检测”。")
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }
@@ -183,7 +183,7 @@ struct AgentEditor: View {
                 } header: {
                     Text("对话")
                 } footer: {
-                    Text("{id} 会被替换成对话 ID。新对话参数里带 {id} 时，AgentDeck 会自己生成 ID 并记住，重启后能精确恢复。{prompt} 会被替换成在 Agent 总览里派发的任务；留空则这个 Agent 不能被派发。")
+                    Text("{id} 会被替换成对话 ID。新对话参数里带 {id} 时，Waitlight 会自己生成 ID 并记住，重启后能精确恢复。{prompt} 会被替换成在 Agent 总览里派发的任务；留空则这个 Agent 不能被派发。")
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Section {
@@ -248,7 +248,7 @@ struct AgentEditor: View {
             return "每次启动时用 --settings 带上 hooks，由 Agent 自己报告运行中、等你、本轮完成。你的设置文件不会被改。"
         case .grok:
             let path = AgentHook.DropIn.grok.file.path.abbreviatingHome
-            return "Grok 只从它自己的配置目录读 hooks。打开后会新建 \(path)，你已有的文件不动；这个 hook 在 AgentDeck 之外什么也不做。Grok 可能要你先信任这个文件夹的 hooks，之后才生效。"
+            return "Grok 只从它自己的配置目录读 hooks。打开后会新建 \(path)，你已有的文件不动；这个 hook 在 Waitlight 之外什么也不做。Grok 可能要你先信任这个文件夹的 hooks，之后才生效。"
         case .codex:
             let path = AgentHook.DropIn.codex.file.path.abbreviatingHome
             return "打开后会新建 \(path)，并在启动 Codex 时加上 -p \(AgentHook.DropIn.codexProfile)；你的 config.toml 和 hooks.json 不动。Codex 会把新 hook 标为待审核，在 Codex 里用 /hooks 信任之后才生效。"

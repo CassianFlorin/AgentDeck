@@ -55,7 +55,7 @@ if [ "$CHECK_ONLY" = 1 ]; then
   exit 0
 fi
 TEAM_ID=HU729D6ML5
-APP=AgentDeck
+APP=Waitlight
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
@@ -142,7 +142,7 @@ if [[ -n "${SPARKLE_KEY_PATH:-}" ]]; then
   [[ "$ED_SIG" == *edSignature=* ]] || { echo "error: sign_update failed"; exit 1; }
   PREV_TAG="$(git describe --tags --abbrev=0 --match 'v*' HEAD^ 2>/dev/null || true)"
   CHANGES="$(git log --no-merges --format=%s ${PREV_TAG:+"$PREV_TAG..HEAD"} | head -n 30)"
-  REPO_URL="https://github.com/${GITHUB_REPOSITORY:-CassianFlorin/AgentDeck}"
+  REPO_URL="https://github.com/${GITHUB_REPOSITORY:-CassianFlorin/Waitlight}"
   VERSION="$VERSION" BUILD_NUM="$BUILD_NUM" ED_SIG="$ED_SIG" CHANGES="$CHANGES" \
   REPO_URL="$REPO_URL" ZIP="$ZIP" python3 - > "$OUT/appcast.xml" <<'PY'
 import os, html
@@ -150,14 +150,14 @@ from email.utils import formatdate
 e = os.environ
 v, repo = e["VERSION"], e["REPO_URL"]
 items = "".join(f"<li>{html.escape(l)}</li>" for l in e["CHANGES"].splitlines() if l.strip())
-notes = f"<h3>AgentDeck {v}</h3><ul>{items}</ul>" \
+notes = f"<h3>Waitlight {v}</h3><ul>{items}</ul>" \
         f'<p><a href="{repo}/releases/tag/v{v}">完整更新说明</a></p>'
 print(f'''<?xml version="1.0" encoding="utf-8"?>
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
   <channel>
-    <title>AgentDeck</title>
+    <title>Waitlight</title>
     <item>
-      <title>AgentDeck {v}</title>
+      <title>Waitlight {v}</title>
       <pubDate>{formatdate(usegmt=True)}</pubDate>
       <sparkle:version>{e["BUILD_NUM"]}</sparkle:version>
       <sparkle:shortVersionString>{v}</sparkle:shortVersionString>

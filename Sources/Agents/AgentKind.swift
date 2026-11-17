@@ -11,7 +11,7 @@ struct AgentKind: Codable, Hashable, Identifiable {
         case none, claude, codex, grok
     }
 
-    /// How AgentDeck learns what the agent is doing.
+    /// How Waitlight learns what the agent is doing.
     enum Hooks: String, Codable {
         /// Generic signals only: Return pressed, bell / OSC 9 notifications,
         /// OSC 9;4 progress, the agent exiting.
@@ -31,7 +31,7 @@ struct AgentKind: Codable, Hashable, Identifiable {
     var symbol: String
     /// Executable plus fixed arguments, e.g. "claude" or "codex --search". nil = plain shell.
     var command: String?
-    /// Extra arguments for a brand-new conversation. `{id}` = an id AgentDeck picks,
+    /// Extra arguments for a brand-new conversation. `{id}` = an id Waitlight picks,
     /// so the conversation can be resumed exactly later.
     var newArgs: String = ""
     /// Arguments that resume a specific conversation (`{id}`).

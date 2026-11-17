@@ -329,13 +329,13 @@ private struct SessionsCard: View {
             if let r = reading {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
-                        Text("AgentDeck 共 \(r.totalProcesses) 个进程")
+                        Text("Waitlight 共 \(r.totalProcesses) 个进程")
                         Spacer()
                         Text(Fmt.bytes(r.totalMemory))
                     }
                     .foregroundStyle(.secondary)
                     Divider().opacity(0.5)
-                    row(name: "AgentDeck 本身", cpu: r.hasCPU ? r.appCPU : nil, memory: r.appMemory, detail: nil)
+                    row(name: "Waitlight 本身", cpu: r.hasCPU ? r.appCPU : nil, memory: r.appMemory, detail: nil)
                     ForEach(r.rows) { s in
                         row(name: s.name, cpu: r.hasCPU ? s.cpu : nil, memory: s.memory,
                             detail: s.processes > 1 ? "\(s.processes) 个进程" : nil)

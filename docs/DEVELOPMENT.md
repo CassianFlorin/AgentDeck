@@ -5,12 +5,12 @@
 Requirements: macOS 14+, Xcode 16+, [XcodeGen](https://github.com/yonaskolb/XcodeGen), and Zig (the version in `vendor/ghostty/build.zig.zon` → `minimum_zig_version`).
 
 ```bash
-git clone --recursive https://github.com/CassianFlorin/AgentDeck.git
-cd AgentDeck
+git clone --recursive https://github.com/CassianFlorin/Waitlight.git
+cd Waitlight
 scripts/build-ghosttykit.sh      # builds vendor/GhosttyKit.xcframework (~5 min first time)
 scripts/fetch-sparkle.sh         # downloads the Sparkle updater framework
 xcodegen
-open AgentDeck.xcodeproj
+open Waitlight.xcodeproj
 ```
 
 On Xcode 26 and later, the Metal compiler is a separate component. Install it once:
@@ -40,9 +40,9 @@ Troubleshooting:
   git tag v0.5.0 origin/main && git push origin v0.5.0
   ```
 
-- **Homebrew cask.** After the GitHub Release is published, the same workflow bumps `version` and `sha256` in `Casks/agentdeck.rb` in [CassianFlorin/homebrew-tap](https://github.com/CassianFlorin/homebrew-tap) and pushes `Update agentdeck to vX.Y.Z` to its default branch, so `brew install --cask cassianflorin/tap/agentdeck` installs the new version. Installed copies update through Sparkle (the cask declares `auto_updates true`). Only the `version` and `sha256` lines are rewritten, so other edits to the cask stay. This needs the `HOMEBREW_TAP_TOKEN` secret. Without it the step prints a notice and is skipped, the release still succeeds, and the cask has to be bumped by hand.
+- **Homebrew cask.** After the GitHub Release is published, the same workflow bumps `version` and `sha256` in `Casks/waitlight.rb` in [CassianFlorin/homebrew-tap](https://github.com/CassianFlorin/homebrew-tap) and pushes `Update waitlight to vX.Y.Z` to its default branch, so `brew install --cask cassianflorin/tap/waitlight` installs the new version. Installed copies update through Sparkle (the cask declares `auto_updates true`). Only the `version` and `sha256` lines are rewritten, so other edits to the cask stay. This needs the `HOMEBREW_TAP_TOKEN` secret. Without it the step prints a notice and is skipped, the release still succeeds, and the cask has to be bumped by hand.
 - One-time setup: `scripts/setup-ci-secrets.sh` stores the Developer ID `.p12` and the App Store Connect API key as repository secrets. It prompts for the p12 password and the Issuer ID. `scripts/setup-update-key.sh` creates the update-signing key in your Keychain, stores it as the `SPARKLE_ED_PRIVATE_KEY` secret and writes the public half into `project.yml`. Back that key up: installed copies only accept updates signed with it.
-- One-time setup for the cask: create a fine-grained personal access token at GitHub → Settings → Developer settings → Fine-grained tokens. Set **Repository access** to *Only select repositories* → `CassianFlorin/homebrew-tap`, and under **Repository permissions** set **Contents** to *Read and write* (Metadata: read is added automatically). Give it an expiry you will remember to renew. Then store it in this repository with `gh secret set HOMEBREW_TAP_TOKEN --repo CassianFlorin/AgentDeck`, which prompts for the value. skill-hub's release uses a secret with the same name and scope, so you can paste the same token if you still have it. Secrets are per repository, so it still has to be set here. `scripts/setup-ci-secrets.sh` lists it too.
+- One-time setup for the cask: create a fine-grained personal access token at GitHub → Settings → Developer settings → Fine-grained tokens. Set **Repository access** to *Only select repositories* → `CassianFlorin/homebrew-tap`, and under **Repository permissions** set **Contents** to *Read and write* (Metadata: read is added automatically). Give it an expiry you will remember to renew. Then store it in this repository with `gh secret set HOMEBREW_TAP_TOKEN --repo CassianFlorin/Waitlight`, which prompts for the value. skill-hub's release uses a secret with the same name and scope, so you can paste the same token if you still have it. Secrets are per repository, so it still has to be set here. `scripts/setup-ci-secrets.sh` lists it too.
 - Local release: `NOTARY_KEY_PATH=… NOTARY_KEY_ID=… NOTARY_ISSUER_ID=… scripts/package.sh 0.1.0` puts its output in `build/dist`. Without the notary variables you get signed but `-unnotarized` artifacts, which aren't meant for distribution.
 
 ### Version numbers
@@ -68,7 +68,7 @@ Also:
 
 ## Claude Code tip
 
-AgentDeck already gets Claude Code's status from hooks. If you also want a terminal bell when Claude waits for you (useful outside AgentDeck too), run:
+Waitlight already gets Claude Code's status from hooks. If you also want a terminal bell when Claude waits for you (useful outside Waitlight too), run:
 
 ```bash
 claude config set --global preferredNotifChannel terminal_bell

@@ -1,12 +1,12 @@
 import SwiftUI
 
 @main
-struct AgentDeckApp: App {
+struct WaitlightApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var workspace: Workspace
 
     init() {
-        // When an agent hook runs us (AGENTDECK_HOOK), forward the event and exit.
+        // When an agent hook runs us (WAITLIGHT_HOOK), forward the event and exit.
         AgentHook.runIfRequested()
         // When ssh runs us as SSH_ASKPASS, answer and exit before any UI.
         Askpass.runIfRequested()
@@ -18,7 +18,7 @@ struct AgentDeckApp: App {
     }
 
     var body: some Scene {
-        Window("AgentDeck", id: "main") {
+        Window("Waitlight", id: "main") {
             ContentView()
                 .environmentObject(workspace)
                 .environmentObject(workspace.catalog)
@@ -165,7 +165,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     weak var workspace: Workspace?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // AgentDeck is always dark: it sits on a (translucent) terminal background.
+        // Waitlight is always dark: it sits on a (translucent) terminal background.
         NSApp.appearance = NSAppearance(named: .darkAqua)
         updateColorScheme()
         DistributedNotificationCenter.default().addObserver(
