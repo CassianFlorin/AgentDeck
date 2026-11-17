@@ -185,6 +185,13 @@
     .btn.ghost { color: var(--text); border: 1px solid rgba(255, 255, 255, 0.16); font-weight: 500; }
     .btn.ghost:hover { color: var(--ink); border-color: rgba(255, 255, 255, 0.36); }
     .facts { margin-top: 14px; color: var(--muted); font-size: 13px; }
+    /* Supported agents, a band under the hero. Names only, no vendor logos. */
+    .agents-strip { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 20px 0 48px; border-top: 1px solid var(--line); }
+    .agents-strip .label { color: var(--muted); font-size: 13px; font-weight: 500; }
+    .agents-strip ul { display: flex; flex-wrap: wrap; gap: 8px; }
+    .agents-strip li { padding: 4px 11px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255, 255, 255, 0.04); color: var(--ink); font-size: 13px; line-height: 1.5; white-space: nowrap; }
+    .agents-strip li.plus { color: var(--muted); border-style: dashed; }
+    .agents-strip .note { flex-basis: 100%; margin-top: 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
     .caption { margin-top: 12px; color: var(--muted); font-size: 13px; line-height: 1.6; }
     .caption button { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
     .caption button:hover { color: var(--ink); }
@@ -671,6 +678,10 @@
       .nav-links .nav-get, .lang { min-height: 36px; }
 
       .hero { padding: 28px 0 44px; gap: 28px; }
+      .agents-strip { gap: 10px; padding: 18px 0 36px; }
+      .agents-strip .label { flex-basis: 100%; }
+      .agents-strip ul { gap: 6px; }
+      .agents-strip li { padding: 3px 10px; font-size: 12.5px; }
       h1 { margin-top: 10px; }
       .lead { margin-top: 14px; font-size: 16px; }
       .actions { margin-top: 20px; }
@@ -943,6 +954,25 @@
         </div>
         <p class="caption"><span class="zh"><span class="d-only">可点的界面示意：点会话换终端，「‹ ›」在 Agent 之间切换，右上角可以打开性能面板。「查看总览演示」会跳到下面可以操作的 Agent 总览。</span><span class="m-only">点上方会话切换内容，点「总览」体验多 Agent 管理。</span></span><span class="en"><span class="d-only">A clickable sketch: choose a session to change the terminal, step through agents with ‹ ›, and open the performance panel at the top right. “See the overview demo” jumps down to a working agent overview.</span><span class="m-only">Tap a session above to switch, and tap Overview to try managing several agents.</span></span></p>
       </div>
+    </div>
+    <div class="wrap agents-strip" aria-labelledby="agents-label">
+      <p class="label" id="agents-label"><span class="zh">内置支持</span><span class="en">Works with</span></p>
+      <ul>
+          <li>Claude Code</li>
+          <li>Codex</li>
+          <li>Gemini</li>
+          <li>Grok</li>
+          <li>opencode</li>
+          <li>Qwen Code</li>
+          <li>Cursor CLI</li>
+          <li>Copilot CLI</li>
+          <li>Droid</li>
+          <li>Amp</li>
+          <li>Crush</li>
+          <li>Aider</li>
+          <li class="plus"><span class="zh">+ 任意命令行工具</span><span class="en">+ any CLI</span></li>
+      </ul>
+      <p class="note"><span class="zh">自动检测你装了哪些，菜单里只列这些；没装的在 App 里点「安装」就行。</span><span class="en">AgentDeck detects which ones you have and lists only those. Install the rest from inside the app.</span></p>
     </div>
   </div>
 
