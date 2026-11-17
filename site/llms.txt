@@ -1,0 +1,27 @@
+# AgentDeck
+
+> AgentDeck is a native macOS app for running multiple AI coding agents (Claude Code, Codex, Gemini and more) side by side, locally or over SSH, with one sidebar that shows which agent needs you. Every pane is a real Ghostty terminal. Free and open source (MIT).
+
+- Platform: macOS 14 or later, Apple silicon.
+- Install: `brew install --cask cassianflorin/tap/agentdeck`, or download the DMG from GitHub Releases. Signed and notarized by Apple; updates itself through Sparkle.
+- Built-in agents: Claude Code, Codex, Gemini, Grok, opencode, Qwen Code, Cursor CLI, Copilot CLI, Droid, Amp, Crush, Aider. Any other CLI can be added. AgentDeck detects which ones are on the login shell's PATH and lists only those; missing ones can be installed from inside the app.
+- Per-agent status: working, waiting for you, turn done, exited. Claude Code reports exactly through hooks passed with `--settings` at launch; Codex and Grok can opt in to status hooks; other agents are tracked from generic terminal signals.
+- Agent overview (`⇧⌘A`): every agent across sessions on one screen, waiting ones first, with a reply field and a bar to hand out new tasks. `⌘⇧J` jumps to the next agent waiting for you.
+- Remote servers: hosts from `~/.ssh/config` show up next to local sessions. tmux or zellij is used when the server has one, so a dropped connection reattaches with the agent still running. Nothing is installed on the server.
+- Restores sessions, splits, groups and SSH connections on relaunch; Claude Code, Codex and Grok return to the same conversation.
+- Privacy: no analytics or telemetry. The only connection the app makes on its own is checking GitHub Releases for updates.
+
+## Docs
+
+- [Landing page (English)](https://agentdeck.cassianflorin.com/en/): overview, interactive demo, FAQ
+- [Landing page (Chinese)](https://agentdeck.cassianflorin.com/): 中文介绍
+- [README](https://github.com/CassianFlorin/AgentDeck#readme): highlights, supported agents table, install, keys
+- [All features](https://raw.githubusercontent.com/CassianFlorin/AgentDeck/main/docs/FEATURES.md): the complete feature list
+- [Building and releasing](https://raw.githubusercontent.com/CassianFlorin/AgentDeck/main/docs/DEVELOPMENT.md)
+
+## Links
+
+- [Source code on GitHub](https://github.com/CassianFlorin/AgentDeck)
+- [Latest release](https://github.com/CassianFlorin/AgentDeck/releases/latest)
+- [Homebrew tap](https://github.com/CassianFlorin/homebrew-tap)
+- [Contributing](https://github.com/CassianFlorin/AgentDeck/blob/main/CONTRIBUTING.md)
