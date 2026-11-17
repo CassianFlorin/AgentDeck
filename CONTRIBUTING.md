@@ -39,7 +39,7 @@ A Debug build can also be driven from the shell with `scripts/debug-cmd.sh` (see
 | `Sources/Remote/` | SSH hosts, tmux / zellij |
 | `Sources/Monitor/` | The performance panel |
 | `Sources/Ghostty/` | The libghostty bridge |
-| `site/` | The landing page. Edit `site/index.html` (Chinese and English text side by side); `scripts/build-site.py` generates the English page at `/en/` and the sitemap |
+| `site/` | The landing page. Edit `site/index.html` (Chinese and English text side by side); `scripts/build-site.py` generates the English page at `/en/`, the sitemap and the Markdown versions (`functions/_middleware.js` serves those to agents) |
 
 ## Pull requests
 

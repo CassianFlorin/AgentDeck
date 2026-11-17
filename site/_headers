@@ -6,10 +6,12 @@ https://:project.pages.dev/*
 https://:version.:project.pages.dev/*
   X-Robots-Tag: noindex
 
-# Link headers (RFC 8288) let agents find the plain-text summary, the sitemap
-# and the other language without parsing the page.
+# Link headers (RFC 8288) let agents find the plain-text summary, the sitemap,
+# the other language and the Markdown version without parsing the page.
+# functions/_middleware.js sets the same header in case these rules don't
+# reach its responses.
 /
-  Link: </llms.txt>; rel="describedby"; type="text/plain", </sitemap.xml>; rel="sitemap"; type="application/xml", </en/>; rel="alternate"; hreflang="en"
+  Link: </llms.txt>; rel="describedby"; type="text/plain", </sitemap.xml>; rel="sitemap"; type="application/xml", </en/>; rel="alternate"; hreflang="en", </index.md>; rel="alternate"; type="text/markdown"
 
 /en/
-  Link: </llms.txt>; rel="describedby"; type="text/plain", </sitemap.xml>; rel="sitemap"; type="application/xml", </>; rel="alternate"; hreflang="zh-Hans"
+  Link: </llms.txt>; rel="describedby"; type="text/plain", </sitemap.xml>; rel="sitemap"; type="application/xml", </>; rel="alternate"; hreflang="zh-Hans", </en/index.md>; rel="alternate"; type="text/markdown"
