@@ -31,8 +31,8 @@ LANGS = {
         "path": "/",
         "og_locale": "zh_CN",
         "title": "AgentDeck — 一个窗口，看住所有编程 Agent | macOS",
-        "desc": "给 AI 编程 Agent 用的原生 macOS 工作台。Claude Code、Codex、Gemini、opencode 等十几个命令行 Agent 并排跑，"
-                "谁在运行、谁在等你一眼看清，本地和 SSH 会话排在同一条侧边栏。基于 Ghostty，免费开源。",
+        "desc": "AgentDeck 是一个原生 macOS 应用，用来并排运行多个 AI 编程 Agent（Claude Code、Codex、Gemini 等），"
+                "本地和 SSH 服务器上的都行，一条侧边栏告诉你哪个 Agent 在等你。基于 Ghostty，免费开源。",
         "og_title": "AgentDeck：一个窗口，看住所有编程 Agent",
         "og_image": "/og.png",
         "og_image_alt": "AgentDeck：侧边栏里并排的多个编程 Agent，各自显示运行中、等你等状态",
@@ -43,8 +43,8 @@ LANGS = {
         "path": "/en/",
         "og_locale": "en_US",
         "title": "AgentDeck — One window for every coding agent on macOS",
-        "desc": "A native macOS workbench for AI coding agents. Run Claude Code, Codex, Gemini, opencode and more side by side, "
-                "see which one needs you, and keep local and SSH sessions in one sidebar. Built on Ghostty. Free and open source.",
+        "desc": "AgentDeck is a native macOS app for running multiple AI coding agents (Claude Code, Codex, Gemini and more) "
+                "side by side, locally or over SSH, with one sidebar that shows which agent needs you. Built on Ghostty. Free and open source.",
         "og_title": "AgentDeck: one window for every coding agent",
         "og_image": "/og-en.png",
         "og_image_alt": "AgentDeck: several coding agents side by side in a sidebar, each showing whether it is working or waiting",
@@ -59,7 +59,25 @@ def esc(s):
     return s.replace("&", "&amp;").replace('"', "&quot;").replace("<", "&lt;")
 
 
-def seo_block(key):
+def faq(src, key):
+    """The FAQ section's questions and answers, as plain text in one language."""
+    pair = re.compile(r'<span class="zh">(.*?)</span><span class="en">(.*?)</span>', re.S)
+    out = []
+    for q, a in re.findall(r'<div class="faq-item">\s*<h3>(.*?)</h3>\s*<p>(.*?)</p>', src, re.S):
+        pick = lambda html: pair.search(html).group(1 if key == "zh" else 2)
+        text = lambda html: re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", html)).strip()
+        out.append({"@type": "Question", "name": text(pick(q)),
+                    "acceptedAnswer": {"@type": "Answer", "text": text(pick(a))}})
+    return out
+
+
+def ld_script(data):
+    return ('<script type="application/ld+json">\n  '
+            + json.dumps(data, ensure_ascii=False, indent=2).replace("\n", "\n  ")
+            + "\n  </script>")
+
+
+def seo_block(key, src):
     c = LANGS[key]
     other = "en" if key == "zh" else "zh"
     ld = {
@@ -118,9 +136,9 @@ def seo_block(key):
         f'<meta name="twitter:description" content="{esc(c["desc"])}">',
         f'<meta name="twitter:image" content="{SITE}{c["og_image"]}">',
         f"<script>\n    {redirect}\n  </script>",
-        '<script type="application/ld+json">\n  '
-        + json.dumps(ld, ensure_ascii=False, indent=2).replace("\n", "\n  ")
-        + "\n  </script>",
+        ld_script(ld),
+        *([ld_script({"@context": "https://schema.org", "@type": "FAQPage", "inLanguage": c["html_lang"],
+                      "mainEntity": qa})] if (qa := faq(src, key)) else []),
         END,
     ]
     return "\n  ".join(lines)
@@ -128,7 +146,7 @@ def seo_block(key):
 
 def page(src, key):
     c = LANGS[key]
-    out, n = re.subn(re.escape(BEGIN) + r".*?" + re.escape(END), lambda _: seo_block(key), src, flags=re.S)
+    out, n = re.subn(re.escape(BEGIN) + r".*?" + re.escape(END), lambda _: seo_block(key, src), src, flags=re.S)
     assert n == 1, "SEO markers not found in site/index.html"
     out, n = re.subn(r'<html lang="[^"]*">', f'<html lang="{c["html_lang"]}">', out, count=1)
     assert n == 1, "<html lang> not found"

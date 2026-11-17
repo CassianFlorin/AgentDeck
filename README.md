@@ -26,9 +26,9 @@
 
 ---
 
-Coding with AI agents usually means running several at once: Claude Code in one repo, Codex in another, a third on a server. That quickly turns into a pile of terminal tabs, and you keep checking which agent is still working, which one is stuck on a permission prompt, and where a conversation went after the window closed.
+**AgentDeck is a native macOS app for running multiple AI coding agents (Claude Code, Codex, Gemini and more) side by side, locally or over SSH, with one sidebar that shows which agent needs you.**
 
-AgentDeck puts them in one window with a sidebar of sessions, and tells you which ones need you.
+Coding with AI agents usually means running several at once: Claude Code in one repo, Codex in another, a third on a server. That quickly turns into a pile of terminal tabs, and you keep checking which agent is still working, which one is stuck on a permission prompt, and where a conversation went after the window closed. AgentDeck puts them in one window and tells you which ones need you.
 
 ## Highlights
 
