@@ -4,8 +4,8 @@ import SwiftUI
 
 /// Debug-only remote control, so UI can be exercised without synthetic
 /// keystrokes (which land in whatever app is frontmost). Post a distributed
-/// notification named "AgentDeckDebug" (or "AgentDeckDebug.test" for an
-/// instance started with AGENTDECK_HOME, see AppPaths) whose object is a command string:
+/// notification named "WaitlightDebug" (or "WaitlightDebug.test" for an
+/// instance started with WAITLIGHT_HOME, see AppPaths) whose object is a command string:
 ///
 ///   binding:<ghostty action>   e.g. binding:new_split:right, binding:scroll_to_top
 ///   paste:<text>               bracketed-paste text into the focused pane
@@ -31,11 +31,11 @@ import SwiftUI
 ///   hook:<agentID>:install|uninstall   the status hook file of Grok / Codex
 ///   monitor:show|hide|<kinds>  open/close the 性能 panel, or set its monitors (e.g. cpu,sessions)
 ///   monitor                    log the 性能 panel's latest readings (monitor:script dumps the server script)
-///   dump                       write sessions/split trees to ~/Library/Caches/AgentDeck/debug.log
+///   dump                       write sessions/split trees to ~/Library/Caches/Waitlight/debug.log
 ///
 /// From a shell:
 ///   swift -e 'import Foundation; DistributedNotificationCenter.default()
-///     .postNotificationName(.init("AgentDeckDebug"), object: "find:login",
+///     .postNotificationName(.init("WaitlightDebug"), object: "find:login",
 ///     userInfo: nil, deliverImmediately: true)'
 @MainActor
 enum DebugHooks {
@@ -51,7 +51,7 @@ enum DebugHooks {
         }
     }
 
-    /// Appends to ~/Library/Caches/AgentDeck/debug.log
+    /// Appends to ~/Library/Caches/Waitlight/debug.log
     static func log(_ msg: String) {
         let url = AppPaths.cache.appendingPathComponent("debug.log")
         let line = Data((msg + "\n").utf8)
@@ -214,7 +214,7 @@ enum DebugHooks {
             workspace.selected.map(workspace.reconnect)
         case "find": pane?.showSearch(needle: arg)
         case "session": workspace.gotoSession(Int32(arg) ?? 1)
-        default: NSLog("AgentDeckDebug: unknown command %@", cmd)
+        default: NSLog("WaitlightDebug: unknown command %@", cmd)
         }
     }
 }

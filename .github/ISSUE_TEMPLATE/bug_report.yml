@@ -20,8 +20,8 @@ body:
   - type: input
     id: version
     attributes:
-      label: AgentDeck version / AgentDeck 版本
-      description: AgentDeck → About AgentDeck / 关于 AgentDeck
+      label: Waitlight version / Waitlight 版本
+      description: Waitlight → About Waitlight / 关于 Waitlight
       placeholder: "0.9.0"
     validations:
       required: true

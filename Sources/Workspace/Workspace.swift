@@ -338,7 +338,7 @@ final class Workspace: ObservableObject {
         hiddenSSHConfigAliases = all.filter { hidden.contains($0) }
     }
 
-    /// Remove an ~/.ssh/config alias from AgentDeck's list. Only remembered
+    /// Remove an ~/.ssh/config alias from Waitlight's list. Only remembered
     /// here; ~/.ssh/config itself is never touched.
     func hideSSHConfigAlias(_ alias: String) {
         var hidden = hostStore.hiddenAliases()
@@ -585,7 +585,7 @@ final class Workspace: ObservableObject {
     }
 }
 
-/// ~/Library/Application Support/AgentDeck/workspace.json
+/// ~/Library/Application Support/Waitlight/workspace.json
 struct WorkspaceStore {
     struct Saved: Codable {
         struct Session: Codable {

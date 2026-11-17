@@ -1,10 +1,10 @@
 # Third-party notices
 
-AgentDeck is MIT licensed (see [LICENSE](LICENSE)). It includes the following third-party software, each under its own license, reproduced below.
+Waitlight is MIT licensed (see [LICENSE](LICENSE)). It includes the following third-party software, each under its own license, reproduced below.
 
 ## Ghostty
 
-AgentDeck embeds libghostty, built from [Ghostty](https://github.com/ghostty-org/ghostty) (the `vendor/ghostty` submodule). Parts of `Sources/Ghostty/` are adapted from Ghostty's macOS app.
+Waitlight embeds libghostty, built from [Ghostty](https://github.com/ghostty-org/ghostty) (the `vendor/ghostty` submodule). Parts of `Sources/Ghostty/` are adapted from Ghostty's macOS app.
 
 ```
 MIT License
@@ -32,7 +32,7 @@ SOFTWARE.
 
 ## Sparkle
 
-AgentDeck bundles [Sparkle](https://sparkle-project.org) 2.10.1 for in-app updates (fetched by `scripts/fetch-sparkle.sh`).
+Waitlight bundles [Sparkle](https://sparkle-project.org) 2.10.1 for in-app updates (fetched by `scripts/fetch-sparkle.sh`).
 
 ```
 Copyright (c) 2006-2013 Andy Matuschak.

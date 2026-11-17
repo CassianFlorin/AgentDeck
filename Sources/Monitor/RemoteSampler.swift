@@ -58,7 +58,7 @@ enum MonitorScript {
         var s = """
         export LC_ALL=C
         P=$$
-        T=$(mktemp -d 2>/dev/null) || { T=/tmp/agentdeck-mon.$$; mkdir -p "$T"; }
+        T=$(mktemp -d 2>/dev/null) || { T=/tmp/waitlight-mon.$$; mkdir -p "$T"; }
         trap 'rm -rf "$T"' EXIT
         trap 'rm -rf "$T"; exit 0' HUP INT TERM PIPE
         docker_loop() {

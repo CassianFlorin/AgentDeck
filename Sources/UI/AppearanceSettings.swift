@@ -31,14 +31,14 @@ enum AppearanceSettings {
     /// part of the window ends up the same shade.
     static var ghosttyOverlay: String {
         """
-        # Written by AgentDeck (设置 → 外观). Edits here are overwritten.
+        # Written by Waitlight (设置 → 外观). Edits here are overwritten.
         background-opacity = \(isTranslucent ? "0" : "1")
         background-blur = \(blur && isTranslucent ? 20 : 0)
 
         """
     }
 
-    static let changed = Notification.Name("AgentDeckAppearanceChanged")
+    static let changed = Notification.Name("WaitlightAppearanceChanged")
 }
 
 struct AppearanceSettingsView: View {

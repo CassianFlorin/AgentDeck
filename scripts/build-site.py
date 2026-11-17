@@ -25,32 +25,32 @@ import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent / "site"
-SITE = "https://agentdeck.cassianflorin.com"
-REPO = "https://github.com/CassianFlorin/AgentDeck"
+SITE = "https://waitlight.cassianflorin.com"
+REPO = "https://github.com/CassianFlorin/Waitlight"
 
 LANGS = {
     "zh": {
         "html_lang": "zh-Hans",
         "path": "/",
         "og_locale": "zh_CN",
-        "title": "AgentDeck — 一个窗口，看住所有编程 Agent | macOS",
-        "desc": "AgentDeck 是一个原生 macOS 应用，用来并排运行多个 AI 编程 Agent（Claude Code、Codex、Gemini 等），"
+        "title": "Waitlight — 一个窗口，看住所有编程 Agent | macOS",
+        "desc": "Waitlight 是一个原生 macOS 应用，用来并排运行多个 AI 编程 Agent（Claude Code、Codex、Gemini 等），"
                 "本地和 SSH 服务器上的都行，一条侧边栏告诉你哪个 Agent 在等你。基于 Ghostty，免费开源。",
-        "og_title": "AgentDeck：一个窗口，看住所有编程 Agent",
+        "og_title": "Waitlight：一个窗口，看住所有编程 Agent",
         "og_image": "/og.png",
-        "og_image_alt": "AgentDeck：侧边栏里并排的多个编程 Agent，各自显示运行中、等你等状态",
+        "og_image_alt": "Waitlight：侧边栏里并排的多个编程 Agent，各自显示运行中、等你等状态",
         "lang_link": "/en/",
     },
     "en": {
         "html_lang": "en",
         "path": "/en/",
         "og_locale": "en_US",
-        "title": "AgentDeck — One window for every coding agent on macOS",
-        "desc": "AgentDeck is a native macOS app for running multiple AI coding agents (Claude Code, Codex, Gemini and more) "
+        "title": "Waitlight — One window for every coding agent on macOS",
+        "desc": "Waitlight is a native macOS app for running multiple AI coding agents (Claude Code, Codex, Gemini and more) "
                 "side by side, locally or over SSH, with one sidebar that shows which agent needs you. Built on Ghostty. Free and open source.",
-        "og_title": "AgentDeck: one window for every coding agent",
+        "og_title": "Waitlight: one window for every coding agent",
         "og_image": "/og-en.png",
-        "og_image_alt": "AgentDeck: several coding agents side by side in a sidebar, each showing whether it is working or waiting",
+        "og_image_alt": "Waitlight: several coding agents side by side in a sidebar, each showing whether it is working or waiting",
         "lang_link": "/",
     },
 }
@@ -86,7 +86,8 @@ def seo_block(key, src):
     ld = {
         "@context": "https://schema.org",
         "@type": "SoftwareApplication",
-        "name": "AgentDeck",
+        "name": "Waitlight",
+        "alternateName": "AgentDeck",
         "url": SITE + c["path"],
         "description": c["desc"],
         "inLanguage": c["html_lang"],
@@ -109,7 +110,7 @@ def seo_block(key, src):
         "(function () {\n"
         '      document.documentElement.classList.add("js");\n'
         "      var pick = null;\n"
-        '      try { pick = localStorage.getItem("agentdeck-lang"); } catch (e) {}\n'
+        '      try { pick = localStorage.getItem("waitlight-lang"); } catch (e) {}\n'
         f'      if (pick === "{other}") location.replace("{LANGS[other]["path"]}" + location.hash);\n'
         "    })();"
     )
@@ -124,7 +125,7 @@ def seo_block(key, src):
         '<link rel="icon" href="/favicon.png" type="image/png">',
         '<link rel="apple-touch-icon" href="/apple-touch-icon.png">',
         '<meta property="og:type" content="website">',
-        '<meta property="og:site_name" content="AgentDeck">',
+        '<meta property="og:site_name" content="Waitlight">',
         f'<meta property="og:title" content="{esc(c["og_title"])}">',
         f'<meta property="og:description" content="{esc(c["desc"])}">',
         f'<meta property="og:url" content="{SITE}{c["path"]}">',

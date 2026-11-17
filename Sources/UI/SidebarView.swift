@@ -406,7 +406,7 @@ struct ServerList: View {
     private func confirmHide(_ alias: String) {
         let alert = NSAlert()
         alert.messageText = "从列表中删除“\(alias)”？"
-        alert.informativeText = "只是不在 AgentDeck 里显示，~/.ssh/config 不会被修改，ssh 命令照常可用。之后可在右键菜单里恢复。"
+        alert.informativeText = "只是不在 Waitlight 里显示，~/.ssh/config 不会被修改，ssh 命令照常可用。之后可在右键菜单里恢复。"
         alert.addButton(withTitle: "删除")
         alert.addButton(withTitle: "取消")
         if alert.runModal() == .alertFirstButtonReturn { workspace.hideSSHConfigAlias(alias) }
@@ -415,7 +415,7 @@ struct ServerList: View {
     private func confirmDelete(_ host: RemoteHost) {
         let alert = NSAlert()
         alert.messageText = "删除服务器“\(host.name)”？"
-        alert.informativeText = "只删除 AgentDeck 里的配置和钥匙串里保存的密码，不会影响服务器，也不会关闭已打开的会话。"
+        alert.informativeText = "只删除 Waitlight 里的配置和钥匙串里保存的密码，不会影响服务器，也不会关闭已打开的会话。"
         alert.addButton(withTitle: "删除")
         alert.addButton(withTitle: "取消")
         if alert.runModal() == .alertFirstButtonReturn { workspace.deleteHost(host) }

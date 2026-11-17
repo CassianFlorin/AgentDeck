@@ -15,7 +15,7 @@ final class TerminalSurfaceView: NSView {
     /// Last directory reported by shell integration (OSC 7).
     private(set) var currentDirectory: String?
 
-    /// Exported to the shell as AGENTDECK_PANE, so agent hooks can say which
+    /// Exported to the shell as WAITLIGHT_PANE, so agent hooks can say which
     /// pane they belong to.
     let paneID = UUID().uuidString
 
@@ -116,6 +116,8 @@ final class TerminalSurfaceView: NSView {
 
         var fullEnv = env
         fullEnv[AgentHook.paneEnv] = paneID
+        fullEnv["WAITLIGHT"] = "1"
+        // The app was called AgentDeck before; shell configs may still check this.
         fullEnv["AGENTDECK"] = "1"
         var envVars = fullEnv.map { ghostty_env_var_s(key: UnsafePointer(c($0.key)), value: UnsafePointer(c($0.value))) }
         envVars.withUnsafeMutableBufferPointer { buf in
@@ -123,7 +125,7 @@ final class TerminalSurfaceView: NSView {
             cfg.env_var_count = buf.count
             surface = ghostty_surface_new(app, &cfg)
         }
-        if surface == nil { NSLog("AgentDeck: ghostty_surface_new failed") }
+        if surface == nil { NSLog("Waitlight: ghostty_surface_new failed") }
     }
 
     // MARK: - Lifecycle / layout

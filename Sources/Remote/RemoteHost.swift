@@ -109,7 +109,7 @@ struct RemoteHost: Codable, Identifiable, Hashable {
     }
 }
 
-/// Which remote session a local AgentDeck session is attached to.
+/// Which remote session a local Waitlight session is attached to.
 struct RemoteRef: Codable, Hashable {
     var hostID: UUID
     /// tmux / zellij session name on the server (nil when persistence is .none).
@@ -117,7 +117,7 @@ struct RemoteRef: Codable, Hashable {
     var sessionName: String?
 }
 
-/// ~/Library/Application Support/AgentDeck/hosts.json
+/// ~/Library/Application Support/Waitlight/hosts.json
 struct HostStore {
     private var url: URL {
         AppPaths.support.appendingPathComponent("hosts.json")
@@ -135,7 +135,7 @@ struct HostStore {
     }
 
     /// ~/.ssh/config aliases removed from the sidebar: hidden-ssh-aliases.json.
-    /// ~/.ssh/config itself is read-only to AgentDeck.
+    /// ~/.ssh/config itself is read-only to Waitlight.
     private var hiddenURL: URL {
         AppPaths.support.appendingPathComponent("hidden-ssh-aliases.json")
     }

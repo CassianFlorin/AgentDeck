@@ -89,7 +89,7 @@ final class PerformanceMonitor: ObservableObject {
     private var timer: Timer?
     private var inFlight = false
     private let sampler = SystemSampler()
-    private let queue = DispatchQueue(label: "agentdeck.monitor", qos: .utility)
+    private let queue = DispatchQueue(label: "waitlight.monitor", qos: .utility)
     private var stream: ScriptStream?
     private var retry: DispatchWorkItem?
     private var occlusionObserver: NSObjectProtocol?

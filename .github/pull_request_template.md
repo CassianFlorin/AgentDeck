@@ -4,8 +4,8 @@
 
 ## How I checked it / 怎么验证的
 
-<!-- CI only builds. What did you try by hand? An isolated instance helps: AGENTDECK_HOME=/tmp/ad-test scripts/test-instance.sh -->
-<!-- CI 只编译。你手动试了什么？可以用隔离实例：AGENTDECK_HOME=/tmp/ad-test scripts/test-instance.sh -->
+<!-- CI only builds. What did you try by hand? An isolated instance helps: WAITLIGHT_HOME=/tmp/ad-test scripts/test-instance.sh -->
+<!-- CI 只编译。你手动试了什么？可以用隔离实例：WAITLIGHT_HOME=/tmp/ad-test scripts/test-instance.sh -->
 
 - [ ] Builds in Debug / Debug 能编译
 - [ ] Tried it in the app / 在 App 里实际试过

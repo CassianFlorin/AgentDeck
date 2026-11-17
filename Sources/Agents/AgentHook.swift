@@ -3,16 +3,16 @@ import Foundation
 /// Precise agent status via the agent's own hooks.
 ///
 /// For Claude Code we pass `--settings '<json>'` at launch (merged with, never
-/// replacing, the user's settings files). Each hook runs AgentDeck's own
-/// binary with AGENTDECK_HOOK set; that process forwards the event to the
+/// replacing, the user's settings files). Each hook runs Waitlight's own
+/// binary with WAITLIGHT_HOOK set; that process forwards the event to the
 /// running app as a distributed notification and exits immediately.
-/// The pane is identified by AGENTDECK_PANE, which every terminal gets in its
+/// The pane is identified by WAITLIGHT_PANE, which every terminal gets in its
 /// environment.
 enum AgentHook {
-    static let modeEnv = "AGENTDECK_HOOK"
-    static let paneEnv = "AGENTDECK_PANE"
-    static let eventEnv = "AGENTDECK_EVENT"
-    static let notificationName = Notification.Name("AgentDeckAgentEvent")
+    static let modeEnv = "WAITLIGHT_HOOK"
+    static let paneEnv = "WAITLIGHT_PANE"
+    static let eventEnv = "WAITLIGHT_EVENT"
+    static let notificationName = Notification.Name("WaitlightAgentEvent")
 
     struct Event {
         let paneID: String
@@ -111,11 +111,11 @@ extension AgentHook {
     /// there. So nothing is written unless you turn it on in 管理 Agent, and
     /// what is written is one file of our own; yours are left as they are.
     ///
-    /// The hook does nothing outside AgentDeck: it checks AGENTDECK_PANE first.
+    /// The hook does nothing outside Waitlight: it checks WAITLIGHT_PANE first.
     enum DropIn {
         case grok, codex
 
-        static let codexProfile = "agentdeck"
+        static let codexProfile = "waitlight"
 
         /// `$GROK_HOME` / `$CODEX_HOME`, as the agents themselves resolve them.
         private var home: URL {
@@ -127,13 +127,29 @@ extension AgentHook {
 
         var file: URL {
             switch self {
-            case .grok: return home.appendingPathComponent("hooks/agentdeck.json")
-            // `codex -p agentdeck` layers this on top of the user's config.toml.
+            case .grok: return home.appendingPathComponent("hooks/waitlight.json")
+            // `codex -p waitlight` layers this on top of the user's config.toml.
             case .codex: return home.appendingPathComponent("\(Self.codexProfile).config.toml")
             }
         }
 
-        var isInstalled: Bool { FileManager.default.fileExists(atPath: file.path) }
+        /// Where the app wrote this file when it was called AgentDeck.
+        private var legacyFile: URL {
+            switch self {
+            case .grok: return home.appendingPathComponent("hooks/agentdeck.json")
+            case .codex: return home.appendingPathComponent("agentdeck.config.toml")
+            }
+        }
+
+        var isInstalled: Bool {
+            let fm = FileManager.default
+            // A hook turned on before the rename stays on: take its file over
+            // once. refresh() then rewrites it for this app.
+            if !fm.fileExists(atPath: file.path), fm.fileExists(atPath: legacyFile.path) {
+                try? fm.moveItem(at: legacyFile, to: file)
+            }
+            return fm.fileExists(atPath: file.path)
+        }
 
         /// (event the agent fires, matcher, event we report it as)
         private var events: [(name: String, matcher: String?, reportAs: String?)] {
@@ -168,7 +184,7 @@ extension AgentHook {
                     withJSONObject: ["hooks": hooks], options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]) else { return nil }
                 return String(decoding: data, as: UTF8.self) + "\n"
             case .codex:
-                var out = "# Written by AgentDeck (管理 Agent → Codex → 精确状态). Delete this file to turn it off.\n"
+                var out = "# Written by Waitlight (管理 Agent → Codex → 精确状态). Delete this file to turn it off.\n"
                 for e in events {
                     // A JSON string is also a valid TOML basic string.
                     guard let cmd = command(reportAs: e.reportAs),
@@ -188,7 +204,10 @@ extension AgentHook {
             return (try? contents.write(to: file, atomically: true, encoding: .utf8)) != nil
         }
 
-        func uninstall() { try? FileManager.default.removeItem(at: file) }
+        func uninstall() {
+            try? FileManager.default.removeItem(at: file)
+            try? FileManager.default.removeItem(at: legacyFile)
+        }
 
         /// The hook names this app's path; keep it right if the app moved.
         /// Left alone when nothing changed: a changed hook has to be trusted again.

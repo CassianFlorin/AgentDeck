@@ -10,8 +10,8 @@
 #
 # Optional, set separately (see docs/DEVELOPMENT.md → Releasing):
 #   HOMEBREW_TAP_TOKEN   fine-grained PAT, Contents: write on CassianFlorin/homebrew-tap only;
-#                        lets the release bump Casks/agentdeck.rb. Without it that step is skipped.
-#                        gh secret set HOMEBREW_TAP_TOKEN --repo CassianFlorin/AgentDeck
+#                        lets the release bump Casks/waitlight.rb. Without it that step is skipped.
+#                        gh secret set HOMEBREW_TAP_TOKEN --repo CassianFlorin/Waitlight
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

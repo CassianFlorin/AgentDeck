@@ -15,7 +15,7 @@ struct TerminalOptions: Codable, Equatable {
     /// `adjust-cell-height`, in percent.
     var cellHeight: Double?
     var fontThicken: Bool?
-    /// Font for Chinese/Japanese/Korean text. nil = PingFang SC (AgentDeck's
+    /// Font for Chinese/Japanese/Korean text. nil = PingFang SC (Waitlight's
     /// default), "" = leave it to Ghostty's own fallback.
     var cjkFont: String?
     /// block, bar, underline, block_hollow
@@ -93,7 +93,7 @@ enum TerminalSettings {
         if let v = o.copyOnSelect { lines.append("copy-on-select = \(v ? "clipboard" : "false")") }
         if let v = o.mouseHide { lines.append("mouse-hide-while-typing = \(b(v))") }
         guard !lines.isEmpty else { return "" }
-        return "# Written by AgentDeck (设置 → 终端). Edits here are overwritten.\n"
+        return "# Written by Waitlight (设置 → 终端). Edits here are overwritten.\n"
             + lines.joined(separator: "\n") + "\n"
     }
 }
@@ -524,7 +524,7 @@ private struct TerminalPreview: View {
     var body: some View {
         let p = colors.palette
         VStack(alignment: .leading, spacing: 2 + CGFloat(options.cellHeight ?? 0) / 20) {
-            (Text("~/agentdeck ").foregroundColor(p[4]) + Text("main ").foregroundColor(p[5])
+            (Text("~/waitlight ").foregroundColor(p[4]) + Text("main ").foregroundColor(p[5])
                 + Text("❯ ").foregroundColor(p[2]) + Text("claude").foregroundColor(colors.foreground))
             (Text("● ").foregroundColor(p[6]) + Text("Reading Sources/UI/TerminalSettings.swift")
                 .foregroundColor(colors.foreground))

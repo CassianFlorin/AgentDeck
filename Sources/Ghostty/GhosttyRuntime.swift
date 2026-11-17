@@ -2,7 +2,7 @@ import AppKit
 import GhosttyKit
 import SwiftUI
 
-/// Everything libghostty tells a surface that AgentDeck cares about.
+/// Everything libghostty tells a surface that Waitlight cares about.
 /// Delivered on the main thread via `TerminalSurfaceView.onEvent`.
 enum TerminalEvent {
     // Pane-level state
@@ -47,7 +47,7 @@ enum TerminalEvent {
 ///
 /// libghostty is the terminal engine from Ghostty (https://ghostty.org, MIT).
 /// The callback plumbing here is adapted from Ghostty's own macOS app
-/// (macos/Sources/Ghostty/Ghostty.App.swift), trimmed to what AgentDeck needs.
+/// (macos/Sources/Ghostty/Ghostty.App.swift), trimmed to what Waitlight needs.
 final class GhosttyRuntime {
     static let shared = GhosttyRuntime()
 
@@ -73,7 +73,7 @@ final class GhosttyRuntime {
         }
 
         guard ghostty_init(UInt(CommandLine.argc), CommandLine.unsafeArgv) == GHOSTTY_SUCCESS else {
-            NSLog("AgentDeck: ghostty_init failed")
+            NSLog("Waitlight: ghostty_init failed")
             return false
         }
 
@@ -88,7 +88,7 @@ final class GhosttyRuntime {
         let diagnostics = ghostty_config_diagnostics_count(cfg)
         for i in 0..<diagnostics {
             let d = ghostty_config_get_diagnostic(cfg, i)
-            NSLog("AgentDeck: ghostty config: %@", String(cString: d.message))
+            NSLog("Waitlight: ghostty config: %@", String(cString: d.message))
         }
         config = cfg
 
@@ -119,7 +119,7 @@ final class GhosttyRuntime {
         )
 
         guard let app = ghostty_app_new(&runtime, cfg) else {
-            NSLog("AgentDeck: ghostty_app_new failed")
+            NSLog("Waitlight: ghostty_app_new failed")
             return false
         }
         self.app = app
@@ -145,7 +145,7 @@ final class GhosttyRuntime {
 
     // MARK: - Config
 
-    /// The user's Ghostty config, then AgentDeck's overlay on top: the options
+    /// The user's Ghostty config, then Waitlight's overlay on top: the options
     /// changed in 设置 → 终端, then background opacity / blur from 设置 → 外观
     /// (last, so the glass window always gets the opacity it needs).
     private static func makeConfig() -> ghostty_config_t? {
@@ -160,7 +160,7 @@ final class GhosttyRuntime {
         return cfg
     }
 
-    /// The user's own Ghostty config without AgentDeck's overlay. Caller frees it.
+    /// The user's own Ghostty config without Waitlight's overlay. Caller frees it.
     static func userConfig() -> ghostty_config_t? {
         guard let cfg = ghostty_config_new() else { return nil }
         ghostty_config_load_default_files(cfg)
