@@ -1,13 +1,13 @@
 <p align="center">
-  <img src="Resources/AppIcon-1024.png" alt="AgentDeck icon" width="128">
+  <img src="Resources/AppIcon-1024.png" alt="AgentDeck icon" width="112">
 </p>
 
 <h1 align="center">AgentDeck</h1>
 
 <p align="center">
   <strong>One window for every coding agent.</strong><br>
-  A native macOS workbench for running AI coding agents side by side, locally or on your servers.<br>
-  Every pane is a real <a href="https://ghostty.org">Ghostty</a> terminal.
+  Run Claude Code, Codex, Gemini and more side by side on your Mac, locally or over SSH,<br>
+  and see at a glance which one needs you.
 </p>
 
 <p align="center">
@@ -18,13 +18,19 @@
 </p>
 
 <p align="center">
-  <a href="https://agentdeck.cassianflorin.com">Website</a> ·
-  <a href="https://github.com/CassianFlorin/AgentDeck/releases/latest">Download</a> ·
-  <a href="docs/FEATURES.md">All features</a> ·
-  <a href="README.zh-CN.md">中文</a>
+  <a href="https://agentdeck.cassianflorin.com/en/"><b>Website</b></a> ·
+  <a href="https://github.com/CassianFlorin/AgentDeck/releases/latest"><b>Download</b></a> ·
+  <a href="docs/FEATURES.md"><b>All features</b></a> ·
+  <a href="README.zh-CN.md"><b>中文</b></a>
 </p>
 
----
+<p align="center">
+  <a href="https://agentdeck.cassianflorin.com/en/">
+    <img src="docs/images/agentdeck-en.png" alt="AgentDeck: a sidebar of coding agents, each showing whether it is working, waiting for you, done or exited, next to a terminal where Codex asks to edit a file" width="860">
+  </a>
+  <br>
+  <sub>The <a href="https://agentdeck.cassianflorin.com/en/">website</a> has a clickable version of this sketch.</sub>
+</p>
 
 **AgentDeck is a native macOS app for running multiple AI coding agents (Claude Code, Codex, Gemini and more) side by side, locally or over SSH, with one sidebar that shows which agent needs you.**
 
@@ -32,33 +38,58 @@ Coding with AI agents usually means running several at once: Claude Code in one 
 
 ## Highlights
 
-- **See who needs you.** Every agent shows whether it is working, waiting for you, done with its turn, or exited. `⌘⇧J` jumps to the next one that is waiting.
-- **Every agent on one screen.** The Agent overview (`⇧⌘A`) lists all agents across sessions, waiting ones first. Read their last lines, answer a prompt, or stop a turn without leaving the list, and hand out new tasks from the same place.
-- **Local and remote in one sidebar.** Servers from `~/.ssh/config` show up next to your local sessions. AgentDeck uses tmux or zellij on the server if it is there, so a dropped connection reattaches with the agent still running. Nothing is installed on the server.
-- **Pick up where you were.** Sessions, splits, groups and SSH connections come back after a relaunch, and agents return to the same conversation. `⇧⌘O` lists past conversations for a folder.
-- **Your agents, detected.** AgentDeck finds the agent CLIs on your login shell's PATH and lists only those. Missing ones install from inside the app.
-- **A real terminal.** Your Ghostty config, themes and keybinds carry over. Splits, find, CJK input methods, pasting screenshots as paths, and a performance panel with Docker for the Mac or the server you are on.
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>🚦 See who needs you</h3>
+      Every agent shows whether it is <b>working</b>, <b>waiting for you</b>, <b>done with its turn</b> or <b>exited</b>. <code>⌘⇧J</code> jumps straight to the next one that is waiting.
+    </td>
+    <td width="50%" valign="top">
+      <h3>🗂️ Every agent on one screen</h3>
+      The Agent overview (<code>⇧⌘A</code>) lists all agents across sessions, waiting ones first. Read their last lines, answer a prompt, stop a turn, or hand out a new task without leaving the list.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>🌐 Local and remote together</h3>
+      Hosts from <code>~/.ssh/config</code> sit next to your local sessions. With tmux or zellij on the server, a dropped connection reattaches with the agent still running. Nothing is installed on the server.
+    </td>
+    <td width="50%" valign="top">
+      <h3>♻️ Pick up where you were</h3>
+      Sessions, splits, groups and SSH connections come back after a relaunch, and agents return to the same conversation. <code>⇧⌘O</code> lists past conversations for a folder.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>🔍 Your agents, detected</h3>
+      AgentDeck finds the agent CLIs on your login shell's PATH and lists only those. Missing ones install from inside the app, and any other CLI can be added.
+    </td>
+    <td width="50%" valign="top">
+      <h3>⌨️ A real terminal</h3>
+      Every pane is Ghostty, with your config, themes and keybinds. Splits, find, CJK input, screenshots pasted as paths, and a performance panel with Docker for the Mac or the server.
+    </td>
+  </tr>
+</table>
 
 ## Supported agents
 
-| Agent | Restores its conversation | Hand out tasks | Status |
+| Agent | Restores its conversation | Hand out tasks | Status comes from |
 | --- | :---: | :---: | --- |
-| Claude Code | exact | ✓ | hooks, built in |
-| Codex | exact | ✓ | hooks, opt-in |
-| Grok | exact | ✓ | hooks, opt-in |
-| Gemini | latest | ✓ | generic |
-| opencode | latest | ✓ | generic |
-| Qwen Code | latest | ✓ | generic |
-| Cursor CLI | latest | ✓ | generic |
-| Copilot CLI | latest | ✓ | generic |
-| Droid | latest | ✓ | generic |
-| Aider | latest | | generic |
-| Amp | | | generic |
-| Crush | | | generic |
-| Any other CLI | your arguments | your arguments | generic |
+| **Claude Code** | ✅ exact | ✅ | hooks, built in |
+| **Codex** | ✅ exact | ✅ | hooks, opt-in |
+| **Grok** | ✅ exact | ✅ | hooks, opt-in |
+| **Gemini** | latest | ✅ | terminal signals |
+| **opencode** | latest | ✅ | terminal signals |
+| **Qwen Code** | latest | ✅ | terminal signals |
+| **Cursor CLI** | latest | ✅ | terminal signals |
+| **Copilot CLI** | latest | ✅ | terminal signals |
+| **Droid** | latest | ✅ | terminal signals |
+| **Aider** | latest | — | terminal signals |
+| **Amp** | — | — | terminal signals |
+| **Crush** | — | — | terminal signals |
+| *Any other CLI* | your arguments | your arguments | terminal signals |
 
-- **Restores its conversation:** *exact* returns to the same conversation by id; *latest* continues the most recent one in the folder.
-- **Status:** *hooks* means the agent reports its state itself. AgentDeck passes Claude Code's hooks at launch without touching your settings; for Codex and Grok you turn them on in Manage Agents. *generic* status comes from Return, the bell, notifications, progress and the agent exiting.
+<sub><b>exact</b> returns to the same conversation by id; <b>latest</b> continues the most recent one in the folder. <b>Hooks</b> means the agent reports its own state: Claude Code's are passed at launch without touching your settings, and Codex and Grok can be switched on in Manage Agents. <b>Terminal signals</b> are Return, the bell, notifications, progress and the agent exiting.</sub>
 
 ## Install
 
@@ -66,24 +97,54 @@ Coding with AI agents usually means running several at once: Claude Code in one 
 brew install --cask cassianflorin/tap/agentdeck
 ```
 
-Or download the DMG from [Releases](https://github.com/CassianFlorin/AgentDeck/releases/latest). It is signed with a Developer ID and notarized by Apple, and updates itself from then on. Requires macOS 14 or later on Apple silicon.
+Or download the DMG from [Releases](https://github.com/CassianFlorin/AgentDeck/releases/latest). It is signed with a Developer ID and notarized by Apple, and updates itself from then on. Requires **macOS 14 or later on Apple silicon**.
 
 ## Keys
 
-| Keys | |
+| | |
 | --- | --- |
-| `⌘⇧J` | Jump to the next session that needs you |
-| `⇧⌘A` | Agent overview |
-| `⌥⌘[` `⌥⌘]` | Previous / next agent, across sessions |
-| `⌘D` `⌘⇧D` | Split right / down |
-| `⇧⌘O` | Resume an earlier conversation for this folder |
-| `⌘⇧R` | Reconnect SSH |
+| <kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>J</kbd> | Jump to the next session that needs you |
+| <kbd>⇧</kbd> <kbd>⌘</kbd> <kbd>A</kbd> | Agent overview |
+| <kbd>⌥</kbd> <kbd>⌘</kbd> <kbd>[</kbd> / <kbd>]</kbd> | Previous / next agent, across sessions |
+| <kbd>⌘</kbd> <kbd>D</kbd> / <kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>D</kbd> | Split right / down |
+| <kbd>⇧</kbd> <kbd>⌘</kbd> <kbd>O</kbd> | Resume an earlier conversation for this folder |
+| <kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>R</kbd> | Reconnect SSH |
 
 The full list is in [docs/FEATURES.md](docs/FEATURES.md).
 
+## FAQ
+
+<details>
+<summary><b>Do I need to install anything on my servers?</b></summary>
+<br>
+No. AgentDeck uses plain SSH, and the hosts in <code>~/.ssh/config</code> just work. If the server has tmux or zellij, AgentDeck uses it, so a dropped connection reattaches with the agent still running.
+</details>
+
+<details>
+<summary><b>How is it different from tabs in iTerm or tmux?</b></summary>
+<br>
+The terminal is still a terminal (Ghostty). What AgentDeck adds is each agent's state, a single overview to reply and hand out tasks from, and agents that return to the same conversation after a relaunch.
+</details>
+
+<details>
+<summary><b>Does it change my agent settings?</b></summary>
+<br>
+No. Claude Code's hooks are passed with <code>--settings</code> at launch. The status hooks for Codex and Grok are opt-in; turning one on writes a single file of AgentDeck's own, and turning it off deletes it.
+</details>
+
+<details>
+<summary><b>Does it collect any data?</b></summary>
+<br>
+No. There is no analytics or telemetry. The only connection AgentDeck makes on its own is checking GitHub Releases for updates.
+</details>
+
+More on the [website](https://agentdeck.cassianflorin.com/en/#faq).
+
 ## Build from source
 
-You need Xcode 16+, [XcodeGen](https://github.com/yonaskolb/XcodeGen) and Zig. The short version:
+<details>
+<summary>Xcode 16+, <a href="https://github.com/yonaskolb/XcodeGen">XcodeGen</a> and Zig</summary>
+<br>
 
 ```bash
 git clone --recursive https://github.com/CassianFlorin/AgentDeck.git
@@ -92,12 +153,11 @@ scripts/build-ghosttykit.sh && scripts/fetch-sparkle.sh
 xcodegen && open AgentDeck.xcodeproj
 ```
 
-Troubleshooting and the release process are in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+Troubleshooting and the release process are in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). Contributions are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md).
+</details>
 
 ## About
 
 AgentDeck is a personal tool, built for my own workflow and open-sourced in case it fits yours. Issues and ideas are welcome.
 
-The terminal engine is [Ghostty](https://github.com/ghostty-org/ghostty) by Mitchell Hashimoto and contributors (MIT). Updates are delivered with [Sparkle](https://sparkle-project.org).
-
-MIT licensed. See [LICENSE](LICENSE), and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for Ghostty and Sparkle.
+The terminal engine is [Ghostty](https://github.com/ghostty-org/ghostty) by Mitchell Hashimoto and contributors (MIT). Updates are delivered with [Sparkle](https://sparkle-project.org). AgentDeck is MIT licensed; see [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
