@@ -1270,7 +1270,8 @@
             <summary><span><span class="zh">还有这些</span><span class="en">Also</span><small><span class="zh">内置 Agent、贴图、输入法、分组、Docker、更新</span><span class="en">built-in agents, image paste, input methods, groups, Docker, updates</span></small></span></summary>
             <div class="fold-body">
               <ul class="notes cols">
-                <li><span class="zh">内置 Claude Code、Codex、Grok、Gemini 和 Shell。其他命令行工具可以自己加。还没安装的，会给出安装命令。命令是打进登录 shell 的，Agent 退出以后，你还在那个 shell 里。</span><span class="en">Built in: Claude Code, Codex, Grok, Gemini, and a shell. Any other CLI can be added. Ones that are not installed come with an install command. The command is typed into your login shell, so when the agent exits you are still in that shell.</span></li>
+                <li><span class="zh">内置主流的 Agent 命令行工具：Claude Code、Codex、Gemini、Grok、opencode、Qwen Code、Cursor CLI、Copilot CLI、Droid、Amp、Crush、Aider，外加 Shell。装了哪些，新建会话的菜单里就只列哪些。没装的在「管理 Agent」里点「安装」，会新开一个终端跑安装命令，装完自动出现在菜单里。其他命令行工具可以自己加。</span><span class="en">The mainstream agent CLIs are built in: Claude Code, Codex, Gemini, Grok, opencode, Qwen Code, Cursor CLI, Copilot CLI, Droid, Amp, Crush, and Aider, plus a shell. The new-session menu lists only the ones you have installed. For the rest, Install in Manage Agents runs the install command in a new terminal, and the agent shows up in the menu once it is done. Any other CLI can be added.</span></li>
+                <li><span class="zh">Agent 的命令是打进登录 shell 的，Agent 退出以后，你还在那个 shell 里。</span><span class="en">An agent's command is typed into your login shell, so when the agent exits you are still in that shell.</span></li>
                 <li><span class="zh">状态跟着窗格走，不跟着会话。在分屏里自己敲 <span class="path">claude</span> 或 <span class="path">codex</span>，AgentDeck 也认得出来，它会有自己的状态，也会出现在总览里。</span><span class="en">Status belongs to the pane, not the session. Type <span class="path">claude</span> or <span class="path">codex</span> into a split yourself and AgentDeck notices: it gets its own status and its own row in the overview.</span></li>
                 <li><span class="zh">剪贴板里如果是截图，⌘V 会先存成 PNG，再贴上路径，这样就能把图交给 Agent。拷进来或拖进来的文件，会变成 shell 转义后的路径。</span><span class="en">If the clipboard holds a screenshot, ⌘V saves a PNG and pastes the path, which is how you hand an image to an agent. Copied or dragged files paste as shell-escaped paths.</span></li>
                 <li><span class="zh">中文、日文、韩文输入法可以用，候选窗贴着光标。</span><span class="en">Chinese, Japanese, and Korean input methods work, with the candidate window anchored at the cursor.</span></li>
@@ -1303,10 +1304,10 @@
                 <h4><span class="zh">Agent</span><span class="en">Agents</span></h4>
                 <ul>
                   <li><span class="zh">在会话里，工具栏显示当前是第几个 Agent（比如 2/5），两边的箭头去上一个和下一个。</span><span class="en">In a session, the toolbar shows which agent you are on (2/5, say), with arrows to the previous and the next.</span></li>
-                  <li><span class="zh">派发的任务通过「带提示词启动参数」里的 <span class="path">{prompt}</span> 交给 Agent。内置的几个已经配好；自定义 Agent 填了才会出现在派发栏里。</span><span class="en">A task reaches the agent through <span class="path">{prompt}</span> in its prompt arguments. The built-in agents have it set; a custom agent is offered in the bar once you fill it in.</span></li>
-                  <li><span class="zh"><kbd>⌘⇧1</kbd>…<kbd>⌘⇧9</kbd> 按「管理 Agent」里的顺序新建会话。</span><span class="en"><kbd>⌘⇧1</kbd>…<kbd>⌘⇧9</kbd> open a new session, in the order shown in Manage Agents.</span></li>
+                  <li><span class="zh">派发的任务通过「带提示词启动参数」里的 <span class="path">{prompt}</span> 交给 Agent。内置的大多已经配好（Amp、Crush、Aider 除外）；自定义 Agent 填了才会出现在派发栏里。</span><span class="en">A task reaches the agent through <span class="path">{prompt}</span> in its prompt arguments. Most built-in agents have it set (all but Amp, Crush, and Aider); a custom agent is offered in the bar once you fill it in.</span></li>
+                  <li><span class="zh"><kbd>⌘⇧1</kbd>…<kbd>⌘⇧9</kbd> 按「管理 Agent」里的顺序新建会话，只算已经装好的。</span><span class="en"><kbd>⌘⇧1</kbd>…<kbd>⌘⇧9</kbd> open a new session, in the order shown in Manage Agents, counting only installed agents.</span></li>
                   <li><span class="zh">自定义 Agent 可以分别填新对话、恢复对话、继续最近对话的参数。参数里的 <span class="path">{id}</span> 会换成对话 id。</span><span class="en">A custom agent takes separate arguments for a new conversation, resuming one, and continuing the latest. <span class="path">{id}</span> in them becomes the conversation id.</span></li>
-                  <li><span class="zh">AgentDeck 在你登录 shell 的 PATH 里找这些命令，所以 nvm、<span class="path">~/.local/bin</span> 里装的也能找到。</span><span class="en">AgentDeck looks for the commands on the PATH of your login shell, so ones installed through nvm or in <span class="path">~/.local/bin</span> are found.</span></li>
+                  <li><span class="zh">AgentDeck 在你登录 shell 的 PATH 里找这些命令，所以 nvm、<span class="path">~/.local/bin</span> 里装的也能找到。切回 AgentDeck 时会重新检测，在别处刚装的也会出现。</span><span class="en">AgentDeck looks for the commands on the PATH of your login shell, so ones installed through nvm or in <span class="path">~/.local/bin</span> are found. It checks again when you switch back to it, so an agent you just installed elsewhere shows up too.</span></li>
                 </ul>
               </div>
               <div>
@@ -1360,6 +1361,7 @@
               <a class="btn ghost" href="#build"><span class="zh">从源码构建</span><span class="en">Build from source</span></a>
             </div>
             <dl class="specs">
+              <div><dt><span class="zh">Agent</span><span class="en">Agents</span></dt><dd><span class="zh">内置 12 个主流 CLI，装了哪些列哪些</span><span class="en">12 mainstream CLIs built in, listed once installed</span></dd></div>
               <div><dt><span class="zh">系统</span><span class="en">System</span></dt><dd><span class="zh">macOS 14 或更高</span><span class="en">macOS 14 or later</span></dd></div>
               <div><dt><span class="zh">芯片</span><span class="en">Chip</span></dt><dd><span class="zh">目前只有 Apple 芯片</span><span class="en">Apple silicon only, for now</span></dd></div>
               <div><dt><span class="zh">远程采样</span><span class="en">Remote stats</span></dt><dd><span class="zh">目前只支持 Linux</span><span class="en">Linux only, for now</span></dd></div>
