@@ -1,0 +1,15 @@
+name: Feature request / 功能建议
+description: An idea or a workflow AgentDeck doesn't cover yet. / 一个想法，或 AgentDeck 还没覆盖的用法。
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do? / 你想做什么？
+      description: The workflow or problem, not just the solution. / 说说场景和遇到的问题，不只是解决方案。
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would help? / 怎样会有帮助？

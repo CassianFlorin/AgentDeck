@@ -1,0 +1,48 @@
+name: Bug report / 问题反馈
+description: Something doesn't work as expected. / 有地方不符合预期。
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened? / 发生了什么？
+      description: What you did, what you expected, and what happened instead. Screenshots help. / 你做了什么，预期是什么，实际是什么。有截图更好。
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce / 复现步骤
+      placeholder: |
+        1.
+        2.
+        3.
+  - type: input
+    id: version
+    attributes:
+      label: AgentDeck version / AgentDeck 版本
+      description: AgentDeck → About AgentDeck / 关于 AgentDeck
+      placeholder: "0.9.0"
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version / macOS 版本
+      placeholder: "15.5"
+    validations:
+      required: true
+  - type: input
+    id: agent
+    attributes:
+      label: Agent CLI and version, if relevant / 相关的 Agent CLI 和版本（如有）
+      placeholder: "Claude Code 2.1.0"
+  - type: dropdown
+    id: where
+    attributes:
+      label: Local or SSH? / 本地还是 SSH？
+      options:
+        - Local / 本地
+        - SSH (tmux)
+        - SSH (zellij)
+        - SSH (plain shell / 普通 shell)
