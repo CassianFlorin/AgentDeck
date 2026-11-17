@@ -132,3 +132,46 @@ jobs:
             gh release create "$TAG" "${FILES[@]}" --title "AgentDeck $VERSION" \
               --notes-file "$NOTES" --generate-notes
           fi
+
+      # Point the Homebrew cask (brew install --cask cassianflorin/tap/agentdeck)
+      # at this release. Installed copies update themselves through Sparkle
+      # (the cask says auto_updates true); this only matters for new installs.
+      # Needs HOMEBREW_TAP_TOKEN, a fine-grained PAT with Contents: write on
+      # CassianFlorin/homebrew-tap only (see docs/DEVELOPMENT.md). Without it
+      # the step is skipped and the release still succeeds.
+      - name: Update Homebrew cask
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          HOMEBREW_TAP_REPO: CassianFlorin/homebrew-tap
+          VERSION: ${{ steps.v.outputs.version }}
+        run: |
+          set -euo pipefail
+          if [ -z "${HOMEBREW_TAP_TOKEN:-}" ]; then
+            echo "::notice::Skipping Homebrew cask update: HOMEBREW_TAP_TOKEN is not configured. Bump Casks/agentdeck.rb in $HOMEBREW_TAP_REPO by hand."
+            exit 0
+          fi
+          DMG="AgentDeck-$VERSION.dmg"
+          SHA=$(awk -v f="$DMG" '$2 == f || $2 == "*"f { print $1 }' "build/dist/AgentDeck-$VERSION.sha256")
+          [[ "$SHA" =~ ^[0-9a-f]{64}$ ]] || { echo "::error::no sha256 for $DMG"; exit 1; }
+
+          TAP="$RUNNER_TEMP/homebrew-tap"
+          git clone --depth 1 "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/${HOMEBREW_TAP_REPO}.git" "$TAP"
+          CASK="$TAP/Casks/agentdeck.rb"
+          sed -i '' -E \
+            -e "s/^(  version )\"[^\"]*\"/\1\"$VERSION\"/" \
+            -e "s/^(  sha256 )\"[^\"]*\"/\1\"$SHA\"/" "$CASK"
+          if ! grep -q "^  version \"$VERSION\"$" "$CASK" || ! grep -q "^  sha256 \"$SHA\"$" "$CASK"; then
+            echo "::error::could not update version/sha256 in Casks/agentdeck.rb"; exit 1
+          fi
+
+          cd "$TAP"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Casks/agentdeck.rb
+          if git diff --cached --quiet; then
+            echo "Homebrew cask already at $VERSION."
+            exit 0
+          fi
+          git commit -m "Update agentdeck to v$VERSION"
+          # The tap is shared with other projects' release jobs; retry once on a race.
+          git push || { git pull --rebase && git push; }
