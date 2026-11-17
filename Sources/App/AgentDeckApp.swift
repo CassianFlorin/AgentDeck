@@ -72,7 +72,7 @@ struct AppCommands: Commands {
 
         CommandGroup(replacing: .newItem) {
             // ⌘⇧1…9 follow the order in 管理 Agent.
-            ForEach(Array(workspace.catalog.visible.prefix(9).enumerated()), id: \.element.id) { i, kind in
+            ForEach(Array(workspace.catalog.available.prefix(9).enumerated()), id: \.element.id) { i, kind in
                 Button("新建 \(kind.name)…") { NewSessionPanel.present(kind: kind, in: workspace) }
                     .keyboardShortcut(KeyEquivalent(Character("\(i + 1)")), modifiers: [.command, .shift])
             }

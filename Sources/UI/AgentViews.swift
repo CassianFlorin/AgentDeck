@@ -20,23 +20,22 @@ struct AgentManagerView: View {
             .padding(16)
 
             List {
-                ForEach(catalog.agents) { agent in
-                    AgentRow(agent: agent)
-                        .contentShape(Rectangle())
-                        .onTapGesture(count: 2) { editing = agent }
-                        .contextMenu {
-                            Button("编辑…") { editing = agent }
-                            Button(agent.hidden ? "在菜单中显示" : "从菜单中隐藏") {
-                                var a = agent
-                                a.hidden.toggle()
-                                catalog.save(a)
-                            }
-                            if agent.isBuiltIn {
-                                Button("恢复默认") { catalog.remove(agent) }
-                            } else {
-                                Button("删除", role: .destructive) { catalog.remove(agent) }
-                            }
-                        }
+                Section {
+                    rows(found)
+                } header: {
+                    Text("已检测到")
+                } footer: {
+                    Text("新建会话菜单只列这一组里没隐藏的 Agent。").font(.caption).foregroundStyle(.secondary)
+                }
+                if !missing.isEmpty {
+                    Section {
+                        rows(missing)
+                    } header: {
+                        Text("未安装")
+                    } footer: {
+                        Text("在登录 shell 的 PATH 上找不到。装好后回到 AgentDeck 会自动重新检测，也可以点“重新检测”。")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
                 }
             }
             .listStyle(.inset(alternatesRowBackgrounds: true))
@@ -49,9 +48,34 @@ struct AgentManagerView: View {
             }
             .padding(16)
         }
-        .frame(width: 640, height: 480)
+        .frame(width: 640, height: 540)
         .sheet(item: $editing) { agent in
             AgentEditor(agent: agent) { catalog.save($0) }
+        }
+    }
+
+    /// Installed, or still being checked.
+    private var found: [AgentKind] { catalog.agents.filter { catalog.isInstalled($0) != false } }
+    private var missing: [AgentKind] { catalog.agents.filter { catalog.isInstalled($0) == false } }
+
+    private func rows(_ list: [AgentKind]) -> some View {
+        ForEach(list) { agent in
+            AgentRow(agent: agent)
+                .contentShape(Rectangle())
+                .onTapGesture(count: 2) { editing = agent }
+                .contextMenu {
+                    Button("编辑…") { editing = agent }
+                    Button(agent.hidden ? "在菜单中显示" : "从菜单中隐藏") {
+                        var a = agent
+                        a.hidden.toggle()
+                        catalog.save(a)
+                    }
+                    if agent.isBuiltIn {
+                        Button("恢复默认") { catalog.remove(agent) }
+                    } else {
+                        Button("删除", role: .destructive) { catalog.remove(agent) }
+                    }
+                }
         }
     }
 }
@@ -59,6 +83,8 @@ struct AgentManagerView: View {
 private struct AgentRow: View {
     let agent: AgentKind
     @EnvironmentObject private var catalog: AgentCatalog
+    @EnvironmentObject private var workspace: Workspace
+    @State private var confirmingInstall = false
 
     var body: some View {
         HStack(spacing: 10) {
@@ -88,14 +114,28 @@ private struct AgentRow: View {
                 .labelStyle(.titleAndIcon).font(.caption).foregroundStyle(.green).lineLimit(1)
                 .frame(maxWidth: 220, alignment: .trailing)
         case .some(false):
-            VStack(alignment: .trailing, spacing: 2) {
-                Label("未安装", systemImage: "xmark.circle").font(.caption).foregroundStyle(.orange)
-                if let hint = agent.installHint {
-                    Text(hint).font(.caption2.monospaced()).foregroundStyle(.secondary)
-                        .textSelection(.enabled).lineLimit(1)
+            HStack(spacing: 8) {
+                VStack(alignment: .trailing, spacing: 2) {
+                    Label("未安装", systemImage: "xmark.circle").font(.caption).foregroundStyle(.orange)
+                    if let hint = agent.installHint {
+                        Text(hint).font(.caption2.monospaced()).foregroundStyle(.secondary)
+                            .textSelection(.enabled).lineLimit(1).truncationMode(.middle)
+                            .help(hint)
+                    }
+                }
+                .frame(maxWidth: 240, alignment: .trailing)
+                if agent.installCommand != nil {
+                    Button("安装") { confirmingInstall = true }
+                        .controlSize(.small)
+                        .help("在新的终端会话里运行安装命令")
                 }
             }
-            .frame(maxWidth: 260, alignment: .trailing)
+            .confirmationDialog("安装 \(agent.name)？", isPresented: $confirmingInstall) {
+                Button("在终端里运行") { workspace.install(agent) }
+                Button("取消", role: .cancel) {}
+            } message: {
+                Text("会新开一个终端会话运行：\n\n\(agent.installCommand ?? "")\n\n命令跑完后会自动重新检测。")
+            }
         case .none:
             ProgressView().controlSize(.mini)
         }
@@ -124,7 +164,7 @@ struct AgentEditor: View {
                 Section {
                     TextField("名称", text: $agent.name, prompt: Text("例如：Qwen Code"))
                     Picker("图标", selection: $agent.symbol) {
-                        ForEach(AgentKind.symbolChoices, id: \.self) { s in
+                        ForEach(symbolChoices, id: \.self) { s in
                             Label(s, systemImage: s).labelStyle(.iconOnly).tag(s)
                         }
                     }
@@ -193,6 +233,11 @@ struct AgentEditor: View {
             .padding(16)
         }
         .frame(width: 560, height: 640)
+    }
+
+    /// Built-ins may use a symbol outside the short list; keep it selectable.
+    private var symbolChoices: [String] {
+        AgentKind.symbolChoices.contains(agent.symbol) ? AgentKind.symbolChoices : [agent.symbol] + AgentKind.symbolChoices
     }
 
     private var hooksNote: String {

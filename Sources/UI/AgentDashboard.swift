@@ -164,10 +164,9 @@ struct AgentDashboard: View {
     private var header: some View {
         HStack(spacing: 12) {
             Menu {
-                ForEach(catalog.visible.filter(\.isAgent)) { kind in
+                ForEach(catalog.available.filter(\.isAgent)) { kind in
                     Button { NewSessionPanel.present(kind: kind, in: workspace) } label: {
-                        Label(catalog.isInstalled(kind) == false ? "\(kind.name)（未安装）" : kind.name,
-                              systemImage: kind.symbol)
+                        Label(kind.name, systemImage: kind.symbol)
                     }
                 }
                 Divider()
@@ -237,7 +236,7 @@ private struct AgentDispatchBar: View {
     @State private var prompt = ""
 
     /// Only agents that can be started with a prompt.
-    private var agents: [AgentKind] { catalog.visible.filter(\.canTakePrompt) }
+    private var agents: [AgentKind] { catalog.available.filter(\.canTakePrompt) }
     private var agent: AgentKind? { agents.first { $0.id == agentID } ?? agents.first }
     private var folder: String {
         directory ?? suggestedDirectory ?? workspace.recentDirectories.first ?? NSHomeDirectory()

@@ -182,7 +182,7 @@ struct EmptyStateView: View {
                 .foregroundStyle(.secondary)
             Text("还没有会话").font(.title3)
             HStack {
-                ForEach(catalog.visible) { kind in
+                ForEach(catalog.available) { kind in
                     Button {
                         NewSessionPanel.present(kind: kind, in: workspace)
                     } label: {
