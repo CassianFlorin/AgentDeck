@@ -54,6 +54,15 @@ struct DiskReading {
     var rate: IORate?
     var free: UInt64?
     var capacity: UInt64?
+    /// Each mounted data volume (remote servers; a NAS has several).
+    var volumes: [DiskVolume] = []
+}
+
+struct DiskVolume: Identifiable, Equatable {
+    let mount: String
+    let free: UInt64
+    let capacity: UInt64
+    var id: String { mount }
 }
 
 struct GPUReading {

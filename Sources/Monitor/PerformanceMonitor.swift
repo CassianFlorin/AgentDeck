@@ -281,7 +281,8 @@ final class PerformanceMonitor: ObservableObject {
             if let d = r.disk {
                 readings.disk = DiskReading(rate: d.rate ?? readings.disk?.rate,
                                             free: d.free ?? readings.disk?.free,
-                                            capacity: d.capacity ?? readings.disk?.capacity)
+                                            capacity: d.capacity ?? readings.disk?.capacity,
+                                            volumes: d.volumes.isEmpty ? readings.disk?.volumes ?? [] : d.volumes)
             }
             h["disk.read", default: .init()].append(r.disk?.rate?.a)
             h["disk.write", default: .init()].append(r.disk?.rate?.b)
