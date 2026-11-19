@@ -95,7 +95,9 @@ enum MonitorScript {
                 grep -E "^(MemTotal|MemAvailable|Buffers|Cached|SReclaimable|SwapTotal|SwapFree):" /proc/meminfo | sed "s/^/@m /"
                 sed -n "3,\\$p" /proc/net/dev | sed "s/^/@n /"
                 sed "s/^/@k /" /proc/diskstats
-                df -Pk / 2>/dev/null | sed -n "2s/^/@f /p"
+                awk '$3 ~ /^(ext[234]|xfs|btrfs|zfs|f2fs|jfs|reiserfs|bcachefs|ntfs3?|fuseblk|exfat|vfat|fuse\\.(shfs|mergerfs))$/ && $2 !~ /\\\\/ && $2 !~ /^\\/boot(\\/|$)/ { print "@fm", $3, $2 }' /proc/mounts 2>/dev/null >"$T/m"
+                cat "$T/m"
+                set -f; df -Pk / $(cut -d" " -f3 "$T/m") 2>/dev/null | sed "1d;s/^/@f /"; set +f
 
             """
             if gpu {
@@ -238,7 +240,7 @@ final class RemoteParser {
     private var lastProc: [Int: UInt64] = [:]
 
     private static let wholeDisk = try! NSRegularExpression(
-        pattern: #"^(sd[a-z]+|vd[a-z]+|xvd[a-z]+|hd[a-z]+|nvme\d+n\d+|mmcblk\d+)$"#)
+        pattern: #"^(sd[a-z]+|vd[a-z]+|xvd[a-z]+|hd[a-z]+|nvme\d+n\d+|mmcblk\d+|sata\d+)$"#)
     /// Virtual links that would count container / VPN traffic twice.
     private static let virtualLink = ["lo", "veth", "docker", "br-", "virbr", "cni", "flannel", "cali",
                                       "tun", "tap", "wg", "tailscale", "zt", "kube", "vxlan", "weave"]
@@ -258,6 +260,33 @@ final class RemoteParser {
     /// Error text from an `@err` line, if the server can't be sampled.
     private(set) var fatal: String?
 
+    /// Every local data filesystem the server has, so a NAS shows its
+    /// storage pools (/volume1, /mnt/user, ZFS pools…) and not only the
+    /// system partition at /. One row per device (bind mounts, btrfs
+    /// subvolumes and ZFS datasets share space), biggest first.
+    static func volumes(_ rows: [(device: String, mount: String, free: UInt64, capacity: UInt64)],
+                        fsType: [String: String]) -> [DiskVolume] {
+        var byDevice: [String: DiskVolume] = [:]
+        var rootFallback: DiskVolume?
+        for row in rows where row.capacity > 0 {
+            let v = DiskVolume(mount: row.mount, free: row.free, capacity: row.capacity)
+            guard let type = fsType[row.mount] else {
+                // `/` is always asked for; it only counts when nothing
+                // real turns up (containers, overlay roots).
+                if row.mount == "/" { rootFallback = v }
+                continue
+            }
+            // Tiny partitions (EFI, firmware) are noise next to real disks.
+            if row.capacity < 1 << 30 { continue }
+            let key = type == "zfs" ? String(row.device.prefix { $0 != "/" }) : row.device
+            if let old = byDevice[key], old.mount.count <= row.mount.count { continue }
+            byDevice[key] = v
+        }
+        let list = byDevice.values.sorted { $0.capacity != $1.capacity ? $0.capacity > $1.capacity : $0.mount < $1.mount }
+        if list.isEmpty, let rootFallback { return [rootFallback] }
+        return list
+    }
+
     func parse(_ lines: [String], kinds: Set<MonitorKind>) -> PerfReadings {
         var uptime: Double?
         var cpuLines: [(String, [UInt64])] = []
@@ -265,7 +294,8 @@ final class RemoteParser {
         var mem: [String: UInt64] = [:]
         var netIn: UInt64 = 0, netOut: UInt64 = 0, sawNet = false
         var diskR: UInt64 = 0, diskW: UInt64 = 0, sawDisk = false
-        var df: (UInt64, UInt64)?
+        var dfRows: [(device: String, mount: String, free: UInt64, capacity: UInt64)] = []
+        var fsType: [String: String] = [:]
         var gpus: [GPUReading] = []
         var procs: [(pid: Int, name: String, ticks: UInt64, rss: UInt64)] = []
         var docker: DockerReading?
@@ -326,9 +356,13 @@ final class RemoteParser {
                 diskR &+= (UInt64(f[5]) ?? 0) * 512
                 diskW &+= (UInt64(f[9]) ?? 0) * 512
                 sawDisk = true
+            case "@fm":
+                if f.count >= 2 { fsType[f[1...].joined(separator: " ")] = f[0] }
             case "@f":
                 // Filesystem 1024-blocks Used Available Capacity Mounted
-                if f.count >= 4, let size = UInt64(f[1]), let avail = UInt64(f[3]) { df = (avail * 1024, size * 1024) }
+                if f.count >= 6, let size = UInt64(f[1]), let avail = UInt64(f[3]) {
+                    dfRows.append((f[0], f[5...].joined(separator: " "), avail * 1024, size * 1024))
+                }
             case "@g":
                 let g = rest.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
                 if g.count >= 3, let u = Double(g[0]) {
@@ -399,8 +433,13 @@ final class RemoteParser {
             lastNet = (netIn, netOut)
         }
 
-        if kinds.contains(.disk), sawDisk || df != nil {
-            var d = DiskReading(free: df?.0, capacity: df?.1)
+        let volumes = Self.volumes(dfRows, fsType: fsType)
+        if kinds.contains(.disk), sawDisk || !volumes.isEmpty {
+            // The headline bar is the root filesystem when it's a real disk,
+            // else the biggest volume (a NAS's / is a small system partition).
+            let main = volumes.first { $0.mount == "/" } ?? volumes.first
+            var d = DiskReading(free: main?.free, capacity: main?.capacity)
+            d.volumes = volumes
             if let (pr, pw) = lastDisk, let elapsed {
                 d.rate = IORate(a: Double(diskR &- pr) / elapsed, b: Double(diskW &- pw) / elapsed)
             }

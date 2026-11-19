@@ -306,14 +306,28 @@ private struct DiskCard: View {
                 LegendDot(color: .pink, text: "写 \(reading?.rate.map { Fmt.rate($0.b) } ?? "—")")
             }
             .font(.caption).monospacedDigit()
-            if let free = reading?.free, let cap = reading?.capacity, cap > 0 {
-                VStack(alignment: .leading, spacing: 3) {
-                    ProgressView(value: Double(cap - min(free, cap)), total: Double(cap))
-                        .tint(Double(free) / Double(cap) < 0.1 ? .red : .accentColor)
-                    Text("可用 \(Fmt.bytes(free)) / \(Fmt.bytes(cap))")
-                        .font(.caption).foregroundStyle(.secondary).monospacedDigit()
+            if let volumes = reading?.volumes, volumes.count > 1 {
+                ForEach(volumes) { v in
+                    space(free: v.free, capacity: v.capacity, label: v.mount)
                 }
+            } else if let free = reading?.free, let cap = reading?.capacity, cap > 0 {
+                space(free: free, capacity: cap, label: nil)
             }
+        }
+    }
+
+    private func space(free: UInt64, capacity cap: UInt64, label: String?) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            ProgressView(value: Double(cap - min(free, cap)), total: Double(cap))
+                .tint(Double(free) / Double(cap) < 0.1 ? .red : .accentColor)
+            HStack(spacing: 6) {
+                if let label {
+                    Text(label).lineLimit(1).truncationMode(.middle)
+                    Spacer(minLength: 4)
+                }
+                Text("可用 \(Fmt.bytes(free)) / \(Fmt.bytes(cap))")
+            }
+            .font(.caption).foregroundStyle(.secondary).monospacedDigit()
         }
     }
 }
