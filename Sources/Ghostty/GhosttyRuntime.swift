@@ -1,4 +1,5 @@
 import AppKit
+import os
 import GhosttyKit
 import SwiftUI
 
@@ -95,10 +96,7 @@ final class GhosttyRuntime {
         var runtime = ghostty_runtime_config_s(
             userdata: Unmanaged.passUnretained(self).toOpaque(),
             supports_selection_clipboard: false,
-            wakeup_cb: { _ in
-                // May arrive on any thread; ticking must happen on main.
-                DispatchQueue.main.async { GhosttyRuntime.shared.tick() }
-            },
+            wakeup_cb: { _ in GhosttyRuntime.scheduleTick() },
             action_cb: { app, target, action in
                 GhosttyRuntime.handleAction(app, target: target, action: action)
             },
@@ -141,6 +139,25 @@ final class GhosttyRuntime {
     func tick() {
         guard let app else { return }
         ghostty_app_tick(app)
+    }
+
+    /// Set while a tick is queued on main and hasn't started yet.
+    private static let tickQueued = OSAllocatedUnfairLock(initialState: false)
+
+    /// libghostty wakes us from its threads, often in bursts while output
+    /// streams in. One queued tick drains the whole mailbox, so further
+    /// wakeups before it runs need no block of their own.
+    private static func scheduleTick() {
+        let first = tickQueued.withLock { queued in
+            defer { queued = true }
+            return !queued
+        }
+        guard first else { return }
+        DispatchQueue.main.async {
+            // Cleared before ticking: a wakeup during the tick queues another.
+            tickQueued.withLock { $0 = false }
+            shared.tick()
+        }
     }
 
     // MARK: - Config

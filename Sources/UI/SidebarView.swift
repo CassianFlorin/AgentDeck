@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct SidebarView: View {
@@ -481,6 +482,7 @@ struct ActivityBadge: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Bumped when a turn finishes, for a single bounce of the dot.
     @State private var finished = 0
+    @ObservedObject private var visibility = AppVisibility.shared
 
     var body: some View {
         HStack(spacing: 3) {
@@ -489,7 +491,7 @@ struct ActivityBadge: View {
                 Image(systemName: "circle.fill")
                     .font(.system(size: 5))
                     .foregroundStyle(color)
-                    .symbolEffect(.pulse, options: .repeating, isActive: !reduceMotion)
+                    .symbolEffect(.pulse, options: .repeating, isActive: !reduceMotion && visibility.isVisible)
                 Text(label).foregroundStyle(color).shimmer(active: !reduceMotion)
             case .waiting:
                 PulsingDot(color: color, size: 5)
@@ -519,29 +521,57 @@ struct ActivityBadge: View {
     }
 }
 
+/// Whether any of the app's windows can be seen. Endless animations run on
+/// the main thread every frame, so they stop while nobody can see them
+/// (window minimised, covered, on another Space, app hidden).
+@MainActor
+final class AppVisibility: ObservableObject {
+    static let shared = AppVisibility()
+    @Published private(set) var isVisible = true
+    private var observer: NSObjectProtocol?
+
+    private init() {
+        observer = NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeOcclusionStateNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                let visible = NSApp.occlusionState.contains(.visible)
+                if self?.isVisible != visible { self?.isVisible = visible }
+            }
+        }
+    }
+}
+
 /// A solid dot with a ring that keeps expanding and fading out — "look here".
 struct PulsingDot: View {
     let color: Color
     let size: CGFloat
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var expanded = false
+    @ObservedObject private var visibility = AppVisibility.shared
 
     var body: some View {
         Circle()
             .fill(color)
             .frame(width: size, height: size)
             .background {
-                if !reduceMotion {
-                    Circle()
-                        .stroke(color, lineWidth: 1)
-                        .scaleEffect(expanded ? 2.6 : 1)
-                        .opacity(expanded ? 0 : 0.8)
+                // A fresh ring each time it shows, so the animation starts again.
+                if !reduceMotion && visibility.isVisible { Ripple(color: color) }
+            }
+    }
+
+    private struct Ripple: View {
+        let color: Color
+        @State private var expanded = false
+
+        var body: some View {
+            Circle()
+                .stroke(color, lineWidth: 1)
+                .scaleEffect(expanded ? 2.6 : 1)
+                .opacity(expanded ? 0 : 0.8)
+                .onAppear {
+                    withAnimation(.easeOut(duration: 1.4).repeatForever(autoreverses: false)) { expanded = true }
                 }
-            }
-            .onAppear {
-                guard !reduceMotion else { return }
-                withAnimation(.easeOut(duration: 1.4).repeatForever(autoreverses: false)) { expanded = true }
-            }
+        }
     }
 }
 
@@ -549,9 +579,10 @@ struct PulsingDot: View {
 private struct Shimmer: ViewModifier {
     let active: Bool
     @State private var phase: CGFloat = -1
+    @ObservedObject private var visibility = AppVisibility.shared
 
     func body(content: Content) -> some View {
-        if active {
+        if active && visibility.isVisible {
             content
                 .overlay {
                     GeometryReader { geo in

@@ -87,6 +87,7 @@ final class TerminalSurfaceView: NSView {
     required init?(coder: NSCoder) { fatalError("not supported") }
 
     deinit {
+        occlusionObserver.map(NotificationCenter.default.removeObserver)
         if let surface { ghostty_surface_free(surface) }
     }
 
@@ -147,19 +148,35 @@ final class TerminalSurfaceView: NSView {
         return ok
     }
 
+    /// Watches this view's window for being minimised, covered or on another Space.
+    private var occlusionObserver: NSObjectProtocol?
+
+    /// Tell the renderer whether anyone can see it. Hidden, it stops drawing
+    /// and gives back its GPU buffers (most of a surface's memory); they are
+    /// rebuilt on the next frame once it shows again.
+    private func syncOcclusion() {
+        guard let surface else { return }
+        ghostty_surface_set_occlusion(surface, window?.occlusionState.contains(.visible) ?? false)
+    }
+
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
+        occlusionObserver.map(NotificationCenter.default.removeObserver)
+        occlusionObserver = nil
+        if let window {
+            occlusionObserver = NotificationCenter.default.addObserver(
+                forName: NSWindow.didChangeOcclusionStateNotification, object: window, queue: .main
+            ) { [weak self] _ in self?.syncOcclusion() }
+        }
+        // Not in a window: another session is selected, so let the renderer idle.
+        syncOcclusion()
         guard let surface else { return }
         if let window {
-            ghostty_surface_set_occlusion(surface, true)
             if let id = window.screen?.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber {
                 ghostty_surface_set_display_id(surface, id.uint32Value)
             }
             updateScale()
             sizeDidChange(frame.size)
-        } else {
-            // Not on screen (another session is selected): let the renderer idle.
-            ghostty_surface_set_occlusion(surface, false)
         }
     }
 
