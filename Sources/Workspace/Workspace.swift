@@ -53,6 +53,7 @@ final class Workspace: ObservableObject {
     }
 
     init() {
+        menuObserver = objectWillChange.sink { [weak self] _ in self?.queueMenuRefresh() }
         let saved = store.load()
         recentDirectories = saved.recentDirectories
         groups = saved.groups
@@ -140,11 +141,7 @@ final class Workspace: ObservableObject {
         session.detectAgent = { [weak self] title in self?.catalog.agent(runBy: title) }
         // Re-publish child changes so sidebar and Dock badge update.
         cancellables[session.id] = session.objectWillChange.sink { [weak self] _ in
-            DispatchQueue.main.async {
-                self?.objectWillChange.send()
-                self?.updateDockBadge()
-                self?.schedulePersist()
-            }
+            self?.sessionDidChange()
         }
         if let g = session.group, !groups.contains(g) { groups.append(g) }
         sessions.append(session)
@@ -569,6 +566,56 @@ final class Workspace: ObservableObject {
             groups: groups))
     }
 
+    // MARK: Menu bar
+
+    /// The little the menu bar shows. Published only when a value actually
+    /// changes, so the menus aren't rebuilt for every session update.
+    final class MenuState: ObservableObject {
+        @Published fileprivate(set) var hasSession = false
+        @Published fileprivate(set) var showingDashboard = false
+        @Published fileprivate(set) var selectedDisconnected = false
+    }
+
+    let menuState = MenuState()
+    private var menuRefreshQueued = false
+    private var menuObserver: AnyCancellable?
+
+    /// objectWillChange fires before the change; read the new values after it.
+    private func queueMenuRefresh() {
+        guard !menuRefreshQueued else { return }
+        menuRefreshQueued = true
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.menuRefreshQueued = false
+            let m = self.menuState
+            let hasSession = self.selected != nil && !self.showingDashboard
+            let disconnected = self.selected?.isDisconnected == true
+            if m.hasSession != hasSession { m.hasSession = hasSession }
+            if m.showingDashboard != self.showingDashboard { m.showingDashboard = self.showingDashboard }
+            if m.selectedDisconnected != disconnected { m.selectedDisconnected = disconnected }
+        }
+    }
+
+    /// A session changed and the workspace hasn't re-published it yet.
+    private var sessionChangePending = false
+
+    /// Everything that watches the workspace (sidebar, Agent 总览, toolbar,
+    /// Dock badge, saving) hears about session changes at most every 0.1 s.
+    /// Busy agents change state and title many times a second; re-rendering
+    /// the whole window for each one is most of what an idle Waitlight costs.
+    /// Views that show one session observe it directly and stay immediate.
+    private func sessionDidChange() {
+        guard !sessionChangePending else { return }
+        sessionChangePending = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            guard let self else { return }
+            self.sessionChangePending = false
+            self.objectWillChange.send()
+            self.updateDockBadge()
+            self.schedulePersist()
+        }
+    }
+
     private var persistWork: DispatchWorkItem?
 
     /// Coalesce bursts of changes (typing `cd` a lot, dragging a divider).
@@ -581,12 +628,14 @@ final class Workspace: ObservableObject {
 
     private func updateDockBadge() {
         let n = attentionCount
-        NSApp.dockTile.badgeLabel = n > 0 ? "\(n)" : nil
+        let label = n > 0 ? "\(n)" : nil
+        // Each assignment is a round trip to the Dock, even with the same value.
+        if NSApp.dockTile.badgeLabel != label { NSApp.dockTile.badgeLabel = label }
     }
 }
 
 /// ~/Library/Application Support/Waitlight/workspace.json
-struct WorkspaceStore {
+final class WorkspaceStore {
     struct Saved: Codable {
         struct Session: Codable {
             var kindID: String
@@ -630,10 +679,14 @@ struct WorkspaceStore {
         return saved
     }
 
+    /// What the last save wrote, so an unchanged workspace isn't rewritten.
+    private var lastSaved: Data?
+
     func save(_ saved: Saved) {
         let enc = JSONEncoder()
         enc.outputFormatting = [.prettyPrinted, .sortedKeys]
-        if let data = try? enc.encode(saved) { try? data.write(to: url, options: .atomic) }
+        guard let data = try? enc.encode(saved), data != lastSaved else { return }
+        if (try? data.write(to: url, options: .atomic)) != nil { lastSaved = data }
     }
 }
 

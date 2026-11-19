@@ -236,13 +236,16 @@ final class AgentSession: ObservableObject, Identifiable {
     private func handle(_ event: TerminalEvent, from pane: PaneView) {
         switch event {
         case .title(let t):
-            guard !t.isEmpty else { return }
+            // Agents animate their title (a spinner while working), so the
+            // same title arrives over and over; publishing it again would
+            // redraw the sidebar, dashboard and menus for nothing.
+            guard !t.isEmpty, paneTitles[ObjectIdentifier(pane)] != t else { return }
             paneTitles[ObjectIdentifier(pane)] = t
-            if pane === focusedPane { title = t }
+            if pane === focusedPane { publishTitleSoon() }
             adopt(title: t, in: pane)
 
         case .pwd:
-            if pane === focusedPane, let dir = pane.terminal.currentDirectory { directory = dir }
+            if pane === focusedPane, let dir = pane.terminal.currentDirectory, dir != directory { directory = dir }
 
         case .attention(let message):
             setActivity(.waiting(message), in: pane)
@@ -310,6 +313,22 @@ final class AgentSession: ObservableObject, Identifiable {
 
         default:
             onWorkspaceEvent?(self, event)
+        }
+    }
+
+    private var titleQueued = false
+
+    /// A spinner in the title would redraw the sidebar ten times a second;
+    /// four is plenty to read. The latest title always lands.
+    private func publishTitleSoon() {
+        guard !titleQueued else { return }
+        titleQueued = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
+            guard let self else { return }
+            self.titleQueued = false
+            if let pane = self.focusedPane, let t = self.paneTitles[ObjectIdentifier(pane)], t != self.title {
+                self.title = t
+            }
         }
     }
 
@@ -459,9 +478,9 @@ final class AgentSession: ObservableObject, Identifiable {
     }
 
     private func setFocused(_ pane: PaneView) {
-        focusedPane = pane
-        if let t = paneTitles[ObjectIdentifier(pane)] { title = t }
-        if let dir = pane.terminal.currentDirectory { directory = dir }
+        if focusedPane !== pane { focusedPane = pane }
+        if let t = paneTitles[ObjectIdentifier(pane)], t != title { title = t }
+        if let dir = pane.terminal.currentDirectory, dir != directory { directory = dir }
         if case .needsAttention = status { status = .running }
         updateDimming()
     }

@@ -3,7 +3,10 @@ import SwiftUI
 @main
 struct WaitlightApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    @StateObject private var workspace: Workspace
+    /// Held, not observed: the scene itself doesn't depend on what's in the
+    /// workspace, and re-evaluating it rebuilds the window's root and the menu
+    /// bar. ContentView and AppCommands observe what they need.
+    @State private var workspace: Workspace
 
     init() {
         // When an agent hook runs us (WAITLIGHT_HOOK), forward the event and exit.
@@ -12,7 +15,7 @@ struct WaitlightApp: App {
         Askpass.runIfRequested()
         // libghostty must be initialised before any surface exists.
         GhosttyRuntime.shared.start()
-        _workspace = StateObject(wrappedValue: Workspace())
+        _workspace = State(initialValue: Workspace())
         // After the hook/askpass early exits: those runs must not touch Sparkle.
         _ = AppUpdater.shared
     }
@@ -33,7 +36,7 @@ struct WaitlightApp: App {
                 }
         }
         .windowToolbarStyle(.unifiedCompact)
-        .commands { AppCommands(workspace: workspace) }
+        .commands { AppCommands(workspace: workspace, menu: workspace.menuState, catalog: workspace.catalog) }
 
         Settings {
             TabView {
@@ -51,12 +54,16 @@ struct WaitlightApp: App {
 /// binding actions, so menu and keyboard (incl. the user's own Ghostty
 /// keybinds) go through exactly the same path.
 struct AppCommands: Commands {
-    @ObservedObject var workspace: Workspace
+    /// Not observed: the menus only read the few values in `menu`, and
+    /// rebuilding them on every session change is expensive.
+    let workspace: Workspace
+    @ObservedObject var menu: Workspace.MenuState
+    @ObservedObject var catalog: AgentCatalog
     @ObservedObject private var updater = AppUpdater.shared
     @AppStorage(MonitorSettings.visibleKey) private var showMonitor = false
 
     /// Terminal commands need a terminal on screen.
-    private var hasSession: Bool { workspace.selected != nil && !workspace.showingDashboard }
+    private var hasSession: Bool { menu.hasSession }
 
     private func act(_ action: String) {
         workspace.selected?.focusedPane?.terminal.performBindingAction(action)
@@ -72,7 +79,7 @@ struct AppCommands: Commands {
 
         CommandGroup(replacing: .newItem) {
             // ⌘⇧1…9 follow the order in 管理 Agent.
-            ForEach(Array(workspace.catalog.available.prefix(9).enumerated()), id: \.element.id) { i, kind in
+            ForEach(Array(catalog.available.prefix(9).enumerated()), id: \.element.id) { i, kind in
                 Button("新建 \(kind.name)…") { NewSessionPanel.present(kind: kind, in: workspace) }
                     .keyboardShortcut(KeyEquivalent(Character("\(i + 1)")), modifiers: [.command, .shift])
             }
@@ -133,7 +140,7 @@ struct AppCommands: Commands {
         }
 
         CommandMenu("会话") {
-            Button(workspace.showingDashboard ? "回到会话" : "Agent 总览") { workspace.showingDashboard.toggle() }
+            Button(menu.showingDashboard ? "回到会话" : "Agent 总览") { workspace.showingDashboard.toggle() }
                 .keyboardShortcut("a", modifiers: [.command, .shift])
             Button("下一个 Agent") { workspace.cycleAgent(1) }
                 .keyboardShortcut("]", modifiers: [.command, .option])
@@ -149,7 +156,7 @@ struct AppCommands: Commands {
             Divider()
             Button("重新连接") { workspace.selected.map(workspace.reconnect) }
                 .keyboardShortcut("r", modifiers: [.command, .shift])
-                .disabled(workspace.selected?.isDisconnected != true)
+                .disabled(!menu.selectedDisconnected)
             Button("添加服务器…") { workspace.editingHost = RemoteHost(name: "", host: "") }
             Divider()
             Button("重命名会话…") { workspace.renaming = workspace.selected }

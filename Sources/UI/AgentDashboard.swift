@@ -296,6 +296,7 @@ private struct AgentDashboardRow: View {
     let entry: AgentEntry
     let showsFolder: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @ObservedObject private var visibility = AppVisibility.shared
 
     var body: some View {
         HStack(spacing: 8) {
@@ -335,7 +336,7 @@ private struct AgentDashboardRow: View {
             PulsingDot(color: .orange, size: 7)
         case .working:
             Image(systemName: "circle.fill").font(.system(size: 7)).foregroundStyle(.blue)
-                .symbolEffect(.pulse, options: .repeating, isActive: !reduceMotion)
+                .symbolEffect(.pulse, options: .repeating, isActive: !reduceMotion && visibility.isVisible)
         case .done:
             Image(systemName: "circle.fill").font(.system(size: 7)).foregroundStyle(.green)
         default:
